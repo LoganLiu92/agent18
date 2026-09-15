@@ -60,7 +60,7 @@ AGENT18_MODEL_JSON_MODE=true
 
 HTTPS 是默认要求；本地模型可使用 `http://localhost`、`127.0.0.1` 或 Docker 的 `host.docker.internal`。容器内 `localhost` 指容器自身。请求禁止重定向，响应限 128 KB，超时/鉴权/配额错误只返回错误码。
 
-CLI 自动加载 `.local/model.env`；Compose Core 通过可选 `env_file` 加载。更改模型配置后运行 `pnpm demo:start` 重建/重建容器配置；单纯 restart 不会读取变化的容器环境。模型 Key 不会发往浏览器或 Worker。部署者选择模型供应商意味着允许向该供应商发送所选资料片段、客户问题和候选业务操作；在导入客户私有代码前确认这个数据范围。
+CLI 自动加载 `.local/model.env`；Compose Core 通过可选 `env_file` 加载。更改模型配置后运行 `pnpm deploy:start`（演示环境用 `pnpm demo:start`）重新创建服务；单纯 restart 不会读取变化的容器环境。模型 Key 不会发往浏览器或 Worker。部署者选择模型供应商意味着允许向该供应商发送所选资料片段、客户问题和候选业务操作；在导入客户私有代码前确认这个数据范围。
 
 ## 构建、检查、发布和撤下
 
@@ -80,7 +80,7 @@ pnpm knowledge disable product-guide
 
 发布以单次数据库事务切换来源的活动版本。失败构建不替换当前版本；不同来源分别发布，不提供跨来源的一次性发布。发布旧构建可回滚，同时恢复该构建的受众配置。切换到内部受众或修改租户列表的构建会先停止当前来源对客户开放，直到重新发布。`disable` 即刻停止后续读取；旧 Case 详情中的知识引用也会重新验证可见性。已经送达客户端或模型供应商的内容无法被远程收回。
 
-数据库保存构建报告、生成条目、文件位置与内容指纹、模型缓存，不保留所有原始源文件。目录来源没有 Git commit，以文件内容清单指纹作为版本。对更新频繁的生产源代码优先使用 Git commit，以避免扫描时文件变化。同步目前由部署者手动/自有调度调用 CLI；未实现 webhook、内置调度器或文件监控。
+数据库保存构建报告、生成条目、文件位置与内容指纹、模型缓存，不保留所有原始源文件。目录来源没有 Git commit，以文件内容清单指纹作为版本。对更新频繁的生产源代码优先使用 Git commit，以避免扫描时文件变化。同步由 CLI 手动执行或下文的 watch 轮询；未实现 webhook、服务端调度器或文件系统事件监控。
 
 ## 常见问题
 
@@ -89,7 +89,7 @@ pnpm knowledge disable product-guide
 - `SOURCE_BUDGET_EXCEEDED`：缩小 include 范围或合理调整上限；拆分成多个知识源。
 - `NO_INDEXABLE_FILES`：路径、include 或过滤结果为空；检查支持格式及文件权限。
 - `GIT_READ_FAILED`：检查宿主机 SSH、host key、仓库权限、ref 和 60 秒单命令超时。
-- 网站没有知识：检查项目 `knowledge: indexed`、构建是否发布、受众/租户范围。`pnpm knowledge enable` 可更新本地项目配置，随后重启 Core。
+- 网站没有知识：检查项目 `knowledge: indexed`、构建是否发布、受众/租户范围。`pnpm knowledge enable` 可更新本地项目配置，随后通过工作台“应用到运行服务”或 `pnpm deploy:start` 重新创建 Core。
 
 
 ## 持续更新与多项目

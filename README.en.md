@@ -2,6 +2,8 @@
 
 An open-source assistant for existing SaaS products. Connect code and documentation, bring your own model, reuse your users' identity, and embed knowledge answers, business queries, confirmed actions and support conversations in your website.
 
+**Integrating an existing product? Start with the [integration task brief](INTEGRATE.md)** (Chinese). It maps responsibilities across repositories, defines staged outcomes, and includes a task prompt and [acceptance report template](docs/reference/integration-acceptance.md) for your target system.
+
 **0.6.0 integration preview.** This release connects the adoption and operation workflow: setup wizard, local operator workspace, three customer entry modes, versioned knowledge, OpenAPI reads, delegated actions, support replies, diagnostics and backup/restore. Runtime investigation and autonomous code repair are not implemented.
 
 ## Run locally
@@ -9,7 +11,7 @@ An open-source assistant for existing SaaS products. Connect code and documentat
 Requires Node 24.14.x, pnpm 11.19.0 and Docker Compose v2. Git sources use the host's existing read permissions.
 
 ```sh
-git clone git@github.com:LoganLiu92/agent18.git
+git clone https://github.com/LoganLiu92/agent18.git
 cd agent18
 pnpm install --frozen-lockfile
 pnpm start

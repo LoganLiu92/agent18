@@ -9,6 +9,8 @@ import { Pool } from '@agent18/persistence';
 import { KnowledgeIndexer, sourceSchema } from '@agent18/knowledge';
 import { createBackup, restoreBackup, activateRestore } from './lib/backup.js';
 import { buildSetupApp } from '../apps/setup/src/app.js';
+import { startStack } from './lib/start-stack.js';
+import { atomicJson } from './lib/atomic.js';
 const execute = promisify(execFile),
   root = await mkdtemp(join(tmpdir(), 'agent18-journey-')),
   name = 'agent18-journey-' + randomBytes(4).toString('hex');
@@ -62,8 +64,16 @@ try {
     (await readFile(join(root, 'compose.env'), 'utf8')) + `\nAGENT18_STACK_NAME=${name}\n`,
   );
   composeStarted = true;
-  await execute('docker', [...compose, 'up', '-d', '--wait'], { env, timeout: 180000, maxBuffer: 1000000 });
-  pass('Clean configuration, migrations and isolated Compose startup');
+  await startStack(compose, { build: false });
+  assert.equal((await execute('docker', [...compose, 'ps', '-q', 'identity-demo'])).stdout.trim(), '');
+  pass('Clean configuration and deployment startup without the demo identity service');
+  const postgresId = (await execute('docker', [...compose, 'ps', '-q', 'postgres'])).stdout.trim();
+  // The independent synthetic SaaS is only needed for the business acceptance below.
+  await execute('docker', [...compose, 'up', '-d', '--no-deps', '--wait', 'identity-demo'], {
+    env,
+    timeout: 120000,
+    maxBuffer: 1000000,
+  });
   const config = JSON.parse(await readFile(join(root, 'server.json'), 'utf8'));
   pool = new Pool({
     connectionString: JSON.parse(await readFile(join(root, 'indexer.json'), 'utf8')).databaseUrl,
@@ -99,13 +109,16 @@ try {
     const c = JSON.parse(await readFile(join(root, file), 'utf8'));
     c.projects[0].knowledge = 'indexed';
     c.setupCompleted = true;
-    await writeFile(join(root, file), JSON.stringify(c), { mode: 0o600 });
+    c.projects[0].displayName = 'Atomic configuration reload';
+    await atomicJson(join(root, file), c);
   }
-  await execute('docker', [...compose, 'up', '-d', '--no-deps', '--force-recreate', '--wait', 'server'], {
-    env,
-    timeout: 120000,
-    maxBuffer: 1000000,
-  });
+  await startStack(compose, { build: false });
+  assert.equal((await execute('docker', [...compose, 'ps', '-q', 'postgres'])).stdout.trim(), postgresId);
+  assert.equal(
+    (await (await fetch(core + '/public/projects/invoice-demo')).json()).displayName,
+    'Atomic configuration reload',
+  );
+  pass('Config-only deployment reloads atomic file replacements without recreating PostgreSQL');
   const diagnosis = await execute('pnpm', ['--silent', 'run', 'doctor', '--json'], {
     env,
     timeout: 30000,
@@ -240,15 +253,27 @@ try {
   const retained = await restoreBackup(root, snapshot.directory, false);
   assert.ok(retained.database);
   await activateRestore(root, retained.database);
-  await execute(
-    'docker',
-    [...compose, 'up', '-d', '--no-deps', '--force-recreate', '--wait', 'server', 'worker'],
-    { env, timeout: 120000, maxBuffer: 1000000 },
-  );
+  await startStack(compose, { build: false });
   assert.equal((await api('/api/cases/' + caseId)).case.status, 'resolved');
   assert.equal((await api(`/api/cases/${caseId}/messages`)).messages.length, 2);
   assert.equal((await api(`/api/actions/proposals/${proposal.id}`)).state, 'succeeded');
   pass('Explicit activation of a verified new database with restored customer history and receipts');
+  const afterRestore = await api(
+    '/api/cases',
+    { title: 'JourneyOrderStatus after restore', description: 'Verify the new queue target', context: {} },
+    alice,
+    randomUUID(),
+    201,
+  );
+  for (let i = 0; i < 30; i++) {
+    detail = await api('/api/cases/' + afterRestore.case.id);
+    if (detail.runs[0]?.state === 'completed') break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  assert.equal(detail.runs[0].state, 'completed');
+  assert.ok(detail.evidence.length > 0);
+  assert.equal((await execute('docker', [...compose, 'ps', '-q', 'postgres'])).stdout.trim(), postgresId);
+  pass('Core and Worker process new work after database activation while retaining PostgreSQL');
 
   await mkdir('.local/release', { recursive: true });
   await writeFile(

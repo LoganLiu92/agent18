@@ -4,9 +4,11 @@ import { resolve, posix } from 'node:path';
 import MarkdownIt from 'markdown-it';
 import type { FastifyInstance } from 'fastify';
 export const documents = [
+  ['index', '开始使用', 'docs/README.md'],
+  ['integration', '已有项目接入任务书', 'INTEGRATE.md'],
+  ['reference/integration-acceptance', '目标系统验收报告', 'docs/reference/integration-acceptance.md'],
   ['overview/agent18-0.6-core', '0.6 核心抽象与升级', 'docs/overview/agent18-0.6-core.md'],
   ['reference/providers', 'Provider 与 Tool 注册规范', 'docs/reference/providers.md'],
-  ['index', '开始使用', 'docs/README.md'],
   ['guides/installation', '安装与公开部署', 'docs/guides/installation.md'],
   ['guides/integration', '网站与身份接入', 'docs/guides/integration.md'],
   ['guides/conversation', '对话式助手', 'docs/guides/conversation.md'],

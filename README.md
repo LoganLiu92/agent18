@@ -5,6 +5,8 @@
 [![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
 [English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.6-core.md) · [贡献指南](CONTRIBUTING.md)
 
+**准备接入已有项目？先读 [接入任务书](INTEGRATE.md)**：明确两个仓库分别改什么，按知识与支持 → 实时查询 → 确认办理推进；附可发给编码助手的任务描述和[目标系统验收报告](docs/reference/integration-acceptance.md)。
+
 agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与业务助手。连接已有代码和文档，使用自己的模型 API，沿用用户身份，让客户在原网站找答案、查业务、经确认办理业务，并持续跟进尚未解决的问题。
 
 **0.6.0 核心基础预览版**，覆盖知识、身份、业务接口与支持闭环。提供初始化向导、部署工作台、网站浮窗/内嵌/独立页、API 文档、诊断与备份恢复工具。Context、Evidence、RunStep、工具/Provider 注册与策略决策已泛化。运行时日志调查和自动代码修复仍为后续扩展。
@@ -24,7 +26,7 @@ agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与
 需要 Node 24.14.x、pnpm 11.19.0、Docker Compose v2；Git 知识源需要宿主机 Git 读取权限。
 
 ```sh
-git clone git@github.com:LoganLiu92/agent18.git
+git clone https://github.com/LoganLiu92/agent18.git
 cd agent18
 pnpm install --frozen-lockfile
 pnpm start
@@ -72,6 +74,7 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 
 ## 接入和运维文档
 
+- [已有项目接入任务书](INTEGRATE.md)、[接入验收报告模板](docs/reference/integration-acceptance.md)：从仓库 URL 到真实网站效果，记录实际通过与未接入项。
 - [0.6 核心抽象审查与升级](docs/overview/agent18-0.6-core.md)、[Provider / Tool 注册规范](docs/reference/providers.md)。
 
 - [安装与公开部署](docs/guides/installation.md)：本地启动、初始化、HTTPS、演示与正式部署分开。

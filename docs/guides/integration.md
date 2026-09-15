@@ -2,6 +2,8 @@
 
 agent18 不替换业务系统登录。SaaS 后端在确认当前会话后签发短期 Support Token；agent18 校验签名、固定 issuer/audience、项目、租户和用户。前端只持有短期 Token，模型 Key、索引库和业务管理凭据留在部署端。
 
+完整接入顺序与预期效果见[已有项目接入任务书](../../INTEGRATE.md)，本页说明身份和前端的具体合同。
+
 ## 1. 部署基础服务
 
 按 README 启动 PostgreSQL、OPA、Core 与 Worker。生产部署应在 HTTPS 反向代理后发布 Core，使用自己的域名和数据库备份/密钥管理。示例 Compose 只绑定回环地址，属于本地开发部署。Core 需要访问所配置的模型与业务桥；Worker 无需访问它们。
@@ -32,14 +34,14 @@ agent18 不替换业务系统登录。SaaS 后端在确认当前会话后签发�
 
 ```sh
 pnpm project:configure .local/your-project.json
-# 重启 Core，加载项目配置
+# 重新创建 Core，加载项目配置（普通 restart 不足以更新单文件挂载）
 
 docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml up -d --no-deps --force-recreate --wait server
 ```
 
 该命令使用一次性迁移凭据写入项目/租户元数据，更新本地与 Docker Core 配置，拒绝覆盖既有项目的身份映射，拒绝 JWK 私钥字段。重复执行只更新元数据，不删除既有租户或业务数据。数据库事务和配置文件写入不构成跨资源事务；若文件写入失败，修正权限后重新执行同一命令。
 
-当前只实现静态公钥集；轮换时先加入新公钥、重启 Core，再切换签发 key，待旧 Token 过期后移除旧公钥。未实现远程 JWKS 自动轮换、即时撤销 Token 或完整租户管理后台。
+当前只实现静态公钥集；轮换时先加入新公钥、重新创建 Core，再切换签发 key，待旧 Token 过期后移除旧公钥并再次应用配置。未实现远程 JWKS 自动轮换、即时撤销 Token 或完整租户管理后台。
 
 ## 3. SaaS 后端签发 Token
 
@@ -88,9 +90,9 @@ await client.confirmAction(preview.id);
 await client.reconcileAction(preview.id);
 ```
 
-不要在模型规划结束后自动调用 `confirmAction`。前端切换登录用户或租户时销毁旧面板和 SDK 实例、清除旧页面状态，并用新身份重新创建。SDK 的上下文只采集显式传入的路径和实体 ID，不读取 Cookie、DOM 或网络响应。
+不要在模型规划结束后自动调用 `confirmAction`。前端切换登录用户或租户时销毁旧面板和 SDK 实例、清除旧页面状态，并用新身份重新创建。SDK 只接收显式传入的页面路径、通用实体、traceId/sessionId、环境与版本等有界上下文，不读取 Cookie、DOM 或网络响应；上下文不作为可信授权依据。
 
-内置面板包含知识问答、可用业务操作表单、模型生成操作预览和确认/回执。完整问题列表、Run 历史等可通过 SDK 自行组合，演示 Console 已展示这些能力。业务示例和注册方法见[业务操作指南](business-actions.md)。
+浮窗与内嵌面板使用一个消息流和输入框，持续引导知识问答、业务参数补充、预览确认、回执以及问题提交、进展和回复。独立支持页提供目录与工作区，也可用 SDK 自建界面。业务示例和注册方法见[业务操作指南](business-actions.md)。
 
 
 ## 网站中的三种界面入口
@@ -149,7 +151,7 @@ function disconnectSupport() {
 前端调用的是 agent18 API。最终写业务数据的是 **SaaS 后端**：agent18 Core 在用户确认后，携带 Support Token 调用已注册业务桥，SaaS 再核验用户、对象权限和业务条件。前端成功回调用于刷新显示，不承担权限判断；没有自动点击原网页或读取其 DOM 的执行器。参见 [业务桥协议](business-actions.md)。
 
 
-## 0.5 接入工作台
+## 接入工作台
 
 初始化完成后，本地工作台默认进入运行总览。系统与能力页面可以维护现有项目的 Issuer/Audience/公开 JWKS、精确站点 Origin、租户登记，导入 OpenAPI 查询并配置业务操作。租户编辑是新增/更新，不会删除已存在数据。
 

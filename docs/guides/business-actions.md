@@ -6,7 +6,7 @@
 
 ## 注册操作
 
-在项目的 `businessBridge` 配置中给出固定接口和操作列表；通过 `project:configure` 写入可信配置后重启 Core。每个操作默认 `enabled: false`，启用需部署者明确设置。`roles` 必须非空；当前任一匹配角色可请求预览，SaaS 仍执行最终授权。
+在项目的 `businessBridge` 配置中给出固定接口和操作列表；通过 `project:configure` 写入可信配置后，用工作台“应用到运行服务”或 `pnpm deploy:start` 重新创建 Core。每个操作默认 `enabled: false`，启用需部署者明确设置。`roles` 必须非空；当前任一匹配角色可请求预览，SaaS 仍执行最终授权。
 
 ```json
 {

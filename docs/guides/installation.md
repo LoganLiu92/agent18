@@ -2,6 +2,8 @@
 
 本指南覆盖从干净克隆到真实 SaaS 单机接入。默认部署适合开发、评估和小规模自托管；多实例、高可用和生产 SSO 需按自身环境配置。
 
+已准备给另一个项目集成时，先读[接入任务书](../../INTEGRATE.md)。其中提供不启动示例 SaaS 的初始化路径和实际效果验收顺序。
+
 ## 环境要求
 
 - Node.js 24.14.x（主版本限制 `<25`）、pnpm 11.19.0。
@@ -11,7 +13,7 @@
 - 为源码构建、Docker 镜像和数据库提供磁盘空间。模型调用、Git 拉取需要对应网络连通性。
 
 ```sh
-git clone git@github.com:LoganLiu92/agent18.git
+git clone https://github.com/LoganLiu92/agent18.git
 cd agent18
 pnpm install --frozen-lockfile
 pnpm start
@@ -59,7 +61,7 @@ docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml stop
 
 `deploy:prepare` 保留原配置副本，仅让指定真实项目出现在活动配置中；不删除其他项目的数据库记录。它拒绝演示签发者、无网站 Origin、非 HTTPS 公开地址，以及尚未启用 indexed 的项目。此命令不是 SaaS 权限验收器；真实鉴权仍需接入测试。
 
-`deploy:start` 只启动 PostgreSQL、OPA、迁移、Core、Worker；`identity-demo` 处于独立 demo profile。公开部署可由配置文件管理多个真实项目，示例准备命令针对一个项目简化首次上线。
+`deploy:start` 构建镜像后启动 PostgreSQL，重新创建 OPA，用新的一次性容器执行迁移，再重新创建 Core 和 Worker。它会加载原子替换后的最新配置与恢复目标，普通配置更新不重新创建 PostgreSQL。发布期间服务短暂不可用；没有多实例滚动发布。`identity-demo` 处于独立 demo profile，不会由该命令启动；已经运行的演示仍需上面的 stop 命令停止。公开部署可由配置文件管理多个真实项目，示例准备命令针对一个项目简化首次上线。
 
 3. 把 `deploy/proxy/Caddyfile.example` 中的域名替换为公开 Core 域名，在同一主机安装配置 Caddy。DNS 指向主机，允许证书签发所需的入站连接。代理连接回环地址 `127.0.0.1:4318`，数据库与 OPA 保留回环绑定。
 4. 设置宿主网站 CSP，允许从 Core 加载模块并发起 API 请求。工作台中 allowedOrigins 必须是宿主网站的精确 Origin，不带路径和尾斜杠。

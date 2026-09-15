@@ -2,6 +2,8 @@
 
 ## 0.6.0 — Core Foundation
 
+- Add a repository-to-SaaS integration task brief and target-system acceptance report, linked from both READMEs and the built-in handbook.
+- Recreate file-mounted runtime consumers and run migrations in a fresh container on deployment; verify config-only updates and restored database activation without recreating PostgreSQL.
 - Generalize Context, Evidence and RunStep; migrate historical citations and pin queued Run definitions.
 - Register and review Providers/Tools with schema checks and three-state OPA authorization; preserve read-only retries and explicit business confirmation.
 - Separate capability domains from transport and verify a synthetic log provider through the complete Case runtime.
