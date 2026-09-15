@@ -70,7 +70,7 @@ const result = await client.queryBusiness('orders.get', { orderId: 'ORD-1001' })
 // result.columns、rows、retrievedAt、truncated、requestId
 ```
 
-浮窗、内嵌和独立页均内置“查业务”，没有模型也能使用。当前查询通过明确选择的表单调用，不由模型自动展开多步工具计划。
+浮窗和内嵌助手通过[持续对话](conversation.md)识别查询、追问必填参数，并在消息中返回结果；没有模型时也能通过意图匹配与能力选项使用。独立页保留“查业务”目录与表单。每次查询只调用一个已登记的操作，不自动展开多步工具计划。
 
 错误处理：`QUERY_NOT_ALLOWED` 表示操作未启用或当前角色不允许；`BUSINESS_NOT_ACCESSIBLE` 合并记录不存在与无权限，避免泄露业务对象存在性；`BUSINESS_RESPONSE_INVALID` 表示超时、响应过大或结构不符合约定等失败。失败不会伪造业务状态。
 
