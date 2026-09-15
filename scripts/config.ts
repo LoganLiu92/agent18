@@ -5,6 +5,8 @@ import { bridgeSchema } from '@agent18/actions';
 
 export const localDirectory = resolve(process.env.AGENT18_LOCAL_DIR ?? '.local');
 export const configSchema = z.object({
+  setupCompleted: z.boolean().default(false),
+  displayName: z.string().max(120).default('agent18'),
   databaseUrl: z.string(),
   queueDatabaseUrl: z.string(),
   opaUrl: z.string().url(),
@@ -14,6 +16,7 @@ export const configSchema = z.object({
     .array(
       z.object({
         key: z.string(),
+        displayName: z.string().max(120).optional(),
         businessBridge: bridgeSchema.optional(),
         knowledge: z.enum(['fixture', 'indexed']).default('fixture'),
         allowedOrigins: z.array(z.string().url()).default([]),

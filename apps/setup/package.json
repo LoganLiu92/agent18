@@ -1,0 +1,13 @@
+{
+  "name": "@agent18/setup",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agent18/knowledge": "workspace:*",
+    "@agent18/persistence": "workspace:*",
+    "fastify": "5.12.4",
+    "zod": "4.6.5"
+  }
+}

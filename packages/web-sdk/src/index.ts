@@ -165,4 +165,6 @@ export class Agent18 {
     this.context = {};
   }
 }
-export { mountAssistant } from './widget.js';
+export { mountAssistant, mountFloatingAssistant, type AssistantOptions } from './widget.js';
+
+export { openSupportPage } from './standalone.js';

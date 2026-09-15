@@ -1,3 +1,4 @@
+import { demoBridge } from './lib/demo-bridge.js';
 import { mkdir, writeFile, access, readFile } from 'node:fs/promises';
 import { generateKeyPair, exportJWK } from 'jose';
 import { randomBytes } from 'node:crypto';
@@ -6,8 +7,13 @@ import { userInfo } from 'node:os';
 import { localDirectory } from './config.js';
 
 await mkdir(resolve(localDirectory, 'business-data'), { recursive: true, mode: 0o700 });
-try {
-  await access(resolve(localDirectory, 'compose.env'));
+const configured = await access(resolve(localDirectory, 'compose.env'))
+  .then(() => true)
+  .catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  });
+if (configured) {
   // Additive upgrade: preserve all existing keys, credentials and data.
   const migration = JSON.parse(await readFile(resolve(localDirectory, 'migration.json'), 'utf8'));
   if (!migration.indexerPassword) {
@@ -31,8 +37,6 @@ try {
   }
   console.log('Local configuration ready; existing keys and data preserved.');
   process.exit(0);
-} catch {
-  /* first bootstrap */
 }
 await mkdir(localDirectory, { recursive: true, mode: 0o700 });
 const secret = () => randomBytes(32).toString('hex');
@@ -52,7 +56,12 @@ const project = {
   jwks: { keys: [publicJwk] },
 };
 const projects = [
-  project,
+  {
+    ...project,
+    displayName: 'Aurora 支持中心',
+    allowedOrigins: ['http://localhost:4319'],
+    businessBridge: demoBridge(),
+  },
   { ...project, key: 'other-demo', projectId: '20000000-0000-4000-8000-000000000018' },
 ];
 const config = {
@@ -65,6 +74,10 @@ const config = {
 };
 const dockerConfig = {
   ...config,
+  projects: config.projects.map((p) => ({
+    ...p,
+    ...('businessBridge' in p ? { businessBridge: demoBridge(true) } : {}),
+  })),
   databaseUrl: config.databaseUrl.replace('127.0.0.1:54328', 'postgres:5432'),
   queueDatabaseUrl: config.queueDatabaseUrl.replace('127.0.0.1:54328', 'postgres:5432'),
   opaUrl: 'http://opa:8181',

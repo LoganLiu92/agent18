@@ -133,6 +133,21 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
+  apps/setup:
+    dependencies:
+      '@agent18/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
+      '@agent18/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      fastify:
+        specifier: 5.12.4
+        version: 5.12.4
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
   apps/worker:
     dependencies:
       pg-boss:

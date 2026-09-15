@@ -1,6 +1,6 @@
 name: agent18
 x-app: &app
-  image: agent18:0.3.0-local
+  image: agent18:0.4.0-local
   pull_policy: never
   user: '${AGENT18_UID:-1000}:${AGENT18_GID:-1000}'
   init: true

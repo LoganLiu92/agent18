@@ -1,6 +1,6 @@
 {
   "name": "agent18",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Embedded support and evidence-driven investigation for mature SaaS",
   "packageManager": "pnpm@11.19.0",
@@ -27,7 +27,9 @@
     "format:check": "prettier --check apps packages providers examples scripts tests *.json *.ts deploy/compose/*.yaml",
     "knowledge": "node --env-file-if-exists=.local/model.env --import tsx scripts/knowledge.ts",
     "demo:actions": "tsx scripts/enable-demo-actions.ts",
-    "project:configure": "tsx scripts/project.ts"
+    "project:configure": "tsx scripts/project.ts",
+    "setup:ui": "tsx apps/setup/src/main.ts",
+    "start": "pnpm setup && pnpm demo:start && pnpm setup:ui"
   },
   "dependencies": {
     "@agent18/application": "workspace:*",

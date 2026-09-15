@@ -157,6 +157,21 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
       return reply.code(503).send({ status: 'unavailable' });
     }
   });
+  app.get('/public/installation', async () => ({
+    setupCompleted: config.setupCompleted,
+    displayName: config.displayName,
+    version: '0.4.0',
+  }));
+  app.get('/public/projects/:projectKey', async (request, reply) => {
+    const { projectKey } = z.object({ projectKey: z.string().max(100) }).parse(request.params);
+    const project = config.projects.find((p) => p.key === projectKey);
+    if (!project) return reply.code(404).send({ error: { code: 'PROJECT_NOT_FOUND' } });
+    return {
+      projectKey: project.key,
+      displayName: project.displayName ?? project.key,
+      allowedOrigins: project.allowedOrigins,
+    };
+  });
   app.get('/api/session', async (request) => {
     const value = principal(request);
     return {
@@ -326,7 +341,10 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     if (request.url.startsWith('/api/') || request.url.startsWith('/internal/'))
       return reply.code(404).send({ error: { code: 'NOT_FOUND' } });
     const pathname = new URL(request.url, 'http://localhost').pathname;
-    const file = resolve(root, pathname === '/' ? 'index.html' : '.' + pathname);
+    const file = resolve(
+      root,
+      ['/', '/console', '/support'].includes(pathname) ? 'index.html' : '.' + pathname,
+    );
     if (!file.startsWith(root + sep)) return reply.code(404).send();
     try {
       const types: Record<string, string> = {

@@ -91,3 +91,59 @@ await client.reconcileAction(preview.id);
 不要在模型规划结束后自动调用 `confirmAction`。前端切换登录用户或租户时销毁旧面板和 SDK 实例、清除旧页面状态，并用新身份重新创建。SDK 的上下文只采集显式传入的路径和实体 ID，不读取 Cookie、DOM 或网络响应。
 
 内置面板包含知识问答、可用业务操作表单、模型生成操作预览和确认/回执。完整问题列表、Run 历史等可通过 SDK 自行组合，演示 Console 已展示这些能力。业务示例和注册方法见[业务操作指南](business-actions.md)。
+
+
+## 0.4 的三种界面入口
+
+部署者可以先运行 `pnpm setup:ui`，在向导中登记项目、公钥和网站 Origin，然后取得对应接入代码。详见 [安装指南](installation.md)。
+
+```js
+import {
+  Agent18, mountFloatingAssistant, mountAssistant, openSupportPage,
+} from 'https://support.example.com/sdk/agent18.js';
+
+const options = {
+  baseUrl: 'https://support.example.com',
+  projectKey: 'your-saas',
+  getToken: async () => {
+    const response = await fetch('/api/support-token', { method: 'POST' });
+    if (!response.ok) throw new Error('请先登录');
+    return (await response.json()).token;
+  },
+};
+const client = new Agent18(options);
+const pages = new Set();
+const openPage = () => {
+  try { pages.add(openSupportPage(options)); }
+  catch { /* 提示用户允许弹窗，或继续使用浮窗。 */ }
+};
+const assistant = mountFloatingAssistant(client, {
+  title: '产品助手',
+  position: 'right', // 也可使用 left
+  onOpenPage: openPage,
+  onActionComplete: (proposal) => {
+    // 已收到 succeeded 回执；由宿主自己的代码刷新对应业务数据。
+    console.info('业务已完成', proposal.id);
+  },
+});
+document.querySelector('#help').onclick = openPage;
+// 内嵌时改为：mountAssistant(document.querySelector('#support'), client)
+
+function disconnectSupport() {
+  assistant.destroy();
+  client.destroy();
+  for (const page of pages) page.destroy();
+  pages.clear();
+}
+// 路由卸载、退出登录和切换用户时由宿主调用 disconnectSupport()。
+```
+
+浮窗与嵌入区块使用 Shadow DOM 隔离样式，远端文本通过文本节点呈现。宿主有严格样式 CSP 时，可传 `nonce` 为 SDK 的样式元素设置 CSP nonce；SDK 不放宽站点 CSP。使用脚本 URL 的 Origin 需加入宿主 `script-src`，Core API Origin 需加入 `connect-src`。
+
+`openSupportPage` 必须由点击等浏览器用户手势调用。它打开 `/support` 并建立到原页面的短期身份交接：父/子窗口校验窗口引用、精确 Origin、随机 channel、project 与 requestId；URL 不携带 Token。子页每轮 API 请求向原 SaaS 获取当前身份，并发请求可合并，Token 不写入 localStorage/sessionStorage。原页面关闭、身份提供失败或连接销毁时，支持页不能继续取得新 Token。宿主主动销毁连接不会强制关闭客户的支持页。
+
+若宿主设置了会隔离跨源 opener 的 COOP 策略、浏览器禁用弹窗，或业务站点 Origin 未登记，独立页无法完成交接；可继续使用同页浮窗/嵌入模式，或由接入方实现适合自己 SSO 的专用入口。不要通过 URL 参数传长期凭据。
+
+## 业务操作经过谁
+
+前端调用的是 agent18 API。最终写业务数据的是 **SaaS 后端**：agent18 Core 在用户确认后，携带 Support Token 调用已注册业务桥，SaaS 再核验用户、对象权限和业务条件。前端成功回调用于刷新显示，不承担权限判断；没有自动点击原网页或读取其 DOM 的执行器。参见 [业务桥协议](business-actions.md)。

@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Agent18, Agent18Error, type CaseDetail, type Session, type SupportCase } from '@agent18/web-sdk';
 import './style.css';
+import { SetupWizard } from './setup.js';
+import { StandalonePortal } from './portal.js';
+import { Welcome } from './welcome.js';
 import { KnowledgeHub } from './knowledge.js';
 import { BusinessAssistant } from './actions.js';
 
@@ -759,7 +762,7 @@ function App() {
               agent18 <span className="footer-dot">·</span> Built on evidence.
             </span>
             <span>
-              Open source <span className="footer-dot">/</span> 0.3.0
+              Open source <span className="footer-dot">/</span> 0.4.0
             </span>
           </footer>
         </div>
@@ -769,6 +772,14 @@ function App() {
 }
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    {location.pathname === '/setup' ? (
+      <SetupWizard />
+    ) : location.pathname === '/support' ? (
+      <StandalonePortal />
+    ) : location.pathname === '/console' ? (
+      <App />
+    ) : (
+      <Welcome />
+    )}
   </React.StrictMode>,
 );

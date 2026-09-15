@@ -4,9 +4,9 @@
 
 agent18 为现有 SaaS 提供知识库、客户支持和业务操作助手。配置代码仓库与文档，使用自己的模型 API，接入网站身份与业务接口，让用户在原网站中找到答案、提交问题，并以自己的身份完成业务操作。
 
-**当前版本：0.3.0 开发预览。** 已有可运行的源码/文档知识构建、按版本发布、带引用检索与模型问答、用户确认的业务操作、持久化支持任务、权限隔离与网站 SDK。真实业务的身份校验和操作接口仍需要 SaaS 接入；日志调查、自动修复代码和 PR 尚未实现。
+**当前版本：0.4.0 开发预览。** 提供五步初始化向导、浮动助手、嵌入区块、独立支持页，以及可运行的源码/文档知识构建、按版本发布、带引用检索与模型问答、用户确认的业务操作、持久化支持任务、权限隔离与网站 SDK。真实业务的身份校验和操作接口仍需要 SaaS 接入；日志调查、自动修复代码和 PR 尚未实现。
 
-[整体机制与实现综述](docs/overview/agent18-0.3-mechanism.md) · [知识库配置](docs/guides/knowledge.md) · [网站与身份接入](docs/guides/integration.md) · [业务操作接口](docs/guides/business-actions.md)
+[整体机制与实现综述](docs/overview/agent18-0.4-experience.md) · [安装向导](docs/guides/installation.md) · [知识库配置](docs/guides/knowledge.md) · [网站与身份接入](docs/guides/integration.md) · [业务操作接口](docs/guides/business-actions.md)
 
 ## 本地运行
 
@@ -14,16 +14,17 @@ agent18 为现有 SaaS 提供知识库、客户支持和业务操作助手。配
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm setup
-pnpm demo:start
+pnpm start
 ```
+
+终端显示部署访问码后，打开 [初始化向导](http://localhost:4321/setup)，依次配置系统身份、模型、知识来源和网站入口。已有服务只需运行 `pnpm setup:ui`。
 
 打开 [localhost:4318](http://localhost:4318)。默认只绑定回环地址。演示身份签发器用于本地合成数据；现有 SaaS 使用自己的已认证后端签发短期 Token。
 
 ## 从现有代码和文档建立知识库
 
 ```sh
-pnpm knowledge init
+# 若尚无知识配置，先运行 pnpm knowledge init
 # 编辑 .local/knowledge.json：配置本地目录或 Git 仓库、文件范围、受众
 pnpm knowledge sync
 pnpm knowledge status
@@ -53,7 +54,7 @@ pnpm demo:start
 ## 嵌入网站
 
 ```js
-import { Agent18, mountAssistant } from 'https://support.example.com/sdk/agent18.js';
+import { Agent18, mountFloatingAssistant } from 'https://support.example.com/sdk/agent18.js';
 
 const client = new Agent18({
   baseUrl: 'https://support.example.com',
@@ -65,9 +66,11 @@ const client = new Agent18({
   },
 });
 client.setContext({ pageUrl: location.href, entityType: 'order', entityId: 'current-order-id' });
-const assistant = mountAssistant(document.querySelector('#support-assistant'), client);
+const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 // 离开页面或切换登录身份：assistant.destroy(); client.destroy();
 ```
+
+此外提供 `mountAssistant(container, client)` 嵌入区块和 `openSupportPage(options)` 独立支持页。独立页从 SaaS 的按钮打开并安全传递当前身份，不能用无登录上下文的裸 URL 代替。
 
 先按[接入指南](docs/guides/integration.md)注册项目、公钥、租户与站点 Origin。可以使用内置面板，也可以只使用 SDK 构建自己的 UI。SDK 不收集 Cookie、DOM、完整 URL 或网络请求内容。
 
@@ -86,7 +89,8 @@ pnpm demo:stop         # 保留数据卷与 .local 配置
 `.github/workflows/ci.yml` 定义上述检查；远程 CI 是否通过以 GitHub 的实际运行结果为准。
 
 ```text
-apps/console, server, worker     客户工作台、HTTP API、持久化任务
+apps/console, server, worker     首页/支持页、HTTP API、持久化任务
+apps/setup                       宿主机本地初始化配置服务
 packages/knowledge              扫描、分块、模型整理、增量缓存、发布与检索
 packages/actions                业务注册表、预览、确认、回执核对
 packages/application, policy    Case / Run 编排、工具网关与 OPA
