@@ -1,12 +1,18 @@
 # Contributing to agent18
 
-欢迎提交问题、改进文档和贡献实现。当前可执行范围见 [0.5 机制综述](docs/overview/agent18-0.5-overview.md)，扩展计划见[路线图](docs/planning/mvp-roadmap.md)。建议先提出具体场景、当前限制和验收方式，避免只有接口占位而没有可运行适配器。
+欢迎提交问题、改进文档和贡献实现。扩展计划见[路线图](docs/planning/mvp-roadmap.md)，设计取舍见[评审核验与研发优先级](docs/planning/review-and-priorities.md)。建议先提出具体场景、当前限制和验收方式。
+
+[//]: # (agent18:release:start)
+
+当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+
+[//]: # (agent18:release:end)
 
 ## 开发环境
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm setup
+pnpm run setup
 pnpm demo:start
 pnpm setup:ui
 ```
@@ -30,6 +36,8 @@ pnpm test:policy
 pnpm test:integration
 pnpm test:recovery
 pnpm test:journey
+pnpm observability:demo
+pnpm test:observability
 ```
 
 按改动选择必要测试；身份、数据库、调用、发布与恢复变化必须验证允许和拒绝路径。恢复测试会暂停本地演示组件；journey 使用新建隔离 Compose 项目和固定的专用测试端口。
@@ -37,6 +45,12 @@ pnpm test:journey
 PR 说明具体问题、最终行为、验证结果及依赖接入者的边界。引用本地模拟测试时明确模拟范围，不把构建/容器成功写成真实 SaaS 验收。格式使用 `pnpm format`；新增技术文件同时更新手册导航和版本记录。
 
 CI 会构建、测试、运行恢复及安装旅程，并保存本次 SDK/API 交付清单。`release:check` 是本地交付检查，不会自动向 npm 或镜像仓库发布。
+
+## 文档与版本一致性
+
+`docs/release.json` 记录当前能力状态、限制与实现/验证路径。能力变化时先更新清单，再执行 `pnpm docs:sync`，同步中英文 README、接入任务书、手册、贡献指南与路线图中的受控区块。新增版本同时更新 package、OpenAPI 和 CHANGELOG，保留旧版综述作为历史资料。
+
+`pnpm docs:check` 已纳入 `pnpm check` 和 CI，检查版本、当前变更记录、受控区块以及维护文档的本地链接。它能发现文案漂移，不能证明功能已实现；清单中的状态仍须对应场景验证。不要手工删除生成标记或把规划改成已实现来通过检查。
 
 ## 沟通与许可证
 

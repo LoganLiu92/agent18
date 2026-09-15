@@ -1,14 +1,26 @@
 # agent18
 
-An open-source assistant for existing SaaS products. Connect code and documentation, bring your own model, reuse your users' identity, and embed knowledge answers, business queries, confirmed actions and support conversations in your website.
+**AI support that can answer, act, and investigate.**
+
+Agent18 is an open-source support agent for SaaS products. Connect your documentation, code, model API and current-user identity. Customers get cited answers, query their business data, confirm registered actions and report failures from one conversation. Your support team follows up with runtime evidence and turns resolutions into reviewed knowledge.
+
+- **Answer** with published knowledge and user-scoped business data.
+- **Act** through registered APIs, explicit confirmation and verifiable receipts.
+- **Investigate** with page context, HTTP health, Loki logs and Prometheus metrics.
 
 **Integrating an existing product? Start with the [integration task brief](INTEGRATE.md)** (Chinese). It maps responsibilities across repositories, defines staged outcomes, and includes a task prompt and [acceptance report template](docs/reference/integration-acceptance.md) for your target system.
 
-**0.7.0 integration preview.** Setup, versioned knowledge, current-user API reads and confirmed business actions now connect to page-context reports, real Loki / Prometheus investigation, durable inspections, incident deduplication/recovery, and internal knowledge drafts. Autonomous code repair is not implemented. See the [runtime overview](docs/overview/agent18-0.7-operations.md) and [observability guide](docs/guides/observability.md).
+[//]: # (agent18:release:start)
+
+Current version: **0.7.0 integration preview**. See the [runtime overview](docs/overview/agent18-0.7-operations.md); source-based, single-host deployment.
+
+[//]: # (agent18:release:end)
+
+Built for SaaS teams with existing authentication, business APIs and product knowledge who want to self-host support. See the [capability roadmap](docs/planning/mvp-roadmap.md) and [observability guide](docs/guides/observability.md) for integration requirements and limits.
 
 ## Run locally
 
-Requires Node 24.14.x, pnpm 11.19.0 and Docker Compose v2. Git sources use the host's existing read permissions.
+Requires Node 24.14.x, pnpm 11.19.0 and Docker Compose v2. Git sources use the host's existing read permissions. Official images and npm SDK packages are not published yet; these commands build from source and start a local synthetic SaaS demo.
 
 ```sh
 git clone https://github.com/LoganLiu92/agent18.git
@@ -20,6 +32,30 @@ pnpm start
 Open `http://localhost:4321/setup` and enter the owner access code printed in your terminal. Connect a project, optional model, knowledge sources and website. After setup, the operator workspace becomes the default view.
 
 Try the synthetic SaaS at `http://localhost:4319/example`. Its floating assistant can read scoped orders, preview and change the current user's notification preference, verify persisted state, and submit support cases. The same interface supports inline embedding and a standalone support page opened from the SaaS.
+
+## AI reasons. Your system remains in control.
+
+A business write follows: registered capability and schema → policy → exact preview → user confirmation → identity, permission and revision checks → SaaS execution → receipt reconciliation.
+
+The model proposes registered actions and arguments. Agent18 forwards the current user's short-lived identity to a fixed API. Your SaaS rechecks object access and commits the mutation and idempotent receipt in one transaction. Uncertain delivery stays unverified while Agent18 checks the receipt. See the [business action contract](docs/guides/business-actions.md).
+
+## What is available
+
+[//]: # (agent18:capabilities:start)
+
+| Capability | Status | Available | Requirements and limits |
+| --- | --- | --- | --- |
+| Answer | Implemented | Directory/Git sources, extractive or model drafts, citations, review, publication and watch | Source scope, audience and answer quality need target-system validation |
+| Query | Implemented | Reviewed OpenAPI GET operations, current-user identity, roles and field projection | SaaS enforces object access; POST/GraphQL reads are not yet supported |
+| Act | Implemented | Registered actions, exact previews, explicit confirmation, reauthorization and receipt reconciliation | SaaS implements transactional idempotency; no arbitrary browser control or autonomous multi-step writes |
+| Investigate | Partial | Page-context previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery | Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented |
+| Handoff and learn | Partial | Persistent cases, follow-ups, local operator replies, resolve/reopen and internal knowledge drafts | Ordinary chat resets on reload; remote operator SSO, assignment and external ticket sync are not implemented |
+| Self-host | Partial | Source installation, setup, floating/inline/standalone entry, diagnostics, backup and isolated restore | Single-host integration preview; official images/npm packages, distributed quotas and HA are not shipped |
+| Code repair | Planned | Planned: engineering evidence handoff, fix proposals, isolated verification and draft PRs | No automated code changes, merge or production deployment |
+
+[//]: # (agent18:capabilities:end)
+
+Implemented means the repository includes runnable behavior and validation paths. Your real identity, data, model quality and production behavior still need [target-system acceptance](docs/reference/integration-acceptance.md).
 
 ## What you integrate
 
@@ -68,7 +104,7 @@ Backups contain sensitive configuration and stay local. Restore verification cre
 
 Default ports bind to loopback. The synthetic identity issuer is in the demo profile. See the [installation guide](docs/guides/installation.md) before public deployment; expose only Core behind HTTPS, keep the operator service local, and use your real SaaS identity.
 
-See [the handbook](docs/README.md), [architecture and implementation overview](docs/overview/agent18-0.5-overview.md), [contributing](CONTRIBUTING.md) and [security](SECURITY.md). Core is Apache-2.0; the browser SDK is MIT. Public npm packages and container images are not prerequisites for source-based deployment.
+See [the handbook](docs/README.md), [runtime overview](docs/overview/agent18-0.7-operations.md), [roadmap](docs/planning/mvp-roadmap.md), [review and priorities](docs/planning/review-and-priorities.md), [contributing](CONTRIBUTING.md) and [security](SECURITY.md). Core is Apache-2.0; the browser SDK is MIT.
 
 ## Core Foundation in 0.6
 

@@ -1,29 +1,31 @@
 # agent18
 
-**Open-source AI support platform for SaaS — from customer questions toward production investigation and engineering resolution.**
+**让 SaaS 助手回答问题、办理业务、排查故障。**
+
+Open-source support agent for SaaS. **Answer. Act. Investigate.**
 
 [![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
 [English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.7-operations.md) · [贡献指南](CONTRIBUTING.md)
 
 **准备接入已有项目？先读 [接入任务书](INTEGRATE.md)**：明确两个仓库分别改什么，按知识与支持 → 实时查询 → 确认办理推进；附可发给编码助手的任务描述和[目标系统验收报告](docs/reference/integration-acceptance.md)。
 
-agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与业务助手。连接已有代码和文档，使用自己的模型 API，沿用用户身份，让客户在原网站找答案、查业务、经确认办理业务，并持续跟进尚未解决的问题。
+agent18 是嵌入现有 SaaS 的开源支持助手。连接已有代码和文档、自己的模型 API 与当前用户身份，客户在一个对话入口中找答案、查数据、确认办理业务；遇到故障，提交页面上下文，后台结合日志与指标协助排查，支持人员接手并沉淀处理经验。
 
-**0.7.0 全场景集成预览版**。提供初始化向导、单一对话入口、知识构建、当前用户业务接口、页面上下文上报、真实 Loki / Prometheus 自动排查、周期巡检、异常合并与恢复，以及内部经验草稿。部署、API 文档、诊断与备份恢复随仓库交付。
+- **回答**：从审核发布的知识中查找带引用的答案，并按当前用户权限查询业务数据。
+- **办理**：展示具体变更，经用户确认后调用已登记的业务接口，返回可核对的回执。
+- **排查**：收集页面线索，查询 HTTP / Loki / Prometheus；跟进问题、合并巡检异常，形成内部知识草稿。
 
-用户提问 → 知识与业务 → 页面问题报告 → 日志与指标证据 → 待核实分析 → 支持回复与经验草稿。周期巡检主动发现异常，人工核实处理；自动代码修复仍在规划中。
+[//]: # (agent18:release:start)
 
-| 层级 | 当前状态 |
-| --- | --- |
-| L1 知识与支持 | ✅ 已实现 |
-| L2 身份与上下文 | ✅ 已实现 |
-| L3 查询与明确确认的业务操作 | ✅ 已实现 |
-| L4 运行调查 | ✅ HTTP / Loki / Prometheus、证据报告与巡检；完整 Trace / 自动根因证明未实现 |
-| L5 代码修复 | 🗺 规划中 |
+当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+
+[//]: # (agent18:release:end)
+
+适合已有登录、业务 API 与知识资料，希望自托管支持能力的 SaaS 团队。业务权限由原系统决定，日志和指标可以继续保存在已有监控平台中。[当前能力与路线图](docs/planning/mvp-roadmap.md)列出可验收范围和剩余工作。
 
 ## 从这里运行
 
-需要 Node 24.14.x、pnpm 11.19.0、Docker Compose v2；Git 知识源需要宿主机 Git 读取权限。
+需要 Node 24.14.x、pnpm 11.19.0、Docker Compose v2；Git 知识源需要宿主机 Git 读取权限。当前按源码构建，尚未发布官方容器镜像或 npm SDK。以下路径启动包含合成用户与业务数据的本地示例。
 
 ```sh
 git clone https://github.com/LoganLiu92/agent18.git
@@ -40,19 +42,33 @@ pnpm start
 
 体验真实运行排查：完成启动后执行 `pnpm observability:demo`，在演示网站点击“模拟业务异常”并通过助手上报，Owner 工作台查看工程证据；再运行 `pnpm test:observability`。参见[监控接入指南](docs/guides/observability.md)。
 
-## 一套接入，完整使用路径
+## 模型提出建议，系统保留授权
 
-| 能力 | 实际行为 |
-| --- | --- |
-| 自有知识体系 | 目录/Git → 版本快照 → 原文或模型整理 → 文件行号引用 → 审核发布；watch 持续发现变化 |
-| 当前用户身份 | SaaS 签发短期 Token，Core 校验项目/租户/用户，数据库 FORCE RLS，精确网站 Origin |
-| 业务查询 | 导入 OpenAPI GET 候选，审核角色与字段，调用当前用户的 SaaS API，返回实时数据 |
-| 代客操作 | 注册动作 → 具体预览 → 用户确认 → 后端执行 → 幂等回执；超时保持不确定并核对 |
-| 客户问题闭环 | 页面文字/错误/可选截图预览 → 工单与持久任务 → 日志/指标排查 → 支持回复 → 解决或重新打开 |
-| 主动巡检与经验 | 周期健康/日志/指标检查 → 异常合并、接手、恢复 → 内部知识草稿 |
-| 接入与运行管理 | 向导、工作台、版本/健康诊断、备份、隔离恢复、公开部署配置、随版本 API 文档 |
+**AI reasons. Your system remains in control.**
+
+一次业务写入经过：登记能力与参数校验 → 策略检查 → 具体预览 → 用户确认 → 身份、权限和版本复核 → SaaS 执行 → 回执核对。
+
+模型只能提出已登记的动作和参数。Agent18 携带当前用户的短期身份访问固定接口；SaaS 在执行时再次检查权限，并将业务变更与幂等回执保存在同一事务中。网络结果不确定时，Agent18 查询回执，保持未核实状态直到结果明确。[业务操作协议](docs/guides/business-actions.md)包含具体合同与失败处理。
 
 代码帮助理解业务，业务权限由 SaaS 决定。真实接入需要提供已认证的 Token 签发入口和允许的业务 API，不迁移原有登录、业务数据库或网站架构。
+
+## 当前能交付什么
+
+[//]: # (agent18:capabilities:start)
+
+| 能力 | 状态 | 可用内容 | 接入要求与边界 |
+| --- | --- | --- | --- |
+| 知识回答 | 已实现 | 目录/Git、原文或模型整理、引用、审核发布与 watch | 来源范围、受众与回答质量需接入方验证 |
+| 实时查询 | 已实现 | 已审核的 OpenAPI GET、当前用户身份、角色和字段投影 | SaaS 仍需验证对象权限；POST/GraphQL 查询尚未适配 |
+| 确认办理 | 已实现 | 注册动作、具体预览、明确确认、重新授权、回执核对 | SaaS 实现事务化幂等；无任意网页点击或自主多步写入 |
+| 上报与巡检 | 部分实现 | 页面预览、HTTP/Loki/Prometheus、持久排查、异常合并与恢复 | 需真实数据源和可信标签；完整 Trace 与根因证明尚未实现 |
+| 人工接手与经验 | 部分实现 | 持久工单、客户补充、本地工作人员回复、解决/重开、内部知识草稿 | 普通聊天刷新重置；尚无远程客服 SSO、坐席分工或外部工单同步 |
+| 开源交付 | 部分实现 | 源码安装、初始化、浮窗/内嵌/独立页、诊断、备份与隔离恢复 | 当前为单机集成预览；官方镜像/npm 包、多实例配额与 HA 尚未交付 |
+| 代码修复 | 规划 | 规划：工程证据交接、修复建议、隔离验证与草稿 PR | 当前无自动改代码、合并或生产部署 |
+
+[//]: # (agent18:capabilities:end)
+
+“已实现”表示仓库有可运行实现与验证路径；目标系统的身份、数据、模型质量和线上效果仍按[接入验收报告](docs/reference/integration-acceptance.md)逐项确认。
 
 ## 嵌入你的网站
 
@@ -88,6 +104,7 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 - [OpenAPI 查询](docs/guides/business-queries.md)、[业务操作协议](docs/guides/business-actions.md)：用户身份下的真实业务调用。
 - [诊断、备份与恢复](docs/guides/operations.md)：从检查失败到独立新库恢复和切换。
 - [API 与 SDK](docs/reference/api.md)、[配置参考](docs/reference/configuration.md)、[技术标准与边界](docs/reference/standards.md)。
+- [公开路线图](docs/planning/mvp-roadmap.md)、[评审核验与研发优先级](docs/planning/review-and-priorities.md)：当前缺口、下一轮交付与验收条件。
 
 ## 开发与验收
 

@@ -28,6 +28,8 @@ agent18 0.7.0 是集成预览，目前没有承诺长期支持的生产稳定版
 
 ## Deployment responsibilities and remaining work
 
+[公开生产接入路线图](docs/planning/mvp-roadmap.md)列出分布式配额、远程身份、保留删除和 HA 等工作的验收条件；[评审核验](docs/planning/review-and-priorities.md)说明当前实现和设计选择。
+
 真实 SaaS 接入与用户对象权限需要现场验证；短期 Token 不提供即时撤销。仍需按环境配置远程 JWKS/SSO、企业管理 RBAC、高风险操作二次认证、全局配额、密钥托管、审计保留和导出、漏洞扫描、HA 与外部服务监控。
 
 当前没有任意 Shell/SQL、网页点击代理、自动部署/代码修复、通用文件解析/OCR、多步业务事务或无人审核的自动知识发布。内置诊断与本地恢复演练不能替代真实业务验收和离机灾备。

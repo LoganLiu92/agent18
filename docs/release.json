@@ -1,0 +1,55 @@
+{
+  "version": "0.7.0",
+  "overview": "docs/overview/agent18-0.7-operations.md",
+  "capabilities": [
+    {
+      "id": "knowledge",
+      "status": "implemented",
+      "zh": ["知识回答", "目录/Git、原文或模型整理、引用、审核发布与 watch", "来源范围、受众与回答质量需接入方验证"],
+      "en": ["Answer", "Directory/Git sources, extractive or model drafts, citations, review, publication and watch", "Source scope, audience and answer quality need target-system validation"],
+      "evidence": ["packages/knowledge/src/indexer.ts", "tests/knowledge/index.integration.test.ts"]
+    },
+    {
+      "id": "queries",
+      "status": "implemented",
+      "zh": ["实时查询", "已审核的 OpenAPI GET、当前用户身份、角色和字段投影", "SaaS 仍需验证对象权限；POST/GraphQL 查询尚未适配"],
+      "en": ["Query", "Reviewed OpenAPI GET operations, current-user identity, roles and field projection", "SaaS enforces object access; POST/GraphQL reads are not yet supported"],
+      "evidence": ["packages/actions/src/queries.ts", "tests/connections/workflow.integration.test.ts"]
+    },
+    {
+      "id": "actions",
+      "status": "implemented",
+      "zh": ["确认办理", "注册动作、具体预览、明确确认、重新授权、回执核对", "SaaS 实现事务化幂等；无任意网页点击或自主多步写入"],
+      "en": ["Act", "Registered actions, exact previews, explicit confirmation, reauthorization and receipt reconciliation", "SaaS implements transactional idempotency; no arbitrary browser control or autonomous multi-step writes"],
+      "evidence": ["packages/actions/src/index.ts", "tests/actions/delegation.integration.test.ts"]
+    },
+    {
+      "id": "investigations",
+      "status": "partial",
+      "zh": ["上报与巡检", "页面预览、HTTP/Loki/Prometheus、持久排查、异常合并与恢复", "需真实数据源和可信标签；完整 Trace 与根因证明尚未实现"],
+      "en": ["Investigate", "Page-context previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery", "Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented"],
+      "evidence": ["packages/application/src/observations.ts", "scripts/verify-observability.ts"]
+    },
+    {
+      "id": "handoff",
+      "status": "partial",
+      "zh": ["人工接手与经验", "持久工单、客户补充、本地工作人员回复、解决/重开、内部知识草稿", "普通聊天刷新重置；尚无远程客服 SSO、坐席分工或外部工单同步"],
+      "en": ["Handoff and learn", "Persistent cases, follow-ups, local operator replies, resolve/reopen and internal knowledge drafts", "Ordinary chat resets on reload; remote operator SSO, assignment and external ticket sync are not implemented"],
+      "evidence": ["packages/application/src/conversation.ts", "tests/connections/workflow.integration.test.ts"]
+    },
+    {
+      "id": "delivery",
+      "status": "partial",
+      "zh": ["开源交付", "源码安装、初始化、浮窗/内嵌/独立页、诊断、备份与隔离恢复", "当前为单机集成预览；官方镜像/npm 包、多实例配额与 HA 尚未交付"],
+      "en": ["Self-host", "Source installation, setup, floating/inline/standalone entry, diagnostics, backup and isolated restore", "Single-host integration preview; official images/npm packages, distributed quotas and HA are not shipped"],
+      "evidence": ["scripts/lib/start-stack.ts", "scripts/journey.ts"]
+    },
+    {
+      "id": "repair",
+      "status": "planned",
+      "zh": ["代码修复", "规划：工程证据交接、修复建议、隔离验证与草稿 PR", "当前无自动改代码、合并或生产部署"],
+      "en": ["Code repair", "Planned: engineering evidence handoff, fix proposals, isolated verification and draft PRs", "No automated code changes, merge or production deployment"],
+      "evidence": []
+    }
+  ]
+}

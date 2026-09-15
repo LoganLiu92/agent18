@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- Clarify the Chinese and English product introduction around answers, confirmed business actions and runtime evidence, with explicit deployment and capability limits.
+- Synchronize the handbook, contribution guide and public roadmap; add review findings and acceptance gates for future integrations.
+- Add a versioned capability manifest and `docs:check` / `docs:sync` for current documentation blocks, changelog presence and local links; include checking in CI through `pnpm check`.
+- Log the actual listening address and restrict demo issuer CSP connections to the locally configured synthetic console.
+
+## 0.7.0 — Support and Operations
+
+- Capture bounded page text, errors and optional screenshot previews for customer reports; private regions and form values are excluded. The host must validate redaction on its real pages.
+- Connect Owner-configured HTTP, Loki and Prometheus sources through a read-only engineering provider. Persist case investigation jobs, scoped reports and customer-safe summaries.
+- Schedule durable inspections, merge recurring incidents, acknowledge and resolve healthy recoveries, and create internal knowledge drafts for review.
+- Add a real Loki/Prometheus demo and isolation, lease recovery, unknown-result and incident lifecycle validation.
+- Use current entity context to prefill explicitly referenced business arguments; context remains a hint, never an authorization source.
+
+Upgrade: back up before applying migration `009_operations.sql`; recreate Core and Worker after configuration changes. Monitoring is disabled until configured. Screenshot capture is optional and off by default. Full trace correlation, proven root cause, remote operator SSO and code repair remain unimplemented. See the [0.7 overview](docs/overview/agent18-0.7-operations.md).
+
 ## 0.6.0 — Core Foundation
 
 - Add a repository-to-SaaS integration task brief and target-system acceptance report, linked from both READMEs and the built-in handbook.

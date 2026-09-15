@@ -24,14 +24,14 @@ export function Welcome() {
       <main className="welcome-main">
         <section className="welcome-hero">
           <div>
-            <span className="experience-kicker">YOUR KNOWLEDGE. YOUR MODEL. YOUR PRODUCT.</span>
+            <span className="experience-kicker">ANSWER. ACT. INVESTIGATE.</span>
             <h1>
-              让成熟的系统，
+              回答问题，办理业务，
               <br />
-              拥有懂业务的助手。
+              帮你排查故障。
             </h1>
             <p>
-              已有的代码与文档，是最好的起点。把知识、业务和用户身份连接起来，让帮助自然地出现在你的网站里。
+              将已有知识、当前用户身份与业务接口接入一个对话入口。客户找答案、确认办理业务；遇到问题，结合页面上下文、日志和指标持续跟进。
             </p>
             <div className="welcome-cta">
               <a href={local ? 'http://localhost:4321/setup' : '/docs'} className="experience-primary">

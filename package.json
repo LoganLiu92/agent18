@@ -2,7 +2,7 @@
   "name": "agent18",
   "version": "0.7.0",
   "private": true,
-  "description": "Embedded support and evidence-driven investigation for mature SaaS",
+  "description": "Open-source support agent for SaaS: answer, act, and investigate safely",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": ">=24.14.0 <25"
@@ -35,7 +35,9 @@
     "backup:verify": "tsx scripts/backup.ts verify",
     "restore": "tsx scripts/backup.ts restore",
     "release:check": "tsx scripts/release-check.ts",
-    "check": "pnpm format:check && pnpm build && pnpm test && pnpm release:check",
+    "docs:check": "tsx scripts/docs-check.ts",
+    "docs:sync": "tsx scripts/docs-check.ts --write",
+    "check": "pnpm format:check && pnpm docs:check && pnpm build && pnpm test && pnpm release:check",
     "deploy:prepare": "tsx scripts/deployment.ts",
     "deploy:start": "tsx scripts/start-stack.ts deploy",
     "restore:activate": "tsx scripts/backup.ts activate",

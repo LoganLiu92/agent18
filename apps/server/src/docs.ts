@@ -21,7 +21,9 @@ export const documents = [
   ['reference/api', 'API 与 SDK 参考', 'docs/reference/api.md'],
   ['reference/configuration', '配置参考', 'docs/reference/configuration.md'],
   ['reference/standards', '技术标准与边界', 'docs/reference/standards.md'],
-  ['overview', '整体运行机制与实现', 'docs/overview/agent18-0.5-overview.md'],
+  ['planning/mvp-roadmap', '能力现状与公开路线图', 'docs/planning/mvp-roadmap.md'],
+  ['planning/review-and-priorities', '评审核验与研发优先级', 'docs/planning/review-and-priorities.md'],
+  ['overview', '0.5 历史运行综述', 'docs/overview/agent18-0.5-overview.md'],
   ['contributing', '参与贡献', 'CONTRIBUTING.md'],
 ] as const;
 export function documentationHtml(id: string, source: string) {

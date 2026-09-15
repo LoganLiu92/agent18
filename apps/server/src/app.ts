@@ -34,6 +34,7 @@ import {
 } from '@agent18/application';
 import type { Config } from '../../../scripts/config.js';
 import { customerVerifier, verifyWorkload } from './auth.js';
+import { contentSecurityPolicy } from './security.js';
 
 export async function buildApp(
   config: Config,
@@ -116,15 +117,12 @@ export async function buildApp(
     if (!value) throw new AppError('UNAUTHENTICATED', 401);
     return value;
   };
-  app.addHook('onSend', async (_request, reply) => {
+  app.addHook('onSend', async (request, reply) => {
     reply
       .header('cache-control', 'no-store')
       .header('x-content-type-options', 'nosniff')
       .header('referrer-policy', 'no-referrer');
-    reply.header(
-      'content-security-policy',
-      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' http://localhost:4319 http://127.0.0.1:4319; frame-ancestors 'none'; base-uri 'none'",
-    );
+    reply.header('content-security-policy', contentSecurityPolicy(config, request.url));
   });
   app.addHook('onRequest', async (request, reply) => {
     if (!request.url.startsWith('/api/') && !request.url.startsWith('/sdk/')) return;
