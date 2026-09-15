@@ -1,0 +1,16 @@
+{
+  "name": "@agent18/application",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@agent18/contracts": "workspace:*",
+    "@agent18/domain": "workspace:*",
+    "@agent18/persistence": "workspace:*",
+    "@agent18/policy": "workspace:*",
+    "@agent18/provider-contracts": "workspace:*",
+    "pg-boss": "12.31.1"
+  },
+  "license": "Apache-2.0"
+}

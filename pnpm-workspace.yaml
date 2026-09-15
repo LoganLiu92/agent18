@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+  - 'providers/*'
+  - 'apps/*'
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - pg-boss@12.31.1
+  - zod@4.6.5

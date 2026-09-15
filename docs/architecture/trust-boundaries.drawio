@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" version="24.7.17">
+  <diagram id="trust-boundaries" name="信任边界">
+    <mxGraphModel dx="1200" dy="1000" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1200" pageHeight="1100" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sl-title" value="agent18｜信任边界与受控执行" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=22;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="10" width="1100" height="35" />
+        </mxCell>
+        <mxCell id="sl-subtitle" value="Agent does not own permissions. 每次 Tool Call 都由可信系统判断与执行。" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="50" width="1120" height="30" />
+        </mxCell>
+        <mxCell id="sl-untrusted" value="不可信输入 / 受限运行" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fcebea;strokeColor=#c68580;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="110" width="180" height="740" />
+        </mxCell>
+        <mxCell id="sl-browser" value="浏览器 Context&lt;br&gt;用户消息 / 实体提示" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fcebea;strokeColor=#c68580;spacing=8;fontSize=12;" vertex="1" parent="sl-untrusted">
+          <mxGeometry as="geometry" x="20" y="70" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-agent" value="Agent / Worker&lt;br&gt;无目标凭据" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fcebea;strokeColor=#c68580;spacing=8;fontSize=12;" vertex="1" parent="sl-untrusted">
+          <mxGeometry as="geometry" x="20" y="300" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-sand" value="隔离 Sandbox&lt;br&gt;源码 / 测试不可信" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fcebea;strokeColor=#c68580;spacing=8;fontSize=12;" vertex="1" parent="sl-untrusted">
+          <mxGeometry as="geometry" x="20" y="550" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-trusted" value="可信控制面｜认证、Case Scope、策略、审计与输出投影" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="240" y="110" width="500" height="740" />
+        </mxCell>
+        <mxCell id="sl-identity" value="验证 Token / OIDC&lt;br&gt;Project / Tenant 绑定" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="40" y="70" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-scope" value="Case Capability&lt;br&gt;身份交集 / 有效期" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="220" y="70" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-policy" value="OPA&lt;br&gt;ALLOW / DENY / 待审批" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="220" y="190" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-gate" value="Policy Gateway&lt;br&gt;输入校验 / 再授权" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="40" y="300" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-filter" value="Evidence Filter&lt;br&gt;归属 / 白名单 / 脱敏" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="220" y="420" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-approve" value="不可变 Action&lt;br&gt;人工审批 / Digest" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="40" y="550" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-audit" value="Audit&lt;br&gt;决定 / 审批 / 结果" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="sl-trusted">
+          <mxGeometry as="geometry" x="40" y="420" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-credentials" value="凭据执行边界" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="780" y="110" width="200" height="740" />
+        </mxCell>
+        <mxCell id="sl-read" value="可信 READ Adapter&lt;br&gt;客户系统只读权限" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;fontSize=12;" vertex="1" parent="sl-credentials">
+          <mxGeometry as="geometry" x="30" y="300" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-secret" value="SecretProvider&lt;br&gt;可信代码专用" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-credentials">
+          <mxGeometry as="geometry" x="30" y="420" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-exec" value="独立 Executor&lt;br&gt;仅已注册 Action" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-credentials">
+          <mxGeometry as="geometry" x="30" y="550" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-target" value="现有业务 / 遥测&lt;br&gt;后端强制权限" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1020" y="410" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-git" value="GitHub&lt;br&gt;核验后的 PR" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1020" y="660" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-t0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-browser" target="sl-identity" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-identity" target="sl-scope" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t2" value="授权输入" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-scope" target="sl-policy" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-agent" target="sl-gate" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t4" value="决定" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-gate" target="sl-policy" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t5" value="获准 READ" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-gate" target="sl-read" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-read" target="sl-target" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-read" target="sl-filter" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-secret" target="sl-read" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-sand" target="sl-approve" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-approve" target="sl-exec" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-secret" target="sl-exec" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-exec" target="sl-git" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-approve" target="sl-audit" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-t14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-filter" target="sl-audit" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-foot1" value="任何文档、日志、工具说明和源码都不能增加权限。证据送入模型前过滤；客户只读取独立安全 DTO。" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="920" width="1140" height="40" />
+        </mxCell>
+        <mxCell id="sl-foot2" value="Executor 不接受自然语言、任意 shell 或自由 SQL；L5 没有 Handler。M3 默认只发布 PR，不执行生产动作。" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="970" width="1140" height="40" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

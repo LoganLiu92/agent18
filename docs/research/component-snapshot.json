@@ -1,0 +1,290 @@
+{
+  "checked_at": "2026-09-14T09:35:42.677730+00:00",
+  "components": [
+    {
+      "repo": "infiniflow/ragflow",
+      "release": {
+        "tag_name": "v0.27.2",
+        "published_at": "2026-09-10T11:11:35Z",
+        "html_url": "https://github.com/infiniflow/ragflow/releases/tag/v0.27.2",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://github.com/infiniflow/ragflow/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/infiniflow/ragflow/main/LICENSE",
+        "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "pinned_license": {
+        "tag": "v0.27.2",
+        "url": "https://raw.githubusercontent.com/infiniflow/ragflow/v0.27.2/LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "OpenHands/OpenHands",
+      "release": {
+        "tag_name": "v1.18.0",
+        "published_at": "2026-09-11T18:27:48Z",
+        "html_url": "https://github.com/OpenHands/OpenHands/releases/tag/v1.18.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://github.com/OpenHands/OpenHands/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/OpenHands/OpenHands/main/LICENSE",
+        "sha": "f6f60f52368bcc96f82fbe59ec65049c2c3af9db"
+      },
+      "pinned_license": {
+        "tag": "v1.18.0",
+        "url": "https://raw.githubusercontent.com/OpenHands/OpenHands/v1.18.0/LICENSE",
+        "sha256": "e1d1fa9f3a8d7bef24449d488fcd8f00f8f272cac297bb9bed161eb6175b876a",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "OpenHands/software-agent-sdk",
+      "release": {
+        "tag_name": "v1.47.0",
+        "published_at": "2026-09-10T23:45:41Z",
+        "html_url": "https://github.com/OpenHands/software-agent-sdk/releases/tag/v1.47.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://github.com/OpenHands/software-agent-sdk/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/OpenHands/software-agent-sdk/main/LICENSE",
+        "sha": "b0bd86a6335a564bd3766666bebbf014fd6a8013"
+      },
+      "pinned_license": {
+        "tag": "v1.47.0",
+        "url": "https://raw.githubusercontent.com/OpenHands/software-agent-sdk/v1.47.0/LICENSE",
+        "sha256": "14a9b631c658eee682c6c2973525fbdf808c3457176bc47513052c559cc5ce86",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "langfuse/langfuse",
+      "release": {
+        "tag_name": "v4.35.0",
+        "published_at": "2026-09-11T12:39:21Z",
+        "html_url": "https://github.com/langfuse/langfuse/releases/tag/v4.35.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "NOASSERTION",
+        "url": "https://github.com/langfuse/langfuse/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/langfuse/langfuse/main/LICENSE",
+        "sha": "cf2d4abed1de0891f5dd4a20490ee5033f011605"
+      },
+      "pinned_license": {
+        "tag": "v4.35.0",
+        "url": "https://raw.githubusercontent.com/langfuse/langfuse/v4.35.0/LICENSE",
+        "sha256": "fd09d42b5b16606ad2042cc1edf3a82da1c47743709f170c959c74758af229d6",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "open-telemetry/opentelemetry-collector",
+      "release": {
+        "tag_name": "v0.160.0",
+        "published_at": "2026-09-02T14:38:58Z",
+        "html_url": "https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.160.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/LICENSE",
+        "sha": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+      },
+      "pinned_license": {
+        "tag": "v0.160.0",
+        "url": "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v0.160.0/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "openobserve/openobserve",
+      "release": {
+        "tag_name": "v1.0.0",
+        "published_at": "2026-09-11T06:23:24Z",
+        "html_url": "https://github.com/openobserve/openobserve/releases/tag/v1.0.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "AGPL-3.0",
+        "url": "https://github.com/openobserve/openobserve/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/openobserve/openobserve/main/LICENSE",
+        "sha": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e"
+      },
+      "pinned_license": {
+        "tag": "v1.0.0",
+        "url": "https://raw.githubusercontent.com/openobserve/openobserve/v1.0.0/LICENSE",
+        "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "grafana/loki",
+      "release": {
+        "tag_name": "v3.7.7",
+        "published_at": "2026-08-27T20:20:03Z",
+        "html_url": "https://github.com/grafana/loki/releases/tag/v3.7.7",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "AGPL-3.0",
+        "url": "https://github.com/grafana/loki/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/grafana/loki/main/LICENSE",
+        "sha": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e"
+      },
+      "pinned_license": {
+        "tag": "v3.7.7",
+        "url": "https://raw.githubusercontent.com/grafana/loki/v3.7.7/LICENSE",
+        "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "getsentry/sentry",
+      "release": {
+        "tag_name": "26.8.0",
+        "published_at": "2026-08-15T17:18:42Z",
+        "html_url": "https://github.com/getsentry/sentry/releases/tag/26.8.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "NOASSERTION",
+        "url": "https://github.com/getsentry/sentry/blob/master/LICENSE.md",
+        "download_url": "https://raw.githubusercontent.com/getsentry/sentry/master/LICENSE.md",
+        "sha": "f97b1d1f628142b825c11675c5c33dd7a747f946"
+      },
+      "pinned_license": {
+        "tag": "26.8.0",
+        "url": "https://raw.githubusercontent.com/getsentry/sentry/26.8.0/LICENSE.md",
+        "sha256": "1f2a39da390f36830e83d88b17f7720527a7c95f8f137b16ebb68f283cbbfabc",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "open-policy-agent/opa",
+      "release": {
+        "tag_name": "v1.20.2",
+        "published_at": "2026-09-03T21:00:27Z",
+        "html_url": "https://github.com/open-policy-agent/opa/releases/tag/v1.20.2",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://github.com/open-policy-agent/opa/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/open-policy-agent/opa/main/LICENSE",
+        "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82"
+      },
+      "pinned_license": {
+        "tag": "v1.20.2",
+        "url": "https://raw.githubusercontent.com/open-policy-agent/opa/v1.20.2/LICENSE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "cedar-policy/cedar",
+      "release": {
+        "tag_name": "v4.12.0",
+        "published_at": "2026-07-28T20:16:16Z",
+        "html_url": "https://github.com/cedar-policy/cedar/releases/tag/v4.12.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://github.com/cedar-policy/cedar/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/cedar-policy/cedar/main/LICENSE",
+        "sha": "67db8588217f266eb561f75fae738656325deac9"
+      },
+      "pinned_license": {
+        "tag": "v4.12.0",
+        "url": "https://raw.githubusercontent.com/cedar-policy/cedar/v4.12.0/LICENSE",
+        "sha256": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "chatwoot/chatwoot",
+      "release": {
+        "tag_name": "v4.17.1",
+        "published_at": "2026-08-27T09:30:32Z",
+        "html_url": "https://github.com/chatwoot/chatwoot/releases/tag/v4.17.1",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "NOASSERTION",
+        "url": "https://github.com/chatwoot/chatwoot/blob/develop/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/chatwoot/chatwoot/develop/LICENSE",
+        "sha": "d0425a707ab6f0cf06c9aa3c08e8edf5c64adc61"
+      },
+      "pinned_license": {
+        "tag": "v4.17.1",
+        "url": "https://raw.githubusercontent.com/chatwoot/chatwoot/v4.17.1/LICENSE",
+        "sha256": "602d38a808315f221a5e72e2e90e40cb9300f09aa4b317a6a8f1a0c7a3d2175d",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "modelcontextprotocol/typescript-sdk",
+      "release": {
+        "tag_name": "@modelcontextprotocol/fastify@2.0.0",
+        "published_at": "2026-07-27T23:55:50Z",
+        "html_url": "https://github.com/modelcontextprotocol/typescript-sdk/releases/tag/%40modelcontextprotocol/fastify%402.0.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "NOASSERTION",
+        "url": "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/LICENSE",
+        "sha": "4a93985763241755401a10678395303de4e720ba"
+      },
+      "pinned_license": {
+        "tag": "@modelcontextprotocol/client@2.0.0",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/%40modelcontextprotocol%2Fclient%402.0.0/LICENSE",
+        "sha256": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a",
+        "status": "read"
+      }
+    },
+    {
+      "repo": "modelcontextprotocol/python-sdk",
+      "release": {
+        "tag_name": "v2.2.0",
+        "published_at": "2026-09-07T15:53:57Z",
+        "html_url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v2.2.0",
+        "prerelease": false
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://github.com/modelcontextprotocol/python-sdk/blob/main/LICENSE",
+        "download_url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/main/LICENSE",
+        "sha": "3d48435454b105021b4f777c11b6b07d8d2ffea3"
+      },
+      "pinned_license": {
+        "tag": "v2.2.0",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v2.2.0/LICENSE",
+        "sha256": "5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d",
+        "status": "read"
+      }
+    }
+  ],
+  "mcp": {
+    "protocol": "2026-07-28",
+    "protocol_source": "https://modelcontextprotocol.io/docs/2026-07-28/learn/versioning",
+    "typescript_client": {
+      "name": "@modelcontextprotocol/client",
+      "version": "2.0.0",
+      "license": "MIT"
+    },
+    "typescript_source": "https://registry.npmjs.org/@modelcontextprotocol/client/latest"
+  },
+  "method": "Live unauthenticated GitHub releases/latest and license API; pinned release LICENSE fetched and SHA-256 recorded. MCP TypeScript latest release is package-specific, so client package is checked separately. No deployment or API integration tests performed.",
+  "verified_at": "2026-09-14T09:42:56.661476+00:00"
+}

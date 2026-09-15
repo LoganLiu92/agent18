@@ -1,0 +1,16 @@
+{
+  "name": "@agent18/knowledge",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@agent18/contracts": "workspace:*",
+    "@agent18/domain": "workspace:*",
+    "@agent18/persistence": "workspace:*",
+    "@agent18/provider-contracts": "workspace:*",
+    "pg": "8.23.0",
+    "zod": "4.6.5"
+  },
+  "license": "Apache-2.0"
+}

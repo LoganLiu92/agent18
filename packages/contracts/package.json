@@ -1,0 +1,11 @@
+{
+  "name": "@agent18/contracts",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "license": "Apache-2.0"
+}

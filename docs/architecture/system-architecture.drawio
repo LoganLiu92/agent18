@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" version="24.7.17">
+  <diagram id="system-architecture" name="系统架构">
+    <mxGraphModel dx="1200" dy="1000" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1200" pageHeight="1100" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sl-title" value="agent18｜系统架构" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=22;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="10" width="900" height="35" />
+        </mxCell>
+        <mxCell id="sl-subtitle" value="渐进接入 · 模块化单体 · Provider 可替换 · 生产发布保持人工与既有 CI/CD 流程" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="50" width="1100" height="30" />
+        </mxCell>
+        <mxCell id="sl-widget" value="SaaS Web SDK&lt;br&gt;Ask / Report / Cases" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="110" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-headless" value="现有客服系统&lt;br&gt;Headless API" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="220" y="110" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-console" value="Console&lt;br&gt;Operator OIDC" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="400" y="110" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-ce" value="基础部署｜Server + Worker + PostgreSQL + OPA" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="230" width="910" height="400" />
+        </mxCell>
+        <mxCell id="sl-server" value="Core API｜同一可信服务中的模块" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="sl-ce">
+          <mxGeometry as="geometry" x="20" y="50" width="870" height="150" />
+        </mxCell>
+        <mxCell id="sl-api" value="认证 / Support&lt;br&gt;HTTP + OpenAPI" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-server">
+          <mxGeometry as="geometry" x="180" y="65" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-domain" value="Case / Context&lt;br&gt;Evidence / Audit" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-server">
+          <mxGeometry as="geometry" x="360" y="65" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-gateway" value="Policy Gateway&lt;br&gt;Scope / 预算 / 输出" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-server">
+          <mxGeometry as="geometry" x="540" y="65" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-worker" value="独立 Worker&lt;br&gt;有限 Agent Run" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fontSize=12;" vertex="1" parent="sl-ce">
+          <mxGeometry as="geometry" x="200" y="280" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-pg" value="PostgreSQL&lt;br&gt;RLS / Job / Outbox" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="sl-ce">
+          <mxGeometry as="geometry" x="380" y="280" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-opa" value="OPA&lt;br&gt;版本化 Rego" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-ce">
+          <mxGeometry as="geometry" x="560" y="280" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-providers" value="Provider Adapters&lt;br&gt;API / SDK / MCP" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;fontSize=12;" vertex="1" parent="sl-server">
+          <mxGeometry as="geometry" x="720" y="65" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-external" value="客户已有系统&lt;br&gt;知识 / 业务 / 遥测 / Git" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="345" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-model" value="ModelProvider&lt;br&gt;批准的模型 / 网关" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="510" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-m3" value="M3 可选工程链路｜Sandbox 与 Executor 分离，审批绑定具体变更" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;swimlane;startSize=34;rounded=0;container=1;collapsible=0;pointerEvents=0;align=left;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="700" width="910" height="210" />
+        </mxCell>
+        <mxCell id="sl-sandbox" value="临时 Sandbox&lt;br&gt;OpenHands / Patch / Test" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;fontSize=12;" vertex="1" parent="sl-m3">
+          <mxGeometry as="geometry" x="200" y="75" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-approval" value="PR Proposal&lt;br&gt;Diff / Tests / 人工审批" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-m3">
+          <mxGeometry as="geometry" x="380" y="75" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-executor" value="独立 Executor&lt;br&gt;重验审批 / 临时凭据" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#fff2df;strokeColor=#c4a267;spacing=8;fontSize=12;" vertex="1" parent="sl-m3">
+          <mxGeometry as="geometry" x="560" y="75" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-github" value="GitHub PR&lt;br&gt;幂等发布 / 结果核对" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#e8f5ed;strokeColor=#70a789;spacing=8;fontSize=12;" vertex="1" parent="sl-m3">
+          <mxGeometry as="geometry" x="740" y="75" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-ci" value="既有评审 / CI/CD&lt;br&gt;合并、上线由原流程负责" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#f4f6f9;strokeColor=#94a1b1;spacing=8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="775" width="140" height="60" />
+        </mxCell>
+        <mxCell id="sl-e0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.15;entryY=0;" edge="1" source="sl-widget" target="sl-api" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="sl-headless" target="sl-api" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.85;entryY=0;" edge="1" source="sl-console" target="sl-api" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-api" target="sl-domain" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-domain" target="sl-gateway" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e5" value="授权后" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-gateway" target="sl-providers" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-providers" target="sl-external" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" edge="1" source="sl-providers" target="sl-model" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e8" value="内部 API" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-worker" target="sl-api" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-domain" target="sl-pg" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e10" value="权限判定" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-gateway" target="sl-opa" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-sandbox" target="sl-approval" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-approval" target="sl-executor" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-executor" target="sl-github" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" source="sl-github" target="sl-ci" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-eoptional" value="M3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#43536b;strokeColor=#75869d;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" source="sl-worker" target="sl-sandbox" parent="1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sl-foot" value="图中为目标设计，当前尚未实现。OTel 负责采集/传输，Trace 查询由 OpenObserve 等已有后端提供。" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=14;fontColor=#243247;fillColor=#eaf2ff;strokeColor=#7193c9;spacing=8;fillColor=none;strokeColor=none;align=left;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="20" y="960" width="1120" height="40" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

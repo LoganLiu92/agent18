@@ -1,0 +1,11 @@
+{
+  "name": "@agent18/domain",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@agent18/contracts": "workspace:*"
+  },
+  "license": "Apache-2.0"
+}

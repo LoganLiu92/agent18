@@ -1,0 +1,111 @@
+name: agent18
+x-app: &app
+  image: agent18:0.3.0-local
+  pull_policy: never
+  user: '${AGENT18_UID:-1000}:${AGENT18_GID:-1000}'
+  init: true
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+  networks: [core]
+services:
+  postgres:
+    image: postgres:17-bookworm@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0
+    environment:
+      POSTGRES_DB: agent18
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ${AGENT18_LOCAL_DIR}/postgres-password:/run/secrets/postgres-password:ro
+    ports: ['127.0.0.1:54328:5432']
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d agent18']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    networks: [core, host-access]
+  opa:
+    image: openpolicyagent/opa:1.20.2-static@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d
+    command: [run, --server, --addr=0.0.0.0:8181, --log-level=error, /policy/gateway.rego]
+    volumes: ['../../packages/policy/rego/gateway.rego:/policy/gateway.rego:ro']
+    ports: ['127.0.0.1:8188:8181']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    networks: [core, host-access]
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: [node, --import, tsx, scripts/migrate.ts]
+    environment: { AGENT18_MIGRATION_CONFIG: /run/config/migration.json }
+    volumes: ['${AGENT18_LOCAL_DIR}/migration.docker.json:/run/config/migration.json:ro']
+    depends_on:
+      postgres: { condition: service_healthy }
+  server:
+    <<: *app
+    networks: [core, host-access]
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile
+    environment: { AGENT18_CONFIG: /run/config/server.json }
+    env_file:
+      - path: ${AGENT18_LOCAL_DIR}/model.env
+        required: false
+    volumes: ['${AGENT18_LOCAL_DIR}/server.docker.json:/run/config/server.json:ro']
+    ports: ['127.0.0.1:4318:4318']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      opa: { condition: service_started }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4318/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  worker:
+    <<: *app
+    command: [node, --import, tsx, apps/worker/src/main.ts]
+    environment: { AGENT18_WORKER_CONFIG: /run/config/worker.json }
+    volumes: ['${AGENT18_LOCAL_DIR}/worker.docker.json:/run/config/worker.json:ro']
+    depends_on:
+      server: { condition: service_healthy }
+  identity-demo:
+    <<: *app
+    command: [node, --import, tsx, examples/identity-bridge/server.ts]
+    environment:
+      {
+        AGENT18_IDENTITY_CONFIG: /run/config/identity.json,
+        AGENT18_DEMO_BUSINESS_DB: /data/preferences.sqlite,
+      }
+    volumes:
+      - ${AGENT18_LOCAL_DIR}/identity.json:/run/config/identity.json:ro
+      - ${AGENT18_LOCAL_DIR}/business-data:/data
+    ports: ['127.0.0.1:4319:4319']
+    networks: [demo, core]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4319/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  postgres-data:
+networks:
+  core:
+    internal: true
+  demo:
+  host-access:

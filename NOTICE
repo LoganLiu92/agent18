@@ -1,0 +1,6 @@
+agent18
+Copyright 2026 agent18 contributors
+
+The repository is licensed under Apache-2.0 except packages/web-sdk, which is
+licensed under MIT. Third-party dependencies and container images retain
+their own licenses. See docs/development/dependencies.md.

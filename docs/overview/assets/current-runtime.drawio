@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="a18-runtime-page" name="当前运行链路">
+    <mxGraphModel dx="660" dy="460" grid="1" gridSize="10" page="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="a18-client" value="客户 Console / SDK&lt;br&gt;报告问题" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="10" y="10" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-auth" value="Core 认证&lt;br&gt;JWT → 可信范围" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#E0F2FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="230" y="10" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-case" value="PostgreSQL · RLS&lt;br&gt;Case + Run + outbox" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#EDE9FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="450" y="10" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-worker" value="独立 Worker&lt;br&gt;仅接收 dispatch ID" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="10" y="116" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-queue" value="pg-boss&lt;br&gt;持久化任务队列" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#EDE9FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="230" y="116" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-dispatch" value="Core Dispatcher&lt;br&gt;投递与状态核对" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#E0F2FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="450" y="116" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-run" value="Core RunService&lt;br&gt;租约 / 预算 / 取消" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#E0F2FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="10" y="222" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-gateway" value="Core Gateway&lt;br&gt;OPA 校验 / 调用审计" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#E0F2FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="230" y="222" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-provider" value="Knowledge Provider&lt;br&gt;3 篇合成资料" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#FEF3C7;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="450" y="222" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-output" value="客户详情&lt;br&gt;轮询获取安全投影" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="10" y="328" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-evidence" value="PostgreSQL · RLS&lt;br&gt;证据 / 步骤 / 审计" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#EDE9FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="230" y="328" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-verify" value="Core 结果校验&lt;br&gt;范围 / 来源 / 未取消" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#E0F2FE;strokeColor=#64748B;fontColor=#0F172A;fontFamily=Arial;fontSize=16;spacing=8;">
+          <mxGeometry as="geometry" x="450" y="328" width="180" height="66" />
+        </mxCell>
+        <mxCell id="a18-edge-1" source="a18-client" target="a18-auth" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-2" source="a18-auth" target="a18-case" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-3" source="a18-case" target="a18-dispatch" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-4" source="a18-dispatch" target="a18-queue" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-5" source="a18-queue" target="a18-worker" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-6" source="a18-worker" target="a18-run" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-7" source="a18-run" target="a18-gateway" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-8" source="a18-gateway" target="a18-provider" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-9" source="a18-provider" target="a18-verify" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-10" source="a18-verify" target="a18-evidence" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-edge-11" source="a18-evidence" target="a18-output" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#475569;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="a18-note" value="蓝色：Core 进程内模块　紫色：同一个 PostgreSQL　黄色：演示资料" vertex="1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=14;fontColor=#334155;">
+          <mxGeometry as="geometry" x="10" y="418" width="620" height="24" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

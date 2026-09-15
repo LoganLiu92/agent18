@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>示例 SaaS · agent18 嵌入验收</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f4f6fa;
+        font: 15px/1.7 system-ui;
+        color: #27354e;
+      }
+      header {
+        padding: 20px 6%;
+        background: white;
+        border-bottom: 1px solid #dce2ed;
+      }
+      main {
+        max-width: 1100px;
+        margin: 50px auto;
+        padding: 0 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+      }
+      small {
+        color: #8190a6;
+      }
+      h1 {
+        font-size: 34px;
+      }
+      article {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+      }
+      button,
+      select {
+        padding: 9px 12px;
+        margin: 5px 6px 5px 0;
+        cursor: pointer;
+        border: 1px solid #dce2ed;
+        border-radius: 5px;
+        background: #f8faff;
+      }
+      button:disabled {
+        opacity: 0.5;
+      }
+      label {
+        margin: 12px 0;
+      }
+      #support-assistant section {
+        box-sizing: border-box;
+      }
+      #support-assistant h3 {
+        margin-top: 0;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>EXAMPLE SaaS</b> · 原有网站中的助手 <small>本地合成业务 / Alice · Aurora Studio</small>
+    </header>
+    <main>
+      <div>
+        <small>EMBEDDED SUPPORT</small>
+        <h1>业务页面，<br />多一位能帮忙的助手。</h1>
+        <p>
+          此页面由独立 SaaS 示例服务提供。右侧从 agent18 Core 加载
+          SDK，使用当前用户的短期身份读取知识、预览和执行业务操作。
+        </p>
+        <article>
+          <b>演示订单 DEMO-018</b>
+          <p>状态：等待处理<br />租户：Aurora Studio</p>
+          <small>助手示例只修改当前用户的通知偏好，不修改订单，也不发送邮件。</small>
+        </article>
+      </div>
+      <div id="support-assistant">正在接入助手…</div>
+    </main>
+    <script type="module">
+      import { Agent18, mountAssistant } from 'http://localhost:4318/sdk/agent18.js';
+      const target = document.querySelector('#support-assistant');
+      const client = new Agent18({
+        baseUrl: 'http://localhost:4318',
+        projectKey: 'invoice-demo',
+        getToken: async () => {
+          const response = await fetch('/token', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ profile: 'aurora' }),
+          });
+          if (!response.ok) throw new Error('DEMO_IDENTITY_UNAVAILABLE');
+          return (await response.json()).token;
+        },
+      });
+      client.setContext({ pageUrl: location.href, entityType: 'order', entityId: 'DEMO-018' });
+      target.replaceChildren();
+      const widget = mountAssistant(target, client);
+      window.addEventListener('pagehide', () => {
+        widget.destroy();
+        client.destroy();
+      });
+    </script>
+  </body>
+</html>

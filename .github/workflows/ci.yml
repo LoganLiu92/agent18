@@ -1,0 +1,25 @@
+name: checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+      - run: npm install --global pnpm@11.19.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check && pnpm build && pnpm test
+      - run: pnpm setup && pnpm demo:start
+      - run: pnpm test:policy && pnpm test:integration && pnpm test:recovery
+      - if: failure()
+        run: pnpm logs
+      - if: always()
+        run: pnpm demo:stop
