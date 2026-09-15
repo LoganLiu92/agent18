@@ -1,3 +1,4 @@
+import type { ProviderRegistry } from '@agent18/provider-contracts';
 import { registerDocs } from './docs.js';
 import { openApi } from './openapi.js';
 import Fastify, { type FastifyRequest } from 'fastify';
@@ -21,6 +22,7 @@ import { ActionService, QueryService, routeConversation } from '@agent18/actions
 import { FixtureKnowledgeProvider } from '@agent18/knowledge-basic';
 import {
   ToolGateway,
+  type CaseWorkflow,
   CaseService,
   Dispatcher,
   caseMessages,
@@ -31,7 +33,15 @@ import {
 import type { Config } from '../../../scripts/config.js';
 import { customerVerifier, verifyWorkload } from './auth.js';
 
-export async function buildApp(config: Config, options: { dispatch?: boolean } = {}) {
+export async function buildApp(
+  config: Config,
+  options: {
+    dispatch?: boolean;
+    providers?: ProviderRegistry;
+    caseWorkflow?: CaseWorkflow;
+    environment?: 'development' | 'staging' | 'production';
+  } = {},
+) {
   const app = Fastify({
     logger: false,
     bodyLimit: 16_384,
@@ -60,7 +70,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     projectFor(scope).knowledge === 'indexed';
   const indexed = new IndexedKnowledgeProvider(db);
   const provider = new ProjectKnowledgeProvider(indexed, new FixtureKnowledgeProvider(), isIndexed);
-  const gateway = new ToolGateway(db, policy, provider);
+  const gateway = new ToolGateway(db, policy, provider, options.providers, options.environment);
   const modelConfig = modelFromEnvironment();
   const model = modelConfig ? new CompatibleModel(modelConfig) : undefined;
   const actions = new ActionService(db, policy, (p) => projectFor(p).businessBridge, model);
@@ -83,7 +93,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
       activeExpensive--;
     }
   };
-  const cases = new CaseService(db, gateway);
+  const cases = new CaseService(db, gateway, options.caseWorkflow);
   const dispatcher = new Dispatcher(db, config.queueDatabaseUrl, (scope, runId, reason) =>
     cases.runs.reconcile(scope, runId, reason),
   );

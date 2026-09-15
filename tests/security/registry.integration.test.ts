@@ -1,3 +1,4 @@
+import { buildApp } from '../../apps/server/src/app.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { writeFile, rm } from 'node:fs/promises';
@@ -67,6 +68,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       visible: async (_scope, items) => items,
     };
     let gateway: ToolGateway, cases: CaseService;
+    let server: Awaited<ReturnType<typeof buildApp>>;
     async function report() {
       const result = await cases.report(
         scope,
@@ -86,7 +88,6 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       return { caseId: result.case.id, runId: detail.runs[0]!.id };
     }
     beforeAll(async () => {
-      db = new Pool({ connectionString: config.databaseUrl });
       const credentials = JSON.parse(await readFile(resolve(localDirectory, 'migration.json'), 'utf8'));
       admin = new Pool({ connectionString: credentials.adminDatabaseUrl });
       await admin.query(
@@ -105,16 +106,19 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       );
       const providers = new ProviderRegistry();
       providers.register(provider);
-      gateway = new ToolGateway(db, new OpaPolicy(config.opaUrl), new FixtureKnowledgeProvider(), providers);
-      cases = new CaseService(db, gateway, {
-        toolId: tool.id,
-        input: (report) => ({ traceId: report.context.traceId }),
+      server = await buildApp(config, {
+        dispatch: false,
+        providers,
+        caseWorkflow: { toolId: tool.id, input: (report) => ({ traceId: report.context.traceId }) },
       });
+      db = server.db;
+      gateway = server.gateway;
+      cases = server.cases;
     });
     afterAll(async () => {
       await admin?.query('DELETE FROM control.tools WHERE id=$1', [tool.id]);
       await admin?.query('DELETE FROM control.providers WHERE id=$1', [providerId]);
-      await db?.end();
+      await server?.app.close();
       await admin?.end();
     });
     it('persists a log Evidence and generic step without changing the executor, and strips private references', async () => {

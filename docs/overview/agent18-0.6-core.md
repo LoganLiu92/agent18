@@ -18,7 +18,7 @@
 
 宿主 SaaS 的会话先换取短期客户身份。用户通过一个对话框提问、查询或提交问题；前端仅发送显式上下文。服务端从签名身份建立 scope，前端提供的 `environment`、`entity`、`traceId` 均是待核实的排查线索，不能选择授权环境、工具或身份。
 
-CaseService 根据服务端工作流选择工具，将经过该工具输入 schema 校验的参数、工具版本、Provider 与注册定义指纹写入 Run。Case、Run、outbox 和审计同一事务提交。默认工作流仍是知识检索；新增工作流由部署者的服务端代码注册，客户请求不能传入 Run 计划。
+CaseService 根据服务端工作流选择工具，将经过该工具输入 schema 校验的参数、工具版本、Provider 与注册定义指纹写入 Run。Case、Run、outbox 和审计同一事务提交。默认工作流仍是知识检索；新增工作流由部署者通过 Core 工厂的 providers/caseWorkflow 启动参数注册，客户请求不能传入 Run 计划。
 
 Worker 只接收调度 ID，取得限时租约后请求 Core 执行。Core 保留 advisory lock、预算、取消、次数和 scope revision 检查；通过 ToolRegistry 校验审核状态、实现绑定、Provider 版本、transport 与输入输出 schema，再交给 OPA 授权。工具审核撤销、定义改变或 Run 指纹不匹配会阻止执行。通用运行器只接受 READ/READ 工具，因此队列重试不会派发业务写操作。
 

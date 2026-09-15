@@ -8,6 +8,12 @@
 
 `ToolRegistry` 位于 application：每次调用查询 `control.providers` 与 `control.tools`，要求二者已批准，并与进程内绑定的版本、能力、语义与 schema 一致。注册后的未审核候选不能执行，发现结果不能自动创建权限。已有业务 API 与写入桥继续保留专用验证/执行器，并共用工具审核元数据。
 
+## 服务端安装入口
+
+Core 工厂 `buildApp(config, { providers, caseWorkflow, environment })` 接受部署者安装好的 ProviderRegistry、服务端 CaseWorkflow 和可信环境。导入和批准 manifest 后，由自定义服务入口传入这些依赖，再启动返回的 Fastify app；不需要修改 Run 执行器或客户 API。省略扩展时保持默认知识工作流，省略环境时使用 production。
+
+这些是服务启动参数，没有对应的客户 HTTP 参数。`caseWorkflow.input(report)` 应只从显式报告中提取有界线索；工具仍必须对输入做 schema 校验，并在上游核对租户和对象权限。
+
 ## 工具描述
 
 必须填写 `id/version/capability/provider/effect/stage/audience/risk/resourceTypes/environmentPolicy`，审核状态由 Owner 持久化。不要在 manifest 放凭据、任意客户 URL 或原始业务数据。工具/Provider 语义改变时递增版本，排队 Run 的指纹使原任务停止执行，部署者应审核并重新提交新的工作流。
