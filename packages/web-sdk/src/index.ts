@@ -1,3 +1,4 @@
+import type { ClientContext } from '@agent18/contracts';
 import type {
   ReportCase,
   SupportCase,
@@ -53,12 +54,7 @@ export class Agent18 {
   private context: ReportCase['context'] = {};
   private readonly abort = new AbortController();
   constructor(private readonly options: Agent18Options) {}
-  setContext(input: {
-    pageUrl?: string;
-    entityType?: 'invoice' | 'order' | 'other';
-    entityId?: string;
-    requestId?: string;
-  }) {
+  setContext(input: Omit<ClientContext, 'pagePath'> & { pageUrl?: string }) {
     let pagePath: string | undefined;
     if (input.pageUrl) {
       try {
@@ -69,13 +65,61 @@ export class Agent18 {
       }
     }
     // Never collect cookies, DOM, query strings, fragments, network payloads or full URLs.
+    const extras: Record<string, unknown> = {};
+    for (const key of [
+      'entity',
+      'sessionId',
+      'traceId',
+      'environment',
+      'appVersion',
+      'frontendVersion',
+      'correlationIds',
+    ] as const)
+      if (input[key] !== undefined) extras[key] = input[key];
+    const bounded = (v: unknown, pattern: RegExp) => typeof v === 'string' && pattern.test(v);
+    for (const key of ['sessionId', 'traceId', 'environment', 'appVersion', 'frontendVersion'] as const) {
+      const pattern =
+        key === 'traceId'
+          ? /^[a-fA-F0-9]{16,32}$/
+          : key === 'environment'
+            ? /^[a-zA-Z0-9_.-]{1,64}$/
+            : key.endsWith('Version')
+              ? /^[a-zA-Z0-9_.+-]{1,80}$/
+              : /^[a-zA-Z0-9_.:-]{1,128}$/;
+      if (input[key] !== undefined && !bounded(input[key], pattern)) throw new Error('CONTEXT_INVALID');
+    }
+    if (input.entity) {
+      const e = input.entity;
+      if (
+        !bounded(e.type, /^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/) ||
+        typeof e.id !== 'string' ||
+        !e.id.length ||
+        e.id.length > 128 ||
+        (e.namespace !== undefined && !bounded(e.namespace, /^[a-zA-Z0-9_.-]{1,80}$/))
+      )
+        throw new Error('CONTEXT_INVALID');
+      extras.entity = { type: e.type, id: e.id, ...(e.namespace ? { namespace: e.namespace } : {}) };
+    }
+    if (input.correlationIds) {
+      const entries = Object.entries(input.correlationIds);
+      if (
+        entries.length > 10 ||
+        entries.some(
+          ([k, v]) => !bounded(k, /^[a-zA-Z0-9_.-]{1,40}$/) || !bounded(v, /^[a-zA-Z0-9_.:-]{1,128}$/),
+        )
+      )
+        throw new Error('CONTEXT_INVALID');
+      extras.correlationIds = Object.fromEntries(entries);
+    }
     this.context = {
       ...(pagePath ? { pagePath } : {}),
       ...(input.entityType ? { entityType: input.entityType } : {}),
       ...(input.entityId ? { entityId: input.entityId.slice(0, 100) } : {}),
       ...(input.requestId ? { requestId: input.requestId.slice(0, 100) } : {}),
+      ...extras,
     };
   }
+
   private async request<T>(path: string, method = 'GET', body?: unknown, key?: string): Promise<T> {
     this.abort.signal.throwIfAborted();
     const token = await this.options.getToken();

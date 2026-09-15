@@ -18,6 +18,9 @@ const profiles = [
 const reasons: Record<string, string> = {
   CASE_AND_OUTBOX_COMMITTED: '问题报告与调查任务已持久化',
   READ_APPROVED: '只读检索通过策略检查',
+  EVIDENCE_VALIDATED: '证据已通过范围与格式校验',
+  TOOL_INVOCATION_STARTED: '开始收集关联证据',
+  EVIDENCE_COLLECTED_NEEDS_HUMAN: '证据收集完成，等待支持人员跟进',
   CITATIONS_VALIDATED: '引用来源与权限检查通过',
   NO_MATCHING_SOURCE: '没有匹配的资料',
   POLICY_DENIED: '策略拒绝了工具请求',
@@ -652,9 +655,9 @@ function App() {
                         {detail.evidence.length ? (
                           detail.evidence.map((item, index) => (
                             <article className="citation" key={`${item.id}-${index}`}>
-                              <small>资料 · {item.version.slice(0, 12)}</small>
-                              <b>{item.title}</b>
-                              <p>{item.excerpt}</p>
+                              <small>资料 · {item.provenance.sourceVersion.slice(0, 12)}</small>
+                              <b>{item.citation?.title ?? item.resource.type}</b>
+                              <p>{item.summary}</p>
                               <code>{item.source}</code>
                             </article>
                           ))
@@ -762,7 +765,7 @@ function App() {
               agent18 <span className="footer-dot">·</span> Built on evidence.
             </span>
             <span>
-              Open source <span className="footer-dot">/</span> 0.5.0
+              Open source <span className="footer-dot">/</span> 0.6.0
             </span>
           </footer>
         </div>

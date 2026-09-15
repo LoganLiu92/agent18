@@ -1,6 +1,6 @@
 name: ${AGENT18_STACK_NAME:-agent18}
 x-app: &app
-  image: agent18:0.5.0-local
+  image: agent18:0.6.0-local
   pull_policy: never
   user: '${AGENT18_UID:-1000}:${AGENT18_GID:-1000}'
   init: true
@@ -28,6 +28,7 @@ services:
     restart: unless-stopped
     networks: [core, host-access]
   opa:
+    labels: { org.agent18.policy-version: '0.6.0' }
     image: openpolicyagent/opa:1.20.2-static@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d
     command: [run, --server, --addr=0.0.0.0:8181, --log-level=error, /policy/gateway.rego]
     volumes: ['../../packages/policy/rego/gateway.rego:/policy/gateway.rego:ro']

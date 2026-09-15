@@ -58,3 +58,7 @@ pnpm start
 | `/console` | 本地演示与测试人员 | 固定演示身份工作台，不作为正式管理员后台 |
 
 管理员访问码与客户 Token 完全分开。公开部署只代理 Core，不对外开放本地管理服务、演示签发器、OPA 或数据库。
+
+## 0.6 Core Foundation
+
+[核心抽象、数据迁移与范围](overview/agent18-0.6-core.md) · [Provider / Tool 注册与审核](reference/providers.md)。

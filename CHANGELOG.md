@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — Core Foundation
+
+- Generalize Context, Evidence and RunStep; migrate historical citations and pin queued Run definitions.
+- Register and review Providers/Tools with schema checks and three-state OPA authorization; preserve read-only retries and explicit business confirmation.
+- Separate capability domains from transport and verify a synthetic log provider through the complete Case runtime.
+- Document migration, integration contracts and the boundary between implemented L1–L3 and future L4/L5.
+
+### Conversational entry
 
 - Replace floating and inline feature tabs with one continuous conversation, an anchored composer, contextual choices, query results, citations and explicit action confirmation cards.
 - Add scoped conversation routing, typed parameter follow-ups and bounded user-message context. Model-assisted planning falls back to deterministic guidance and never executes business operations itself.

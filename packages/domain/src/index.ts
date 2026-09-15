@@ -17,11 +17,16 @@ export type Tool = {
   stage: 'READ' | 'PROPOSE' | 'EXECUTE';
   audience: 'CUSTOMER' | 'ENGINEERING';
   provider: string;
+  capability: string;
+  risk: 'LOW' | 'MEDIUM' | 'HIGH';
+  resourceTypes: string[];
+  environmentPolicy: string[];
 };
 export type Capability = {
   id: string;
   toolId: string;
   toolVersion: number;
+  registryHash?: string;
   expiresAt: number;
   scope: Scope;
   caseId: string;
@@ -32,6 +37,7 @@ export class AppError extends Error {
     public readonly code: string,
     public readonly status: number,
     message = code,
+    public readonly policyDecision?: 'ALLOW' | 'DENY' | 'APPROVAL_REQUIRED',
   ) {
     super(message);
   }

@@ -1,6 +1,6 @@
 {
   "name": "agent18",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Embedded support and evidence-driven investigation for mature SaaS",
   "packageManager": "pnpm@11.19.0",
@@ -39,7 +39,8 @@
     "deploy:prepare": "tsx scripts/deployment.ts",
     "deploy:start": "docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml up -d --build --wait postgres opa migrate server worker",
     "restore:activate": "tsx scripts/backup.ts activate",
-    "test:journey": "tsx scripts/journey.ts"
+    "test:journey": "tsx scripts/journey.ts",
+    "registry": "tsx scripts/registry.ts"
   },
   "dependencies": {
     "@agent18/actions": "workspace:*",

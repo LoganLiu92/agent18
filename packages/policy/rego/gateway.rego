@@ -1,70 +1,37 @@
 package agent18.gateway
-
 import rego.v1
 
-default allow := false
+default decision := {"decision": "DENY", "reason": "POLICY_DENIED"}
 
-allow if {
-  input.principal.kind == "customer"
-  input.principal.scope == input.scope
-  input.scopeValid == true
-  input.capabilityValid == true
-  input.phase in {"support", "case"}
-  input.tool.id == "knowledge.search"
-  input.tool.version == 1
-  input.tool.review == "approved"
-  input.tool.effect == "READ"
-  input.tool.stage == "READ"
-  input.tool.audience == "CUSTOMER"
-  input.tool.provider == "knowledge-fixture"
+base if {
+  input.principal.scope == input.resource.scope
+  input.context.scopeValid == true
+  input.context.capabilityValid == true
+  input.context.registered == true
+  is_boolean(input.context.userConfirmed)
+  input.context.phase in {"support", "case"}
+  input.action.review == "approved"
+  input.action.version > 0
+  input.action.risk in {"LOW", "MEDIUM", "HIGH"}
+  input.resource.type in input.action.resourceTypes
+  input.context.environment in input.action.environmentPolicy
+  audience_allowed
+  valid_stage
 }
-
-
-allow if {
+audience_allowed if {
   input.principal.kind == "customer"
-  input.principal.scope == input.scope
-  input.scopeValid == true
-  input.capabilityValid == true
-  input.phase == "support"
-  input.tool.id == "business.delegate"
-  input.tool.version == 1
-  input.tool.review == "approved"
-  input.tool.audience == "CUSTOMER"
-  input.tool.provider == "saas-bridge"
-  input.actionRegistered == true
-  input.tool.effect == "READ"
-  input.tool.stage == "PROPOSE"
+  input.action.audience == "CUSTOMER"
+  input.resource.visibility in {"PUBLIC", "TENANT"}
 }
-
-allow if {
-  input.principal.kind == "customer"
-  input.principal.scope == input.scope
-  input.scopeValid == true
-  input.capabilityValid == true
-  input.phase == "support"
-  input.tool.id == "business.delegate"
-  input.tool.version == 1
-  input.tool.review == "approved"
-  input.tool.audience == "CUSTOMER"
-  input.tool.provider == "saas-bridge"
-  input.actionRegistered == true
-  input.userConfirmed == true
-  input.tool.effect == "WRITE"
-  input.tool.stage == "EXECUTE"
+audience_allowed if {
+  input.principal.kind == "operator"
+  input.action.audience == "ENGINEERING"
+  sprintf("tool:%s:%s", [input.action.id,input.action.stage]) in input.principal.permissions
 }
-
-allow if {
-  input.principal.kind == "customer"
-  input.principal.scope == input.scope
-  input.scopeValid == true
-  input.capabilityValid == true
-  input.phase == "support"
-  input.tool.id == "business.query"
-  input.tool.version == 1
-  input.tool.review == "approved"
-  input.tool.audience == "CUSTOMER"
-  input.tool.provider == "saas-api"
-  input.actionRegistered == true
-  input.tool.effect == "READ"
-  input.tool.stage == "READ"
-}
+valid_stage if { input.action.effect == "READ"; input.action.stage in {"READ", "PROPOSE"} }
+valid_stage if { input.action.effect == "WRITE"; input.action.stage == "EXECUTE"; input.context.phase == "support" }
+needs_approval if { input.action.effect == "WRITE"; input.context.userConfirmed != true }
+needs_approval if { input.action.risk == "HIGH"; not verified_approval }
+verified_approval if { input.context.approval.valid == true; count(input.context.approval.id) > 0 }
+decision := {"decision": "APPROVAL_REQUIRED", "reason": "HUMAN_APPROVAL_REQUIRED"} if { base; needs_approval }
+decision := {"decision": "ALLOW", "reason": "REGISTERED_CAPABILITY_APPROVED"} if { base; not needs_approval }

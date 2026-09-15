@@ -83,3 +83,7 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 `/health/live` 用于进程存活；`/health/ready` 检查数据库与已加载的 OPA 默认拒绝策略。`/public/installation` 和 `/public/projects/{key}` 只提供页面与站点身份握手需要的公开信息。
 
 `/internal/*` 使用独立工作负载 Token，不使用客户 Token。`/owner/*` 不存在于 Core，仅存在于本地工作台，必须通过本机 Host/Origin/地址与访问码检查。两者不出现在客户 OpenAPI 中。
+
+## 0.6 合同升级
+
+`CaseDetail.evidence` 现在返回 Evidence envelope，字段见 OpenAPI 的 `Evidence`；旧引用迁移到 `citation`，摘要为 `summary`，版本为 `provenance.sourceVersion`。知识 search/answer 的 `citations` 保持原结构。RunStep 新增 capability、toolId、providerId、inputRef、outputRef、policyDecision，name 保留兼容别名，输入输出引用暂不提供独立读取接口。审计新增 APPROVAL_REQUIRED。SDK `setContext` 接受通用 entity、sessionId、traceId、environment、版本和有界 correlationIds；legacy entityType/entityId 仍接受。

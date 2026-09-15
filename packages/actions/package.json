@@ -1,6 +1,6 @@
 {
   "name": "@agent18/actions",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
@@ -10,7 +10,8 @@
     "@agent18/persistence": "workspace:*",
     "@agent18/policy": "workspace:*",
     "@agent18/knowledge": "workspace:*",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@agent18/application": "workspace:*"
   },
   "license": "Apache-2.0"
 }

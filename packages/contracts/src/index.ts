@@ -17,7 +17,46 @@ export const contextSchema = z
       .max(256)
       .regex(/^\/[a-zA-Z0-9/_-]*$/)
       .optional(),
-    entityType: z.enum(['invoice', 'order', 'other']).optional(),
+    // Legacy fields remain accepted during the 0.6 preview transition.
+    entityType: z
+      .string()
+      .regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/)
+      .optional(),
+    entity: z
+      .object({
+        namespace: z
+          .string()
+          .regex(/^[a-zA-Z0-9_.-]{1,80}$/)
+          .optional(),
+        type: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
+        id: z.string().min(1).max(128),
+      })
+      .strict()
+      .optional(),
+    sessionId: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.:-]{1,128}$/)
+      .optional(),
+    traceId: z
+      .string()
+      .regex(/^[a-fA-F0-9]{16,32}$/)
+      .optional(),
+    environment: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.-]{1,64}$/)
+      .optional(),
+    appVersion: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.+-]{1,80}$/)
+      .optional(),
+    frontendVersion: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.+-]{1,80}$/)
+      .optional(),
+    correlationIds: z
+      .record(z.string().regex(/^[a-zA-Z0-9_.-]{1,40}$/), z.string().regex(/^[a-zA-Z0-9_.:-]{1,128}$/))
+      .refine((v) => Object.keys(v).length <= 10)
+      .optional(),
     entityId: z.string().max(100).optional(),
     requestId: z.string().max(100).optional(),
   })
@@ -29,6 +68,7 @@ export const reportCaseSchema = z
     context: contextSchema.default({}),
   })
   .strict();
+export type ClientContext = z.infer<typeof contextSchema>;
 export type ReportCase = z.infer<typeof reportCaseSchema>;
 export const searchSchema = z.object({ query: z.string().trim().min(2).max(300) }).strict();
 const assistantArguments = z
@@ -97,7 +137,13 @@ export type RunView = {
 export type RunStepView = {
   id: string;
   attempt: number;
-  name: 'execution' | 'knowledge.search';
+  name: string; // 0.5 compatibility alias for capability
+  capability: string;
+  toolId: string | null;
+  providerId: string | null;
+  inputRef: string | null;
+  outputRef: string | null;
+  policyDecision: 'ALLOW' | 'DENY' | 'APPROVAL_REQUIRED' | null;
   state: 'started' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
   reason: string;
   durationMs: number | null;
@@ -106,11 +152,11 @@ export type RunStepView = {
 export type AuditView = {
   id: string;
   action: string;
-  decision: 'ALLOW' | 'DENY';
+  decision: 'ALLOW' | 'DENY' | 'APPROVAL_REQUIRED';
   reason: string;
   createdAt: string;
 };
-export type CaseDetail = { case: SupportCase; runs: RunView[]; evidence: SafeCitation[]; audit: AuditView[] };
+export type CaseDetail = { case: SupportCase; runs: RunView[]; evidence: EvidenceView[]; audit: AuditView[] };
 export type SearchResult = { mode: 'retrieval_only'; citations: SafeCitation[]; notice: string };
 
 export type KnowledgeArticle = {
@@ -174,3 +220,51 @@ export type QueryResult = {
 };
 
 export type CaseMessage = { id: string; author: 'customer' | 'support'; body: string; createdAt: string };
+
+export const evidenceSchema = z
+  .object({
+    id: id,
+    kind: z.enum([
+      'knowledge',
+      'business',
+      'log',
+      'trace',
+      'metric',
+      'error',
+      'deployment',
+      'commit',
+      'code',
+    ]),
+    source: z.string().min(1).max(300),
+    observedAt: z.string().datetime(),
+    resource: z
+      .object({
+        namespace: z.string().max(80).optional(),
+        type: z.string().min(1).max(80),
+        id: z.string().min(1).max(300),
+      })
+      .strict(),
+    summary: z.string().min(1).max(2000),
+    artifactRef: z
+      .string()
+      .regex(/^artifact:\/\/[a-f0-9-]{36}$/)
+      .nullable(),
+    visibility: z.enum(['PUBLIC', 'TENANT', 'INTERNAL', 'ENGINEERING']),
+    sensitivity: z.enum(['PUBLIC', 'CONFIDENTIAL', 'RESTRICTED']),
+    scope: scopeSchema,
+    provenance: z
+      .object({
+        providerId: z.string().min(1).max(100),
+        toolId: z.string().min(1).max(100),
+        toolVersion: z.number().int().positive(),
+        sourceVersion: z.string().max(100),
+        requestId: z.string().max(128),
+      })
+      .strict(),
+    citation: safeCitationSchema.optional(),
+  })
+  .strict();
+export type Evidence = z.infer<typeof evidenceSchema>;
+// Artifact payloads need their own authorization path; the customer projection never releases refs.
+export const evidenceViewSchema = evidenceSchema.omit({ scope: true, artifactRef: true });
+export type EvidenceView = z.infer<typeof evidenceViewSchema>;

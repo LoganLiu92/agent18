@@ -1,15 +1,28 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { ReportCase, Scope, CaseDetail } from '@agent18/contracts';
+import {
+  evidenceViewSchema,
+  evidenceSchema,
+  type ReportCase,
+  type Scope,
+  type CaseDetail,
+} from '@agent18/contracts';
 import { AppError } from '@agent18/domain';
 import { audit, caseView, scoped, scopeValues, requireTenant, type Database } from '@agent18/persistence';
 import type { ToolGateway } from './gateway.js';
 import { RunService } from './runs.js';
+// Server-owned workflow selection; customer context never chooses tools or broadens capabilities.
+export type CaseWorkflow = { toolId: string; input: (input: ReportCase) => unknown };
+const supportWorkflow: CaseWorkflow = {
+  toolId: 'knowledge.search',
+  input: (report) => ({ query: report.title, limit: 5 }),
+};
 
 export class CaseService {
   readonly runs: RunService;
   constructor(
     private readonly db: Database,
     private readonly gateway: ToolGateway,
+    private readonly workflow: CaseWorkflow = supportWorkflow,
   ) {
     this.runs = new RunService(db, gateway);
   }
@@ -29,10 +42,26 @@ export class CaseService {
         if (!previous || previous.request_hash !== hash) throw new AppError('IDEMPOTENCY_CONFLICT', 409);
         return { case: caseView(previous), replayed: true };
       }
+      const { tool, binding, fingerprint } = await this.gateway.registry.resolve(this.workflow.toolId);
+      if (!binding || tool.effect !== 'READ' || tool.stage !== 'READ')
+        throw new AppError('RUN_REQUIRES_READ_TOOL', 403);
+      const parameters = binding.inputSchema.safeParse(this.workflow.input(input));
+      if (!parameters.success) throw new AppError('TOOL_INPUT_INVALID', 400);
       const runId = randomUUID();
       await client.query(
-        "INSERT INTO core.runs (id,case_id,organization_id,project_id,tenant_id,subject,capability_id,tool_id,tool_version,capability_expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,'knowledge.search',1,now()+interval '1 hour')",
-        [runId, caseId, ...scopeValues(scope), randomUUID()],
+        "INSERT INTO core.runs (id,case_id,organization_id,project_id,tenant_id,subject,capability_id,tool_id,tool_version,capability_expires_at,provider_id,capability,input,registry_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()+interval '1 hour',$10,$11,$12,$13)",
+        [
+          runId,
+          caseId,
+          ...scopeValues(scope),
+          randomUUID(),
+          tool.id,
+          tool.version,
+          tool.provider,
+          tool.capability,
+          parameters.data,
+          fingerprint,
+        ],
       );
       await client.query(
         'INSERT INTO control.dispatch (id,run_id,organization_id,project_id,tenant_id,subject) VALUES ($1,$2,$3,$4,$5,$6)',
@@ -56,9 +85,7 @@ export class CaseService {
       if (!row) return null;
       const runs = await this.runs.views(client, caseId);
       const evidence = (
-        await client.query('SELECT citation FROM core.evidence WHERE case_id=$1 ORDER BY created_at', [
-          caseId,
-        ])
+        await client.query('SELECT payload FROM core.evidence WHERE case_id=$1 ORDER BY created_at', [caseId])
       ).rows;
       const records = (
         await client.query(
@@ -69,7 +96,7 @@ export class CaseService {
       return {
         case: caseView(row),
         runs,
-        evidence: evidence.map((e) => e.citation),
+        evidence: evidence.map((e) => evidenceSchema.parse(e.payload)),
         audit: records.map((r) => ({
           id: r.id,
           action: r.action,
@@ -88,8 +115,14 @@ export class CaseService {
       });
       throw new AppError('NOT_FOUND', 404);
     }
-    result.evidence = await this.gateway.visible(scope, result.evidence);
-    return result;
+    const visible = await this.gateway.visibleEvidence(scope, result.evidence);
+    return {
+      ...result,
+      evidence: visible.map((e) => {
+        const { scope: _scope, artifactRef: _artifact, ...view } = e;
+        return evidenceViewSchema.parse(view);
+      }),
+    };
   }
   async execute(scope: Scope, runId: string, requestId: string) {
     return this.runs.execute(scope, runId, requestId);

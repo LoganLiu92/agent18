@@ -4,6 +4,7 @@ import {
   caseSchema,
   contextSchema,
   safeCitationSchema,
+  evidenceViewSchema,
   searchSchema,
   assistantTurnSchema,
 } from '@agent18/contracts';
@@ -253,7 +254,7 @@ export const openApi = {
   openapi: '3.1.0',
   info: {
     title: 'agent18 Customer API',
-    version: '0.5.0',
+    version: '0.6.0',
     description:
       'Project-, tenant- and subject-scoped API. Local owner and workload APIs are intentionally separate. JSON requests; unsupported input fields are rejected. Never pass tenant or subject in request bodies.',
   },
@@ -348,6 +349,7 @@ export const openApi = {
       Case: schema(caseSchema),
       Context: schema(contextSchema),
       Citation: schema(safeCitationSchema),
+      Evidence: schema(evidenceViewSchema),
       Message: object({
         id: uuid,
         author: { enum: ['customer', 'support'] },
@@ -357,12 +359,12 @@ export const openApi = {
       CaseDetail: object({
         case: ref('Case'),
         runs: array(ref('Run')),
-        evidence: array(ref('Citation')),
+        evidence: array(ref('Evidence')),
         audit: array(
           object({
             id: uuid,
             action: string,
-            decision: { enum: ['ALLOW', 'DENY'] },
+            decision: { enum: ['ALLOW', 'DENY', 'APPROVAL_REQUIRED'] },
             reason: string,
             createdAt: string,
           }),
@@ -385,7 +387,13 @@ export const openApi = {
           object({
             id: uuid,
             attempt: { type: 'integer' },
-            name: { enum: ['execution', 'knowledge.search'] },
+            name: string,
+            capability: string,
+            toolId: { type: ['string', 'null'] },
+            providerId: { type: ['string', 'null'] },
+            inputRef: { type: ['string', 'null'] },
+            outputRef: { type: ['string', 'null'] },
+            policyDecision: { enum: ['ALLOW', 'DENY', 'APPROVAL_REQUIRED', null] },
             state: { enum: ['started', 'succeeded', 'failed', 'cancelled', 'interrupted'] },
             reason: string,
             durationMs: { type: ['integer', 'null'] },

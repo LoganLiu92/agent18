@@ -1,20 +1,20 @@
 package agent18.gateway_test
-
 import rego.v1
-import data.agent18.gateway.allow
-
-fixture := {"principal": {"kind": "customer", "scope": {"tenantId": "a"}}, "scope": {"tenantId": "a"}, "scopeValid": true, "capabilityValid": true, "phase": "case", "tool": {"id": "knowledge.search", "version": 1, "review": "approved", "effect": "READ", "stage": "READ", "audience": "CUSTOMER", "provider": "knowledge-fixture"}}
-test_approved_read if { allow with input as fixture }
-test_missing_input_denied if { not allow with input as {} }
-test_write_denied if { not allow with input as object.union(fixture, {"tool": object.union(fixture.tool, {"effect": "WRITE"})}) }
-test_scope_mismatch_denied if { not allow with input as object.union(fixture, {"scope": {"tenantId": "b"}}) }
-test_unreviewed_denied if { not allow with input as object.union(fixture, {"tool": object.union(fixture.tool, {"review": "pending"})}) }
-test_expired_capability_denied if { not allow with input as object.union(fixture, {"capabilityValid": false}) }
-
-delegated := object.union(fixture, {"phase":"support","actionRegistered":true,"userConfirmed":true,"tool":{"id":"business.delegate","version":1,"review":"approved","effect":"WRITE","stage":"EXECUTE","audience":"CUSTOMER","provider":"saas-bridge"}})
-test_confirmed_delegate_allowed if { allow with input as delegated }
-test_delegate_without_confirmation_denied if { not allow with input as object.union(delegated,{"userConfirmed":false}) }
-test_delegate_unregistered_denied if { not allow with input as object.union(delegated,{"actionRegistered":false}) }
-test_delegate_expired_denied if { not allow with input as object.union(delegated,{"scopeValid":false}) }
-test_delegate_cross_scope_denied if { not allow with input as object.union(delegated,{"scope":{"tenantId":"other"}}) }
-test_delegate_preview_allowed if { allow with input as object.union(delegated,{"userConfirmed":false,"tool":object.union(delegated.tool,{"effect":"READ","stage":"PROPOSE"})}) }
+import data.agent18.gateway.decision
+fixture := {"principal":{"kind":"customer","scope":{"tenantId":"a"}},"action":{"id":"arbitrary.lookup","version":7,"review":"approved","capability":"logs.search","effect":"READ","stage":"READ","risk":"LOW","audience":"CUSTOMER","resourceTypes":["log"],"environmentPolicy":["production"]},"resource":{"type":"log","visibility":"TENANT","scope":{"tenantId":"a"}},"context":{"scopeValid":true,"capabilityValid":true,"registered":true,"environment":"production","phase":"case","userConfirmed":false}}
+test_generic_reviewed_read if { decision.decision == "ALLOW" with input as fixture }
+test_missing_denied if { decision.decision == "DENY" with input as {} }
+test_wrong_scope_denied if { decision.decision == "DENY" with input as object.union(fixture,{"resource":object.union(fixture.resource,{"scope":{"tenantId":"b"}})}) }
+test_expired_denied if { decision.decision == "DENY" with input as object.union(fixture,{"context":object.union(fixture.context,{"capabilityValid":false})}) }
+test_unregistered_denied if { decision.decision == "DENY" with input as object.union(fixture,{"context":object.union(fixture.context,{"registered":false})}) }
+test_unreviewed_denied if { decision.decision == "DENY" with input as object.union(fixture,{"action":object.union(fixture.action,{"review":"pending"})}) }
+test_revoked_denied if { decision.decision == "DENY" with input as object.union(fixture,{"action":object.union(fixture.action,{"review":"revoked"})}) }
+test_environment_denied if { decision.decision == "DENY" with input as object.union(fixture,{"context":object.union(fixture.context,{"environment":"other"})}) }
+test_resource_denied if { decision.decision == "DENY" with input as object.union(fixture,{"resource":object.union(fixture.resource,{"type":"source"})}) }
+test_customer_internal_denied if { decision.decision == "DENY" with input as object.union(fixture,{"resource":object.union(fixture.resource,{"visibility":"INTERNAL"})}) }
+test_customer_engineering_denied if { decision.decision == "DENY" with input as object.union(fixture,{"action":object.union(fixture.action,{"audience":"ENGINEERING"})}) }
+write := object.union(fixture,{"action":object.union(fixture.action,{"effect":"WRITE","stage":"EXECUTE","risk":"MEDIUM"}),"context":object.union(fixture.context,{"phase":"support"})})
+test_write_requires_confirmation if { decision.decision == "APPROVAL_REQUIRED" with input as write }
+test_confirmed_write_allowed if { decision.decision == "ALLOW" with input as object.union(write,{"context":object.union(write.context,{"userConfirmed":true})}) }
+test_high_risk_requires_verified_approval if { decision.decision == "APPROVAL_REQUIRED" with input as object.union(fixture,{"action":object.union(fixture.action,{"risk":"HIGH"}),"context":object.union(fixture.context,{"approval":{"id":"forged","valid":false}})}) }
+test_run_write_denied if { decision.decision == "DENY" with input as object.union(write,{"context":object.union(write.context,{"phase":"case","userConfirmed":true})}) }

@@ -165,6 +165,9 @@ importers:
 
   packages/actions:
     dependencies:
+      '@agent18/application':
+        specifier: workspace:*
+        version: link:../application
       '@agent18/contracts':
         specifier: workspace:*
         version: link:../contracts

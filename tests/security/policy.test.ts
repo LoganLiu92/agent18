@@ -7,7 +7,7 @@ describe('OPA fail-closed boundary', () => {
     async (body) => {
       const request = vi.fn(async () => Response.json(body)) as unknown as typeof fetch;
       expect(await new OpaPolicy('http://opa', request).decide(input)).toEqual({
-        allow: false,
+        decision: 'DENY',
         reason: 'POLICY_INVALID_RESPONSE',
       });
     },
@@ -16,12 +16,12 @@ describe('OPA fail-closed boundary', () => {
     const request = vi.fn(async () => {
       throw new Error('offline');
     }) as unknown as typeof fetch;
-    expect((await new OpaPolicy('http://opa', request).decide(input)).allow).toBe(false);
+    expect((await new OpaPolicy('http://opa', request).decide(input)).decision).toBe('DENY');
   });
   it('does not accept a successful-looking body with a failing HTTP status', async () => {
     const request = vi.fn(async () =>
       Response.json({ result: true }, { status: 503 }),
     ) as unknown as typeof fetch;
-    expect((await new OpaPolicy('http://opa', request).decide(input)).allow).toBe(false);
+    expect((await new OpaPolicy('http://opa', request).decide(input)).decision).toBe('DENY');
   });
 });

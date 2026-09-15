@@ -448,7 +448,7 @@ function mountContents(
     }
     for (const e of detail.evidence) {
       const ref = element('details');
-      ref.append(element('summary', e.title), element('p', e.excerpt));
+      ref.append(element('summary', e.citation?.title ?? e.resource.type), element('p', e.summary));
       card.append(ref);
     }
     suggestions(card, [

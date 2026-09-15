@@ -51,7 +51,7 @@ export type AuditRecord = {
   caseId?: string;
   requestId: string;
   action: string;
-  decision: 'ALLOW' | 'DENY';
+  decision: 'ALLOW' | 'DENY' | 'APPROVAL_REQUIRED';
   reason: string;
 };
 export async function audit(pool: Database, scope: Scope, record: AuditRecord): Promise<void> {

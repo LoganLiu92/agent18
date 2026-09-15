@@ -30,9 +30,10 @@ export class RunService {
     reason: string,
     name = 'execution',
     durationMs: number | null = null,
+    policyDecision: 'ALLOW' | 'DENY' | 'APPROVAL_REQUIRED' | null = null,
   ) {
     await client.query(
-      'INSERT INTO core.run_steps (id,run_id,case_id,organization_id,project_id,tenant_id,subject,attempt,name,state,reason,duration_ms) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
+      'INSERT INTO core.run_steps (id,run_id,case_id,organization_id,project_id,tenant_id,subject,attempt,name,state,reason,duration_ms,capability,tool_id,provider_id,input_ref,output_ref,policy_decision) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)',
       [
         randomUUID(),
         run.id,
@@ -43,6 +44,12 @@ export class RunService {
         state,
         reason,
         durationMs,
+        name === 'execution' ? 'runtime.execute' : run.capability,
+        name === 'execution' ? null : run.tool_id,
+        name === 'execution' ? null : run.provider_id,
+        name === 'execution' ? null : `run-input:${run.id}`,
+        name !== 'execution' && state === 'succeeded' ? `run-evidence:${run.id}` : null,
+        policyDecision,
       ],
     );
   }
@@ -87,13 +94,7 @@ export class RunService {
     ).rows;
     // PostgreSQL now() is shared by a transaction; preserve workflow order for tied timestamps.
     const steps = (
-      await client.query(
-        `SELECT * FROM core.run_steps WHERE case_id=$1 ORDER BY created_at,
-         CASE WHEN name='execution' AND state='started' THEN 0
-              WHEN name='knowledge.search' AND state='started' THEN 1
-              WHEN name='knowledge.search' THEN 2 ELSE 3 END,id`,
-        [caseId],
-      )
+      await client.query('SELECT * FROM core.run_steps WHERE case_id=$1 ORDER BY sequence', [caseId])
     ).rows;
     const hasActive = runs.some((run) => !terminalStates.has(run.state));
     return runs.map((run) => ({
@@ -119,6 +120,12 @@ export class RunService {
           id: step.id,
           attempt: step.attempt,
           name: step.name,
+          capability: step.capability,
+          toolId: step.tool_id,
+          providerId: step.provider_id,
+          inputRef: step.input_ref,
+          outputRef: step.output_ref,
+          policyDecision: step.policy_decision,
           state: step.state,
           reason: step.reason,
           durationMs: step.duration_ms,
@@ -163,8 +170,21 @@ export class RunService {
       if (all.length >= MAX_RUNS_PER_CASE) throw new AppError('CASE_RUN_BUDGET_EXHAUSTED', 409);
       const next = randomUUID();
       await client.query(
-        "INSERT INTO core.runs (id,case_id,organization_id,project_id,tenant_id,subject,capability_id,tool_id,tool_version,capability_expires_at,retry_of,retry_key) VALUES ($1,$2,$3,$4,$5,$6,$7,'knowledge.search',1,now()+interval '1 hour',$8,$9)",
-        [next, parent.case_id, ...scopeValues(scope), randomUUID(), runId, key],
+        "INSERT INTO core.runs (id,case_id,organization_id,project_id,tenant_id,subject,capability_id,tool_id,tool_version,capability_expires_at,retry_of,retry_key,provider_id,capability,input,registry_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$10,$11,now()+interval '1 hour',$8,$9,$12,$13,$14,$15)",
+        [
+          next,
+          parent.case_id,
+          ...scopeValues(scope),
+          randomUUID(),
+          runId,
+          key,
+          parent.tool_id,
+          parent.tool_version,
+          parent.provider_id,
+          parent.capability,
+          parent.input,
+          parent.registry_hash,
+        ],
       );
       await client.query(
         'INSERT INTO control.dispatch (id,run_id,organization_id,project_id,tenant_id,subject) VALUES ($1,$2,$3,$4,$5,$6)',
@@ -256,7 +276,7 @@ export class RunService {
             )
           ).rows[0];
           await this.step(client, scope, next, 'started', 'ATTEMPT_STARTED');
-          await this.step(client, scope, next, 'started', 'KNOWLEDGE_LOOKUP_STARTED', 'knowledge.search');
+          await this.step(client, scope, next, 'started', 'TOOL_INVOCATION_STARTED', next.capability);
           return { ...next, title: row.title };
         });
         if (terminalStates.has(run.state)) return { state: run.state };
@@ -272,14 +292,16 @@ export class RunService {
           expiresAt: run.capability_expires_at.getTime(),
         };
         try {
-          const result = await this.gateway.search(
+          const result = await this.gateway.invoke(
             principal,
-            run.title,
+            run.tool_id,
+            run.input,
             requestId,
             {
               id: run.capability_id,
               toolId: run.tool_id,
               toolVersion: run.tool_version,
+              registryHash: run.registry_hash,
               expiresAt: principal.expiresAt,
               scope,
               caseId: run.case_id,
@@ -305,21 +327,22 @@ export class RunService {
               scope,
               current,
               'succeeded',
-              result.citations.length ? 'CITATIONS_VALIDATED' : 'NO_MATCHING_SOURCE',
-              'knowledge.search',
+              result.length ? 'EVIDENCE_VALIDATED' : 'NO_MATCHING_SOURCE',
+              current.capability,
               Date.now() - started,
+              'ALLOW',
             );
-            for (const citation of result.citations)
+            for (const evidence of result)
               await client.query(
-                'INSERT INTO core.evidence (id,run_id,case_id,organization_id,project_id,tenant_id,subject,citation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-                [randomUUID(), runId, run.case_id, ...scopeValues(scope), citation],
+                'INSERT INTO core.evidence (id,run_id,case_id,organization_id,project_id,tenant_id,subject,payload) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+                [evidence.id, runId, run.case_id, ...scopeValues(scope), evidence],
               );
             await this.finish(
               client,
               scope,
               current,
               'completed',
-              result.citations.length ? 'RETRIEVAL_COMPLETE_NEEDS_HUMAN' : 'NO_SOURCE_NEEDS_HUMAN',
+              result.length ? 'EVIDENCE_COLLECTED_NEEDS_HUMAN' : 'NO_SOURCE_NEEDS_HUMAN',
               requestId,
               Date.now() - started,
             );
@@ -332,7 +355,16 @@ export class RunService {
             const current = (await client.query('SELECT * FROM core.runs WHERE id=$1 FOR UPDATE', [runId]))
               .rows[0];
             if (terminalStates.has(current.state)) return { state: current.state };
-            await this.step(client, scope, current, 'failed', code, 'knowledge.search', Date.now() - started);
+            await this.step(
+              client,
+              scope,
+              current,
+              'failed',
+              code,
+              current.capability,
+              Date.now() - started,
+              error instanceof AppError ? (error.policyDecision ?? null) : null,
+            );
             if (transient && current.attempt_count < current.max_attempts) {
               await client.query("UPDATE core.runs SET state='pending',outcome=$2 WHERE id=$1", [
                 runId,

@@ -1,3 +1,4 @@
+import { ToolRegistry } from '@agent18/application';
 import { z } from 'zod';
 import { AppError, type CustomerPrincipal } from '@agent18/domain';
 import { audit, type Database } from '@agent18/persistence';
@@ -217,31 +218,31 @@ export class QueryService {
       tenantId: p.tenantId,
       subject: p.subject,
     };
+    const { tool } = await new ToolRegistry(this.db).resolve('business.query');
     const decision = await this.policy.decide({
       principal: { kind: p.kind, scope },
-      scope,
-      scopeValid: p.expiresAt > Date.now(),
-      capabilityValid: true,
-      phase: 'support',
-      now: Date.now(),
-      tool: {
-        id: 'business.query',
-        version: 1,
-        review: 'approved',
-        effect: 'READ',
-        stage: 'READ',
-        audience: 'CUSTOMER',
-        provider: 'saas-api',
+      action: tool,
+      resource: { type: 'business', scope, visibility: 'TENANT' },
+      context: {
+        scopeValid: p.expiresAt > Date.now(),
+        capabilityValid: true,
+        registered: true,
+        environment: 'production',
+        phase: 'support',
+        userConfirmed: false,
       },
-      actionRegistered: true,
     });
     await audit(this.db, p, {
       requestId,
       action: 'business.query.' + queryId,
-      decision: decision.allow ? 'ALLOW' : 'DENY',
+      decision: decision.decision,
       reason: decision.reason,
     });
-    if (!decision.allow) throw new AppError(decision.reason, decision.reason === 'POLICY_DENIED' ? 403 : 503);
+    if (decision.decision !== 'ALLOW')
+      throw new AppError(
+        decision.reason,
+        decision.decision === 'APPROVAL_REQUIRED' ? 409 : decision.reason === 'POLICY_DENIED' ? 403 : 503,
+      );
     try {
       const response = await fetch(url, {
         method: 'GET',

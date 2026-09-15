@@ -70,7 +70,8 @@ export function CaseConversation({
                 <small>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '支持处理队列'}</small>
                 {r.outcome && (
                   <p>
-                    {r.outcome === 'EVIDENCE_COLLECTED' || r.outcome === 'RETRIEVAL_COMPLETE_NEEDS_HUMAN'
+                    {r.outcome === 'EVIDENCE_COLLECTED_NEEDS_HUMAN' ||
+                    r.outcome === 'RETRIEVAL_COMPLETE_NEEDS_HUMAN'
                       ? '已找到相关资料，等待确认是否解决你的问题。'
                       : r.outcome === 'NO_SOURCE_NEEDS_HUMAN'
                         ? '暂未找到足够资料，支持团队会继续跟进。'
@@ -85,10 +86,10 @@ export function CaseConversation({
               <summary>相关资料与引用（{detail.evidence.length}）</summary>
               {detail.evidence.map((e) => (
                 <article key={e.id}>
-                  <h4>{e.title}</h4>
-                  <p className="ops-description">{e.excerpt}</p>
+                  <h4>{e.citation?.title ?? e.resource.type}</h4>
+                  <p className="ops-description">{e.summary}</p>
                   <small>
-                    {e.source} · {e.version}
+                    {e.source} · {e.provenance.sourceVersion}
                   </small>
                 </article>
               ))}

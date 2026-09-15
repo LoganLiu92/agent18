@@ -34,7 +34,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('live Compose headless 
     expect(detail.runs).toHaveLength(1);
     expect(detail.case.status).toBe('needs_human');
     expect(detail.evidence.length).toBeGreaterThan(0);
-    expect(detail.audit.some((event) => event.reason === 'CITATIONS_VALIDATED')).toBe(true);
+    expect(detail.audit.some((event) => event.reason === 'EVIDENCE_VALIDATED')).toBe(true);
     expect(detail.case.context.pagePath).toBe('/invoices');
     expect(JSON.stringify(detail)).not.toContain('must-not-store');
     sdk.destroy();

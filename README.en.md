@@ -2,7 +2,7 @@
 
 An open-source assistant for existing SaaS products. Connect code and documentation, bring your own model, reuse your users' identity, and embed knowledge answers, business queries, confirmed actions and support conversations in your website.
 
-**0.5.0 integration preview.** This release connects the adoption and operation workflow: setup wizard, local operator workspace, three customer entry modes, versioned knowledge, OpenAPI reads, delegated actions, support replies, diagnostics and backup/restore. Runtime investigation and autonomous code repair are not implemented.
+**0.6.0 integration preview.** This release connects the adoption and operation workflow: setup wizard, local operator workspace, three customer entry modes, versioned knowledge, OpenAPI reads, delegated actions, support replies, diagnostics and backup/restore. Runtime investigation and autonomous code repair are not implemented.
 
 ## Run locally
 
@@ -67,3 +67,7 @@ Backups contain sensitive configuration and stay local. Restore verification cre
 Default ports bind to loopback. The synthetic identity issuer is in the demo profile. See the [installation guide](docs/guides/installation.md) before public deployment; expose only Core behind HTTPS, keep the operator service local, and use your real SaaS identity.
 
 See [the handbook](docs/README.md), [architecture and implementation overview](docs/overview/agent18-0.5-overview.md), [contributing](CONTRIBUTING.md) and [security](SECURITY.md). Core is Apache-2.0; the browser SDK is MIT. Public npm packages and container images are not prerequisites for source-based deployment.
+
+## Core Foundation in 0.6
+
+Context, Evidence, RunStep, Provider/Tool registries and three-state policy decisions now support domain-neutral read workflows. L1 knowledge, L2 identity and L3 confirmed business actions remain implemented; real runtime connectors, RCA and code fixes remain roadmap work. See the [0.6 review and migration guide](docs/overview/agent18-0.6-core.md) and [registry contracts](docs/reference/providers.md). Public npm SDK packages and official images are not published yet.

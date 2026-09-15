@@ -179,7 +179,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
   app.get('/public/installation', async () => ({
     setupCompleted: config.setupCompleted,
     displayName: config.displayName,
-    version: '0.5.0',
+    version: '0.6.0',
   }));
   app.get('/public/projects/:projectKey', async (request, reply) => {
     const { projectKey } = z.object({ projectKey: z.string().max(100) }).parse(request.params);

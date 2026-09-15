@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { citationSchema, type Scope, type Citation, type SafeCitation } from '@agent18/contracts';
 
 export type ProviderErrorCode =
+  | 'DUPLICATE_REGISTRATION'
+  | 'INVALID_REGISTRATION'
   | 'UNSUPPORTED'
   | 'UNAUTHORIZED'
   | 'RATE_LIMITED'
@@ -34,18 +36,28 @@ export interface BusinessToolProvider extends Provider {
     context: ProviderContext,
   ): Promise<unknown>;
 }
-export interface McpProvider extends Provider {
-  discover(context: ProviderContext): Promise<{ name: string; schema: unknown }[]>;
-  call(
-    input: { registeredToolId: string; arguments: Readonly<Record<string, unknown>> },
-    context: ProviderContext,
-  ): Promise<unknown>;
-}
+// Capability domains are independent of transport (MCP, HTTP, OpenAPI or native).
 export interface ObservabilityProvider extends Provider {
-  query(
+  searchLogs(
     input: { serviceId: string; traceId?: string; from: string; to: string; limit: number },
     context: ProviderContext,
-  ): Promise<{ records: unknown[]; observedAt: string; truncated: boolean }>;
+  ): Promise<import('@agent18/contracts').Evidence[]>;
+  getTrace(
+    input: { serviceId: string; traceId: string },
+    context: ProviderContext,
+  ): Promise<import('@agent18/contracts').Evidence[]>;
+  queryMetrics?(
+    input: { serviceId: string; metric: string; from: string; to: string },
+    context: ProviderContext,
+  ): Promise<import('@agent18/contracts').Evidence[]>;
+  getErrors?(
+    input: { serviceId: string; from: string; to: string; limit: number },
+    context: ProviderContext,
+  ): Promise<import('@agent18/contracts').Evidence[]>;
+  getDeployment?(
+    input: { serviceId: string; deploymentId: string },
+    context: ProviderContext,
+  ): Promise<import('@agent18/contracts').Evidence[]>;
 }
 export interface SourceProvider extends Provider {
   read(
@@ -83,3 +95,5 @@ export function validateCitations(raw: unknown, scope: Scope): Citation[] {
 export function assertCapability(provider: Provider, name: string): void {
   if (!provider.manifest.capabilities.includes(name)) throw new ProviderError('UNSUPPORTED');
 }
+
+export * from './registry.js';

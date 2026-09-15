@@ -1,13 +1,23 @@
 # agent18
 
-**An open-source assistant that connects your SaaS knowledge, users and business APIs.**
+**Open-source AI support platform for SaaS — from customer questions toward production investigation and engineering resolution.**
 
 [![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
-[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.5-overview.md) · [贡献指南](CONTRIBUTING.md)
+[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.6-core.md) · [贡献指南](CONTRIBUTING.md)
 
 agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与业务助手。连接已有代码和文档，使用自己的模型 API，沿用用户身份，让客户在原网站找答案、查业务、经确认办理业务，并持续跟进尚未解决的问题。
 
-**0.5.0 集成预览版**，覆盖知识、身份、业务接口与支持闭环。提供初始化向导、部署工作台、网站浮窗/内嵌/独立页、API 文档、诊断与备份恢复工具。运行时日志调查和自动代码修复仍为后续扩展。
+**0.6.0 核心基础预览版**，覆盖知识、身份、业务接口与支持闭环。提供初始化向导、部署工作台、网站浮窗/内嵌/独立页、API 文档、诊断与备份恢复工具。Context、Evidence、RunStep、工具/Provider 注册与策略决策已泛化。运行时日志调查和自动代码修复仍为后续扩展。
+
+用户提问 → 知识 → 业务上下文 → 问题报告 → 运行证据 → 根因 → 修复建议。前三层和问题闭环已经运行；后三项是分阶段目标。
+
+| 层级 | 当前状态 |
+| --- | --- |
+| L1 知识与支持 | ✅ 已实现 |
+| L2 身份与上下文 | ✅ 已实现 |
+| L3 查询与明确确认的业务操作 | ✅ 已实现 |
+| L4 运行调查 | 🚧 核心抽象就绪，真实连接器与 RCA 待实现 |
+| L5 代码修复 | 🗺 规划中 |
 
 ## 从这里运行
 
@@ -61,6 +71,8 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 也支持 `mountAssistant(container, client)` 与 `openSupportPage(options)`，或仅使用 SDK 自建 UI。示例 `/api/support-token` 由你的 SaaS 后端基于真实会话实现，不能直接信任浏览器传入的用户与租户。
 
 ## 接入和运维文档
+
+- [0.6 核心抽象审查与升级](docs/overview/agent18-0.6-core.md)、[Provider / Tool 注册规范](docs/reference/providers.md)。
 
 - [安装与公开部署](docs/guides/installation.md)：本地启动、初始化、HTTPS、演示与正式部署分开。
 - [网站与身份](docs/guides/integration.md)：Support Token、公钥、租户、CORS、三种前端入口。

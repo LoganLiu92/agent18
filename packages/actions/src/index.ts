@@ -1,3 +1,4 @@
+import { ToolRegistry } from '@agent18/application';
 import { z } from 'zod';
 import { randomUUID, createHash } from 'node:crypto';
 import { AppError, type CustomerPrincipal } from '@agent18/domain';
@@ -86,32 +87,33 @@ export class ActionService {
       tenantId: p.tenantId,
       subject: p.subject,
     };
+    const { tool } = await new ToolRegistry(this.db).resolve(
+      confirmed ? 'business.execute' : 'business.prepare',
+    );
     const decision = await this.policy.decide({
       principal: { kind: p.kind, scope },
-      scope,
-      scopeValid: p.expiresAt > Date.now(),
-      capabilityValid: true,
-      phase: 'support',
-      now: Date.now(),
-      tool: {
-        id: 'business.delegate',
-        version: 1,
-        review: 'approved',
-        effect: confirmed ? 'WRITE' : 'READ',
-        stage: confirmed ? 'EXECUTE' : 'PROPOSE',
-        audience: 'CUSTOMER',
-        provider: 'saas-bridge',
+      action: tool,
+      resource: { type: 'business', scope, visibility: 'TENANT' },
+      context: {
+        scopeValid: p.expiresAt > Date.now(),
+        capabilityValid: true,
+        registered: true,
+        environment: 'production',
+        phase: 'support',
+        userConfirmed: confirmed,
       },
-      actionRegistered: true,
-      userConfirmed: confirmed,
     });
     await audit(this.db, p, {
       requestId,
       action: confirmed ? 'business.execute' : 'business.prepare',
-      decision: decision.allow ? 'ALLOW' : 'DENY',
+      decision: decision.decision,
       reason: decision.reason,
     });
-    if (!decision.allow) throw new AppError(decision.reason, decision.reason === 'POLICY_DENIED' ? 403 : 503);
+    if (decision.decision !== 'ALLOW')
+      throw new AppError(
+        decision.reason,
+        decision.decision === 'APPROVAL_REQUIRED' ? 409 : decision.reason === 'POLICY_DENIED' ? 403 : 503,
+      );
   }
   private async call(bridge: BridgeConfig, authorization: string, body: unknown): Promise<unknown> {
     try {

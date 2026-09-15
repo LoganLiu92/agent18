@@ -196,7 +196,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
     it('records bounded attempts and reaches failed when the application retry budget is exhausted', async () => {
       const { caseId, runId } = await report();
       const gateway = app.gateway;
-      const spy = vi.spyOn(gateway, 'search').mockRejectedValue(new AppError('POLICY_UNAVAILABLE', 503));
+      const spy = vi.spyOn(gateway, 'invoke').mockRejectedValue(new AppError('POLICY_UNAVAILABLE', 503));
       try {
         for (let i = 0; i < 2; i++)
           await expect(app.cases.execute(identity, runId, `attempt-${i}`)).rejects.toMatchObject({
