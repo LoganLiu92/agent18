@@ -1,3 +1,4 @@
+import { openApi } from './openapi.js';
 import { readFile } from 'node:fs/promises';
 import { resolve, posix } from 'node:path';
 import MarkdownIt from 'markdown-it';
@@ -56,7 +57,9 @@ export function documentationHtml(id: string, source: string) {
   return (
     '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' +
     current[1] +
-    ' · agent18 文档</title><link rel="stylesheet" href="/docs.css"></head><body><header><a class="brand" href="/">a<span>18</span> agent18</a><span>开发者文档 · 0.5</span><a href="/openapi.json">OpenAPI JSON ↗</a></header><div class="layout"><aside><b>从接入到运行</b><nav>' +
+    ' · agent18 文档</title><link rel="stylesheet" href="/docs.css"></head><body><header><a class="brand" href="/">a<span>18</span> agent18</a><span>开发者文档 · ' +
+    openApi.info.version +
+    '</span><a href="/openapi.json">OpenAPI JSON ↗</a></header><div class="layout"><aside><b>从接入到运行</b><nav>' +
     documents
       .map(
         (d) => '<a class="' + (d[0] === id ? 'active' : '') + '" href="/docs/' + d[0] + '">' + d[1] + '</a>',
