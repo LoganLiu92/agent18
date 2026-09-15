@@ -73,8 +73,14 @@ export async function buildApp(
   const gateway = new ToolGateway(db, policy, provider, options.providers, options.environment);
   const modelConfig = modelFromEnvironment();
   const model = modelConfig ? new CompatibleModel(modelConfig) : undefined;
-  const actions = new ActionService(db, policy, (p) => projectFor(p).businessBridge, model);
-  const queries = new QueryService(db, policy, (p) => projectFor(p).businessQueries);
+  const actions = new ActionService(
+    db,
+    policy,
+    (p) => projectFor(p).businessBridge,
+    model,
+    options.environment,
+  );
+  const queries = new QueryService(db, policy, (p) => projectFor(p).businessQueries, options.environment);
   let activeExpensive = 0;
   const usage = new Map<string, { since: number; count: number }>();
   const bounded = async <T>(p: CustomerPrincipal, fn: () => Promise<T>): Promise<T> => {

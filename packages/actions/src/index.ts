@@ -63,6 +63,7 @@ export class ActionService {
     private readonly policy: OpaPolicy,
     private readonly config: (p: CustomerPrincipal) => BridgeConfig | undefined,
     private readonly model?: JsonModel,
+    private readonly environment = 'production',
   ) {}
   list(p: CustomerPrincipal): ActionDefinition[] {
     return (this.config(p)?.actions ?? [])
@@ -98,7 +99,7 @@ export class ActionService {
         scopeValid: p.expiresAt > Date.now(),
         capabilityValid: true,
         registered: true,
-        environment: 'production',
+        environment: this.environment,
         phase: 'support',
         userConfirmed: confirmed,
       },

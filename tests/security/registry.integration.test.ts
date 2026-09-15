@@ -23,14 +23,9 @@ import type { Scope } from '@agent18/contracts';
 describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
   'registered non-knowledge tool through the real Case runtime',
   () => {
-    const config = readConfig();
+    let config: ReturnType<typeof readConfig>;
     let db: InstanceType<typeof Pool>, admin: InstanceType<typeof Pool>;
-    const scope: Scope = {
-      organizationId: config.projects[0]!.organizationId,
-      projectId: config.projects[0]!.projectId,
-      tenantId: 'tenant-a',
-      subject: 'core06-' + crypto.randomUUID(),
-    };
+    let scope: Scope;
     const providerId = 'test-logs-' + crypto.randomUUID(),
       tool = builtInTool('test.logs.' + crypto.randomUUID(), providerId, 'logs.search', 'READ', 'log');
     const invoke = vi.fn(async (input: unknown, context: { scope: Scope; requestId: string }) => [
@@ -88,6 +83,13 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       return { caseId: result.case.id, runId: detail.runs[0]!.id };
     }
     beforeAll(async () => {
+      config = readConfig();
+      scope = {
+        organizationId: config.projects[0]!.organizationId,
+        projectId: config.projects[0]!.projectId,
+        tenantId: 'tenant-a',
+        subject: 'core06-' + crypto.randomUUID(),
+      };
       const credentials = JSON.parse(await readFile(resolve(localDirectory, 'migration.json'), 'utf8'));
       admin = new Pool({ connectionString: credentials.adminDatabaseUrl });
       await admin.query(

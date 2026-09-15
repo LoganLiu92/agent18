@@ -177,6 +177,7 @@ export class QueryService {
     private db: Database,
     private policy: OpaPolicy,
     private config: (p: CustomerPrincipal) => QueryConfig | undefined,
+    private readonly environment = 'production',
   ) {}
   list(p: CustomerPrincipal): BusinessQuery[] {
     return (this.config(p)?.operations ?? [])
@@ -227,7 +228,7 @@ export class QueryService {
         scopeValid: p.expiresAt > Date.now(),
         capabilityValid: true,
         registered: true,
-        environment: 'production',
+        environment: this.environment,
         phase: 'support',
         userConfirmed: false,
       },
