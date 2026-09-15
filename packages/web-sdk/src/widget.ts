@@ -1,5 +1,5 @@
 import type { Agent18 } from './index.js';
-import type { ActionProposal, ActionDefinition } from '@agent18/contracts';
+import type { ActionProposal, ActionDefinition, BusinessQuery } from '@agent18/contracts';
 export type AssistantOptions = {
   title?: string;
   /** Optional CSP nonce for the isolated widget stylesheet. */
@@ -63,6 +63,7 @@ function mountContents(
   let alive = true,
     busy = false,
     definitions: ActionDefinition[] = [],
+    queries: BusinessQuery[] = [],
     model = false;
   const delivered = new Set<string>();
   const states = {
@@ -79,7 +80,9 @@ function mountContents(
     if (busy || !alive) return;
     busy = true;
     body.setAttribute('aria-busy', 'true');
-    for (const button of root.querySelectorAll<HTMLButtonElement>('button:not(.icon)'))
+    for (const button of root.querySelectorAll<HTMLInputElement>(
+      'button:not(.icon), input, select, textarea',
+    ))
       button.disabled = true;
     try {
       await fn();
@@ -94,7 +97,8 @@ function mountContents(
       busy = false;
       if (alive) {
         body.removeAttribute('aria-busy');
-        for (const button of root.querySelectorAll<HTMLButtonElement>('button')) button.disabled = false;
+        for (const button of root.querySelectorAll<HTMLInputElement>('button, input, select, textarea'))
+          button.disabled = false;
       }
     }
   };
@@ -194,20 +198,31 @@ function mountContents(
     }
     body.append(chips, form, element('p', '回答来源于已发布、且你有权限访问的知识。', 'hint'), result);
   }
-  function business() {
-    body.append(intro('少点几步，把事情办好。', '选择业务操作，查看预览后再确认执行。'));
+  function queryBusiness() {
+    business(true);
+  }
+  function business(read = false) {
+    const available = read ? queries : definitions;
+    body.append(
+      read
+        ? intro('业务进展，一查就知道。', '沿用你的登录权限，获取业务系统的实时数据。')
+        : intro('少点几步，把事情办好。', '选择业务操作，查看预览后再确认执行。'),
+    );
     const plan = queryForm('业务需求', '例如：帮我关闭邮件通知', '生成操作预览  →', async (query) =>
       preview(await client.planAction(query)),
     );
     plan.form.className = 'plan-form';
-    plan.form.hidden = !model;
+    plan.form.hidden = read || !model;
     body.append(plan.form);
     const select = element('select');
-    select.setAttribute('aria-label', '可用业务操作');
-    const empty = element('option', definitions.length ? '选择你想办理的业务' : '暂无可用业务操作');
+    select.setAttribute('aria-label', read ? '可用业务查询' : '可用业务操作');
+    const empty = element(
+      'option',
+      available.length ? (read ? '选择查询内容' : '选择你想办理的业务') : '当前身份暂无可用业务',
+    );
     empty.value = '';
     select.append(empty);
-    for (const a of definitions) {
+    for (const a of available) {
       const option = element('option', a.title);
       option.value = a.id;
       select.append(option);
@@ -216,7 +231,7 @@ function mountContents(
     select.onchange = () => {
       fields.replaceChildren();
       result.replaceChildren();
-      const definition = definitions.find((a) => a.id === select.value);
+      const definition = available.find((a) => a.id === select.value);
       if (!definition) return;
       const values = new Map<string, () => string | number | boolean | undefined>();
       for (const field of definition.fields) {
@@ -224,6 +239,11 @@ function mountContents(
         if (field.type === 'boolean' || field.enum) {
           const input = element('select');
           input.required = field.required;
+          if (!field.required) {
+            const empty = element('option', '不设置此项');
+            empty.value = '';
+            input.append(empty);
+          }
           for (const value of field.enum ?? ['true', 'false']) {
             const option = element(
               'option',
@@ -232,7 +252,13 @@ function mountContents(
             option.value = value;
             input.append(option);
           }
-          values.set(field.name, () => (field.type === 'boolean' ? input.value === 'true' : input.value));
+          values.set(field.name, () =>
+            !field.required && input.value === ''
+              ? undefined
+              : field.type === 'boolean'
+                ? input.value === 'true'
+                : input.value,
+          );
           label.append(input);
         } else {
           const input = element('input');
@@ -251,26 +277,64 @@ function mountContents(
         }
         fields.append(label);
       }
-      const button = element('button', '查看操作预览  →', 'primary');
+      const button = element('button', read ? '查询业务  →' : '查看操作预览  →', 'primary');
       button.type = 'submit';
       fields.append(button);
       fields.onsubmit = (e) => {
         e.preventDefault();
-        void run(async () =>
-          preview(
-            await client.prepareAction(
-              definition.id,
-              Object.fromEntries([...values].map(([k, v]) => [k, v()]).filter(([, v]) => v !== undefined)),
+        void run(async () => {
+          const args = Object.fromEntries(
+            [...values].map(([k, v]) => [k, v()]).filter(([, v]) => v !== undefined),
+          );
+          if (!read) {
+            preview(await client.prepareAction(definition.id, args));
+            return;
+          }
+          const answer = await client.queryBusiness(definition.id, args);
+          if (!alive) return;
+          result.replaceChildren(element('h3', definition.title));
+          if (!answer.rows.length) result.append(element('p', '没有可访问的记录。'));
+          for (const record of answer.rows) {
+            const card = element('div', '', 'arguments');
+            for (const column of answer.columns) {
+              const value = record[column.path],
+                row = element('div');
+              row.append(
+                element('span', column.label),
+                element(
+                  'b',
+                  value === null
+                    ? '—'
+                    : typeof value === 'boolean'
+                      ? value
+                        ? '开启'
+                        : '关闭'
+                      : String(value),
+                ),
+              );
+              card.append(row);
+            }
+            result.append(card);
+          }
+          result.append(
+            element(
+              'small',
+              (answer.truncated ? '已截取前 50 条 · ' : '') +
+                '业务实时响应 · ' +
+                new Date(answer.retrievedAt).toLocaleTimeString(),
             ),
-          ),
-        );
+          );
+        });
       };
     };
     body.append(select, element('p', '执行主体：你的业务系统 · 身份：当前登录用户', 'hint'), fields, result);
-    if (!definitions.length)
+    if (!available.length)
       result.textContent = '当前身份没有可用操作。部署者可以为项目注册业务接口和允许使用的角色。';
   }
   function cases() {
+    const history = element('button', '我的问题与回复 ↗', 'secondary');
+    history.onclick = () => void run(showCases);
+    body.append(history);
     body.append(intro('把问题交给我们。', '留下操作步骤和实际表现，方便支持团队继续跟进。'));
     const form = element('form'),
       title = element('input'),
@@ -303,7 +367,7 @@ function mountContents(
         result.replaceChildren(
           element('h3', '问题已记录 ✓'),
           element('p', answer.case.title),
-          element('small', '请在独立支持页查看问题记录。'),
+          element('small', '点击“我的问题与回复”查看进展和补充说明。'),
         );
         form.reset();
         key = crypto.randomUUID();
@@ -311,17 +375,101 @@ function mountContents(
     };
     body.append(form, element('p', '请勿提交密码、密钥或不必要的个人信息。', 'hint'), result);
   }
+  async function showCases() {
+    const data = await client.listCases();
+    if (!alive) return;
+    result.replaceChildren(element('h3', '我的问题'));
+    if (!data.cases.length) result.append(element('p', '还没有提交过问题。'));
+    for (const c of data.cases) {
+      const button = element('button', (c.status === 'resolved' ? '✓ ' : '◎ ') + c.title, 'secondary');
+      button.onclick = () => void run(() => showCase(c.id));
+      result.append(button);
+    }
+  }
+  async function showCase(id: string) {
+    const [detail, thread] = await Promise.all([client.getCase(id), client.caseMessages(id)]);
+    if (!alive) return;
+    result.replaceChildren(
+      element('h3', detail.case.title),
+      element('span', detail.case.status === 'resolved' ? '已解决' : '跟进中', 'status'),
+      element('p', detail.case.description),
+    );
+    for (const r of detail.runs.slice(0, 1))
+      result.append(
+        element(
+          'small',
+          '自动处理：' +
+            {
+              pending: '排队中',
+              running: '进行中',
+              completed: '资料检索完成',
+              blocked: '等待跟进',
+              failed: '未完成',
+              cancelled: '已取消',
+            }[r.state],
+        ),
+      );
+    for (const e of detail.evidence) {
+      const citation = element('details');
+      citation.append(element('summary', e.title), element('p', e.excerpt));
+      result.append(citation);
+    }
+    for (const m of thread.messages) {
+      const message = element('div', '', 'arguments');
+      message.append(
+        element(
+          'small',
+          (m.author === 'support' ? '支持团队' : '你') + ' · ' + new Date(m.createdAt).toLocaleString(),
+        ),
+        element('p', m.body),
+      );
+      result.append(message);
+    }
+    const input = element('textarea'),
+      form = element('form'),
+      send = element('button', '补充说明', 'primary');
+    input.required = true;
+    input.maxLength = 4000;
+    input.placeholder = '回复支持团队或补充问题';
+    input.setAttribute('aria-label', '补充说明');
+    let key = crypto.randomUUID();
+    input.oninput = () => {
+      key = crypto.randomUUID();
+    };
+    form.append(input, send);
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      void run(async () => {
+        await client.addCaseMessage(id, input.value, key);
+        await showCase(id);
+      });
+    };
+    const close = element(
+      'button',
+      detail.case.status === 'resolved' ? '重新打开问题' : '问题已解决 ✓',
+      'secondary',
+    );
+    close.onclick = () =>
+      void run(async () => {
+        await client.setCaseStatus(id, detail.case.status === 'resolved' ? 'needs_human' : 'resolved');
+        await showCase(id);
+      });
+    const refresh = element('button', '刷新进展', 'secondary');
+    refresh.onclick = () => void run(() => showCase(id));
+    result.append(form, close, refresh);
+  }
   const render = (page: string) => {
     body.replaceChildren();
     result.replaceChildren();
     for (const button of tabs.querySelectorAll('button'))
       button.setAttribute('aria-selected', String(button.dataset.page === page));
-    (({ knowledge, business, cases })[page] ?? knowledge)();
+    (({ knowledge, business, cases, queryBusiness })[page] ?? knowledge)();
   };
   for (const [id, label] of [
     ['knowledge', '▤  找答案'],
+    ['queryBusiness', '⌕  查业务'],
     ['business', '↔  办业务'],
-    ['cases', '◎  提问题'],
+    ['cases', '◎  问题'],
   ]) {
     const button = element('button', label, 'tab');
     button.type = 'button';
@@ -333,6 +481,19 @@ function mountContents(
     tabs.append(button);
   }
   render('knowledge');
+  void client
+    .listBusinessQueries()
+    .then((data) => {
+      if (alive) {
+        queries = data.queries;
+        if (
+          tabs.querySelector('[data-page=queryBusiness]')?.getAttribute('aria-selected') === 'true' &&
+          !busy
+        )
+          render('queryBusiness');
+      }
+    })
+    .catch(() => {});
   void client
     .listActions()
     .then(({ actions }) => {
@@ -349,7 +510,8 @@ function mountContents(
       if (alive) {
         model = session.capabilities.model === 'configured';
         const plan = root.querySelector<HTMLElement>('.plan-form');
-        if (plan) plan.hidden = !model;
+        if (plan && tabs.querySelector('[data-page=business]')?.getAttribute('aria-selected') === 'true')
+          plan.hidden = !model;
       }
     })
     .catch(() => {});

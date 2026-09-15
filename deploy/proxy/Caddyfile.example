@@ -1,0 +1,13 @@
+# Install Caddy on the same host as the Compose deployment.
+# Replace this hostname with the exact Core public origin saved in server config.
+support.example.com {
+    encode gzip zstd
+    handle /internal/* {
+        respond "Not found" 404
+    }
+    handle /owner/* {
+        respond "Not found" 404
+    }
+    reverse_proxy 127.0.0.1:4318
+}
+# Never proxy port 4321, PostgreSQL, OPA or identity-demo publicly.

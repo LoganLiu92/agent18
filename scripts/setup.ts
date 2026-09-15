@@ -1,4 +1,4 @@
-import { demoBridge } from './lib/demo-bridge.js';
+import { demoBridge, demoQueries } from './lib/demo-bridge.js';
 import { mkdir, writeFile, access, readFile } from 'node:fs/promises';
 import { generateKeyPair, exportJWK } from 'jose';
 import { randomBytes } from 'node:crypto';
@@ -61,6 +61,7 @@ const projects = [
     displayName: 'Aurora 支持中心',
     allowedOrigins: ['http://localhost:4319'],
     businessBridge: demoBridge(),
+    businessQueries: demoQueries(),
   },
   { ...project, key: 'other-demo', projectId: '20000000-0000-4000-8000-000000000018' },
 ];
@@ -76,7 +77,9 @@ const dockerConfig = {
   ...config,
   projects: config.projects.map((p) => ({
     ...p,
-    ...('businessBridge' in p ? { businessBridge: demoBridge(true) } : {}),
+    ...('businessBridge' in p
+      ? { businessBridge: demoBridge(true), businessQueries: demoQueries(true) }
+      : {}),
   })),
   databaseUrl: config.databaseUrl.replace('127.0.0.1:54328', 'postgres:5432'),
   queueDatabaseUrl: config.queueDatabaseUrl.replace('127.0.0.1:54328', 'postgres:5432'),

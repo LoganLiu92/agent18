@@ -1,3 +1,5 @@
+import { registerDocs } from './docs.js';
+import { openApi } from './openapi.js';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -15,9 +17,17 @@ import {
   answerQuestion,
   KnowledgeError,
 } from '@agent18/knowledge';
-import { ActionService } from '@agent18/actions';
+import { ActionService, QueryService } from '@agent18/actions';
 import { FixtureKnowledgeProvider } from '@agent18/knowledge-basic';
-import { ToolGateway, CaseService, Dispatcher } from '@agent18/application';
+import {
+  ToolGateway,
+  CaseService,
+  Dispatcher,
+  caseMessages,
+  addCaseMessage,
+  changeCaseStatus,
+  messageInput,
+} from '@agent18/application';
 import type { Config } from '../../../scripts/config.js';
 import { customerVerifier, verifyWorkload } from './auth.js';
 
@@ -27,6 +37,12 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     bodyLimit: 16_384,
     requestTimeout: 15_000,
     genReqId: () => randomUUID(),
+  });
+  const customerRoutes: string[] = [];
+  app.addHook('onRoute', (route) => {
+    for (const method of Array.isArray(route.method) ? route.method : [route.method])
+      if (route.url.startsWith('/api/') && !['HEAD', 'OPTIONS'].includes(method))
+        customerRoutes.push(method + ' ' + route.url.replace(/:(\w+)/g, '{$1}'));
   });
   const db = new Pool({
     connectionString: config.databaseUrl,
@@ -48,6 +64,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
   const modelConfig = modelFromEnvironment();
   const model = modelConfig ? new CompatibleModel(modelConfig) : undefined;
   const actions = new ActionService(db, policy, (p) => projectFor(p).businessBridge, model);
+  const queries = new QueryService(db, policy, (p) => projectFor(p).businessQueries);
   let activeExpensive = 0;
   const usage = new Map<string, { since: number; count: number }>();
   const bounded = async <T>(p: CustomerPrincipal, fn: () => Promise<T>): Promise<T> => {
@@ -144,6 +161,8 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     if (status === 500) console.error('agent18 request failed', request.id); // No raw error, headers, tokens or request bodies.
     return reply.code(status).send({ error: { code, requestId: request.id } });
   });
+  registerDocs(app);
+  app.get('/openapi.json', async () => openApi);
   app.get('/health/live', async () => ({ service: 'agent18', status: 'ok' }));
   app.get('/health/ready', async (_request, reply) => {
     try {
@@ -160,7 +179,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
   app.get('/public/installation', async () => ({
     setupCompleted: config.setupCompleted,
     displayName: config.displayName,
-    version: '0.4.0',
+    version: '0.5.0',
   }));
   app.get('/public/projects/:projectKey', async (request, reply) => {
     const { projectKey } = z.object({ projectKey: z.string().max(100) }).parse(request.params);
@@ -186,6 +205,7 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
         knowledge: isIndexed(value) ? 'indexed' : 'fixture',
         model: model ? 'configured' : 'unconfigured',
         businessActions: actions.list(value).length > 0,
+        businessQueries: queries.list(value).length > 0,
         runtime: 'unconfigured',
         coding: 'unconfigured',
         operatorConsole: false,
@@ -206,6 +226,36 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
   });
   app.get('/api/cases/:caseId', async (request) =>
     cases.detail(principal(request), z.object({ caseId: id }).parse(request.params).caseId),
+  );
+  app.get('/api/cases/:caseId/messages', async (request) => ({
+    messages: await caseMessages(
+      db,
+      principal(request),
+      z.object({ caseId: id }).parse(request.params).caseId,
+    ),
+  }));
+  app.post('/api/cases/:caseId/messages', async (request) =>
+    addCaseMessage(
+      db,
+      principal(request),
+      z.object({ caseId: id }).parse(request.params).caseId,
+      'customer',
+      messageInput.parse(request.body),
+      id.parse(request.headers['idempotency-key']),
+      request.id,
+    ),
+  );
+  app.post('/api/cases/:caseId/status', async (request) =>
+    changeCaseStatus(
+      db,
+      principal(request),
+      z.object({ caseId: id }).parse(request.params).caseId,
+      z
+        .object({ status: z.enum(['resolved', 'needs_human']) })
+        .strict()
+        .parse(request.body).status,
+      request.id,
+    ),
   );
   app.post('/api/knowledge/search', async (request) =>
     gateway.search(principal(request), searchSchema.parse(request.body).query, request.id),
@@ -246,6 +296,22 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
       });
       return result;
     });
+  });
+  app.get('/api/business/queries', async (request) => ({ queries: queries.list(principal(request)) }));
+  app.post('/api/business/query', async (request) => {
+    const input = z
+      .object({ queryId: z.string().max(80), arguments: z.record(z.string(), z.unknown()) })
+      .strict()
+      .parse(request.body);
+    return bounded(principal(request), () =>
+      queries.execute(
+        principal(request),
+        input.queryId,
+        input.arguments,
+        request.headers.authorization!,
+        request.id,
+      ),
+    );
   });
   app.get('/api/actions', async (request) => ({ actions: actions.list(principal(request)) }));
   app.post('/api/actions/plan', async (request) =>
@@ -365,5 +431,5 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     await db.end();
   });
   await app.ready();
-  return { app, db, cases, gateway, dispatcher };
+  return { app, db, cases, gateway, dispatcher, customerRoutes };
 }

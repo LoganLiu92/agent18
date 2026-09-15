@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { ProductMark } from './setup.js';
 import './experience.css';
 export function Welcome() {
+  const local = ['localhost', '127.0.0.1'].includes(location.hostname);
   const [state, setState] = useState<{ setupCompleted: boolean; displayName: string; version: string }>();
   useEffect(() => {
     void fetch('/public/installation')
       .then((r) => r.json())
-      .then(setState);
+      .then(setState)
+      .catch(() => {});
   }, []);
   return (
     <div className="welcome-shell">
@@ -16,7 +18,7 @@ export function Welcome() {
           <a href="https://github.com/LoganLiu92/agent18" target="_blank" rel="noreferrer">
             GitHub ↗
           </a>
-          <a href="/console">客户工作台 →</a>
+          <a href="/docs">开发者文档 →</a>
         </nav>
       </header>
       <main className="welcome-main">
@@ -32,16 +34,17 @@ export function Welcome() {
               已有的代码与文档，是最好的起点。把知识、业务和用户身份连接起来，让帮助自然地出现在你的网站里。
             </p>
             <div className="welcome-cta">
-              <a href="http://localhost:4321/setup" className="experience-primary">
-                {state?.setupCompleted ? '继续配置工作空间' : '开始初始化配置'} <span>→</span>
+              <a href={local ? 'http://localhost:4321/setup' : '/docs'} className="experience-primary">
+                {local ? (state?.setupCompleted ? '进入接入工作台' : '开始初始化配置') : '阅读接入指南'}{' '}
+                <span>→</span>
               </a>
               <a
-                href="http://localhost:4319/example"
+                href={local ? 'http://localhost:4319/example' : '/docs/guides/integration'}
                 className="experience-secondary"
                 target="_blank"
                 rel="noreferrer"
               >
-                体验网站浮动助手 ↗
+                {local ? '体验网站浮动助手 ↗' : '网站接入方式 ↗'}
               </a>
             </div>
             <small>
@@ -120,13 +123,15 @@ export function Welcome() {
             <span>✓ 入口与接入代码</span>
           </div>
         </section>
-        <p className="welcome-local-note">
-          初始化配置服务位于部署机器的本地端口 4321。若尚未启动，在终端执行 <code>pnpm setup:ui</code>
-          ；全新安装可直接执行 <code>pnpm start</code>。
-        </p>
+        {local && (
+          <p className="welcome-local-note">
+            初始化配置服务位于部署机器的本地端口 4321。若尚未启动，在终端执行 <code>pnpm setup:ui</code>
+            ；全新安装可直接执行 <code>pnpm start</code>。
+          </p>
+        )}
       </main>
       <footer className="experience-footer">
-        agent18 {state?.version ?? '0.4.0'} · Open source, built for your SaaS.
+        agent18 {state?.version ?? '0.5.0'} · Open source, built for your SaaS.
       </footer>
     </div>
   );

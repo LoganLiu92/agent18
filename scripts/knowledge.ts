@@ -70,6 +70,59 @@ if (command === 'init') {
         if (source.kind === 'directory') source.location = resolve(dirname(path), source.location);
         console.log(JSON.stringify(await indexer.sync(source, config), null, 2));
       }
+    } else if (command === 'watch') {
+      const seconds = Number(argument ?? 300);
+      if (!Number.isInteger(seconds) || seconds < 30 || seconds > 86400)
+        throw new KnowledgeError('WATCH_INTERVAL_INVALID');
+      const controller = new AbortController();
+      const stop = () => controller.abort();
+      process.once('SIGINT', stop);
+      process.once('SIGTERM', stop);
+      console.log(
+        `Watching ${config.projectKey} every ${seconds}s. Changed sources produce drafts; publication remains explicit.`,
+      );
+      try {
+        while (!controller.signal.aborted) {
+          try {
+            const latest = knowledgeConfigSchema.parse(JSON.parse(await readFile(path, 'utf8')));
+            if (latest.projectKey !== config.projectKey) throw new KnowledgeError('WATCH_PROJECT_CHANGED');
+            const known = await indexer.activeSourceKeys();
+            for (const sourceId of new Set(known))
+              if (!latest.sources.some((s) => s.id === sourceId)) await indexer.disable(sourceId);
+            for (const source of latest.sources) {
+              if (source.kind === 'directory') source.location = resolve(dirname(path), source.location);
+              const result = await indexer.sync(
+                source,
+                { ...latest, skipUnchanged: true },
+                controller.signal,
+              );
+              if (!result.unchanged) console.log(JSON.stringify(result));
+            }
+          } catch (error) {
+            if (controller.signal.aborted) break;
+            if (error instanceof KnowledgeError && error.code === 'WATCH_PROJECT_CHANGED') throw error;
+            console.error(
+              JSON.stringify({
+                event: 'knowledge.watch.failed',
+                code: error instanceof KnowledgeError ? error.code : 'WATCH_CYCLE_FAILED',
+              }),
+            );
+          }
+          await new Promise<void>((resolve) => {
+            const done = () => {
+              clearTimeout(timer);
+              controller.signal.removeEventListener('abort', done);
+              resolve();
+            };
+            const timer = setTimeout(done, seconds * 1000);
+            controller.signal.addEventListener('abort', done, { once: true });
+            if (controller.signal.aborted) done();
+          });
+        }
+      } finally {
+        process.removeListener('SIGINT', stop);
+        process.removeListener('SIGTERM', stop);
+      }
     } else if (command === 'status') console.log(JSON.stringify(await indexer.status(), null, 2));
     else if (command === 'export')
       console.log(JSON.stringify(await indexer.export(id.parse(argument)), null, 2));

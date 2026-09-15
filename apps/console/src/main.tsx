@@ -762,7 +762,7 @@ function App() {
               agent18 <span className="footer-dot">·</span> Built on evidence.
             </span>
             <span>
-              Open source <span className="footer-dot">/</span> 0.4.0
+              Open source <span className="footer-dot">/</span> 0.5.0
             </span>
           </footer>
         </div>

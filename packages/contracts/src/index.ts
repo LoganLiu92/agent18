@@ -50,7 +50,7 @@ export const caseSchema = z.object({
   id,
   title: z.string(),
   description: z.string(),
-  status: z.enum(['open', 'needs_human']),
+  status: z.enum(['open', 'needs_human', 'resolved']),
   context: contextSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -133,3 +133,21 @@ export type ActionProposal = {
   createdAt: string;
   expiresAt: string;
 };
+
+export type BusinessQuery = {
+  id: string;
+  title: string;
+  description: string;
+  fields: ActionDefinition['fields'];
+  columns: { path: string; label: string }[];
+};
+export type QueryResult = {
+  queryId: string;
+  columns: BusinessQuery['columns'];
+  rows: Record<string, string | number | boolean | null>[];
+  truncated: boolean;
+  retrievedAt: string;
+  requestId: string;
+};
+
+export type CaseMessage = { id: string; author: 'customer' | 'support'; body: string; createdAt: string };

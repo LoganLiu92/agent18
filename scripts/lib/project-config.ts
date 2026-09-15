@@ -1,6 +1,7 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import { atomicJson } from './atomic.js';
 import { Pool } from '@agent18/persistence';
 import { configSchema } from '../config.js';
 export const projectInputSchema = z
@@ -45,7 +46,20 @@ export async function configureProject(raw: unknown, directory: string) {
       if (old && (old.organizationId !== p.organizationId || old.projectId !== p.projectId))
         throw new Error('Existing project identity cannot be reassigned');
       config.projects = config.projects.filter((v: { key: string }) => v.key !== p.key);
-      config.projects.push(p);
+      const host = JSON.parse(await readFile(resolve(directory, 'server.json'), 'utf8')).projects.find(
+        (v: { key: string }) => v.key === p.key,
+      );
+      const next = { ...p };
+      if (file === 'server.docker.json' && old && host) {
+        if (p.businessBridge && p.businessBridge.url === host.businessBridge?.url)
+          next.businessBridge = { ...p.businessBridge, url: old.businessBridge?.url ?? p.businessBridge.url };
+        if (p.businessQueries && p.businessQueries.baseUrl === host.businessQueries?.baseUrl)
+          next.businessQueries = {
+            ...p.businessQueries,
+            baseUrl: old.businessQueries?.baseUrl ?? p.businessQueries.baseUrl,
+          };
+      }
+      config.projects.push(next);
       configSchema.parse(config);
       configurations.push({ target, config });
     }
@@ -88,8 +102,7 @@ export async function configureProject(raw: unknown, directory: string) {
     } finally {
       client.release();
     }
-    for (const { target, config } of configurations)
-      await writeFile(target, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
+    for (const { target, config } of configurations) await atomicJson(target, config);
     return { projectKey: p.key };
   } finally {
     await db?.end();

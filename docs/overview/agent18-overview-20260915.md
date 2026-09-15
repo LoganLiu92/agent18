@@ -215,7 +215,7 @@ agent18 的目标是嵌入已有 SaaS，把客户问题与知识、业务数据�
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm setup
+pnpm run setup
 pnpm demo:start
 ```
 

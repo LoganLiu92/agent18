@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Agent18, type Session, type SupportCase } from '@agent18/web-sdk';
 import { KnowledgeHub } from './knowledge.js';
 import { BusinessAssistant } from './actions.js';
+import { BusinessQueries } from './queries.js';
+import { CaseConversation } from './conversation.js';
 import { ProductMark } from './setup.js';
 import './experience.css';
 
@@ -10,7 +12,7 @@ export function StandalonePortal() {
     [session, setSession] = useState<Session>(),
     [name, setName] = useState('支持中心'),
     [error, setError] = useState(''),
-    [page, setPage] = useState<'knowledge' | 'actions' | 'cases'>('knowledge');
+    [page, setPage] = useState<'knowledge' | 'queries' | 'actions' | 'cases'>('knowledge');
   useEffect(() => {
     const params = new URLSearchParams(location.search),
       project = params.get('project'),
@@ -137,7 +139,8 @@ export function StandalonePortal() {
               {(
                 [
                   ['knowledge', '▤', '知识与答案'],
-                  ['actions', '↔', '业务助手'],
+                  ['queries', '⌕', '查业务'],
+                  ['actions', '↔', '办业务'],
                   ['cases', '◎', '我的问题'],
                 ] as const
               ).map(([id, icon, label]) => (
@@ -150,6 +153,7 @@ export function StandalonePortal() {
             {page === 'knowledge' && (
               <KnowledgeHub client={client} model={session?.capabilities.model === 'configured'} />
             )}{' '}
+            {page === 'queries' && <BusinessQueries client={client} />}
             {page === 'actions' && (
               <>
                 <div className="portal-action-note">
@@ -168,6 +172,7 @@ export function StandalonePortal() {
   );
 }
 function PortalCases({ client }: { client: Agent18 }) {
+  const [selectedCase, setSelectedCase] = useState('');
   const [cases, setCases] = useState<SupportCase[]>([]),
     [title, setTitle] = useState(''),
     [description, setDescription] = useState(''),
@@ -192,7 +197,8 @@ function PortalCases({ client }: { client: Agent18 }) {
     e.preventDefault();
     setBusy(true);
     try {
-      await client.reportCase({ title, description }, key.current);
+      const reported = await client.reportCase({ title, description }, key.current);
+      setSelectedCase(reported.case.id);
       key.current = crypto.randomUUID();
       setTitle('');
       setDescription('');
@@ -247,18 +253,41 @@ function PortalCases({ client }: { client: Agent18 }) {
       </section>
       <section className="setup-card">
         <h2>我的问题记录</h2>
-        {cases.length ? (
-          cases.map((c) => (
-            <article className="portal-case" key={c.id}>
-              <b>{c.title}</b>
-              <span className="experience-badge">{c.status === 'needs_human' ? '等待跟进' : '已收到'}</span>
-              <p>{c.description}</p>
-              <small>{new Date(c.createdAt).toLocaleString()}</small>
-            </article>
-          ))
-        ) : (
-          <div className="build-empty">还没有问题记录。每次求助，都会保存在这里。</div>
+        {selectedCase && (
+          <>
+            <button className="case-back" onClick={() => setSelectedCase('')}>
+              ← 返回问题列表
+            </button>
+            <CaseConversation
+              key={selectedCase}
+              client={client}
+              caseId={selectedCase}
+              onChanged={() =>
+                void client
+                  .listCases()
+                  .then((r) => setCases(r.cases))
+                  .catch((e) => setMessage(e.message))
+              }
+            />
+          </>
         )}
+        {!selectedCase &&
+          (cases.length ? (
+            cases.map((c) => (
+              <article className="portal-case" key={c.id}>
+                <button className="case-title" onClick={() => setSelectedCase(c.id)}>
+                  {c.title} ↗
+                </button>
+                <span className="experience-badge">
+                  {c.status === 'resolved' ? '已解决' : c.status === 'needs_human' ? '等待跟进' : '已收到'}
+                </span>
+                <p>{c.description}</p>
+                <small>{new Date(c.createdAt).toLocaleString()}</small>
+              </article>
+            ))
+          ) : (
+            <div className="build-empty">还没有问题记录。每次求助，都会保存在这里。</div>
+          ))}
       </section>
     </div>
   );

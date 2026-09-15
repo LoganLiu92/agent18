@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './experience.css';
+import { OperationsCenter } from './operations.js';
 
 type Source = {
   id: string;
@@ -91,6 +92,7 @@ export function ProductMark({ href = '/' }: { href?: string }) {
   );
 }
 export function SetupWizard() {
+  const [workspace, setWorkspace] = useState(false);
   const [code, setCode] = useState(''),
     [token, setToken] = useState(''),
     [state, setState] = useState<SetupState>(),
@@ -181,6 +183,7 @@ export function SetupWizard() {
     setToken(code.trim());
     setCode('');
     setState(next);
+    setWorkspace(next.completed);
     setSetupBase(next.coreUrl);
     setChoice(next.knowledge?.projectKey ?? next.projects[0]?.key ?? 'new');
     setName(next.displayName === 'agent18' ? '我的 SaaS' : next.displayName);
@@ -291,10 +294,22 @@ export function SetupWizard() {
         <footer className="experience-footer">agent18 · Open source, built for your SaaS.</footer>
       </div>
     );
+  if (workspace)
+    return (
+      <OperationsCenter
+        token={token}
+        projects={state.projects}
+        coreUrl={state.coreUrl}
+        onWizard={() => setWorkspace(false)}
+      />
+    );
   return (
     <div className="setup-shell">
       <aside className="setup-aside">
         <ProductMark href="http://localhost:4318" />
+        <button className="setup-back" onClick={() => setWorkspace(true)}>
+          ◈ 进入接入工作台
+        </button>
         <div className="setup-aside-label">初始化你的工作空间</div>
         <nav>
           {steps.map(([number, title, desc], i) => (
@@ -398,6 +413,19 @@ export function SetupWizard() {
                     setChoice(projectKey);
                     await refresh();
                   }
+                  const selection = await request<{ knowledge: NonNullable<SetupState['knowledge']> }>(
+                    'knowledge/select',
+                    { projectKey: activeKey },
+                  );
+                  setSources(
+                    selection.knowledge.sources.length
+                      ? selection.knowledge.sources
+                      : activeKey === 'invoice-demo'
+                        ? state.exampleSources
+                        : [],
+                  );
+                  setMode(selection.knowledge.mode);
+                  await refresh();
                   setStep(1);
                 });
               }}

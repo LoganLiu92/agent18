@@ -34,7 +34,7 @@ agent18 不替换业务系统登录。SaaS 后端在确认当前会话后签发�
 pnpm project:configure .local/your-project.json
 # 重启 Core，加载项目配置
 
-docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml restart server
+docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml up -d --no-deps --force-recreate --wait server
 ```
 
 该命令使用一次性迁移凭据写入项目/租户元数据，更新本地与 Docker Core 配置，拒绝覆盖既有项目的身份映射，拒绝 JWK 私钥字段。重复执行只更新元数据，不删除既有租户或业务数据。数据库事务和配置文件写入不构成跨资源事务；若文件写入失败，修正权限后重新执行同一命令。
@@ -73,7 +73,7 @@ Token 最长有效期 10 分钟，建议 5 分钟。SDK 每次调用 `getToken`�
 
 参考 README 中 `Agent18` 与 `mountAssistant` 示例。Core 从 `/sdk/agent18.js` 提供构建后的 ES Module；也可把 `packages/web-sdk/dist/agent18.js` 放入自己的静态资源部署，不需要公共 npm 包。
 
-站点 Origin 必须精确匹配项目配置，包括协议、域名和端口，无尾斜杠，不支持 `*`。跨域请求使用 Bearer Token，不传 Cookie。宿主 CSP 应允许加载 SDK 并连接 Core；内置面板使用少量元素内联样式，若宿主禁止该样式，可只使用 SDK 并实现符合自身设计规范的 UI。
+站点 Origin 必须精确匹配项目配置，包括协议、域名和端口，无尾斜杠，不支持 `*`。跨域请求使用 Bearer Token，不传 Cookie。宿主 CSP 应允许加载 SDK 并连接 Core；内置面板通过 Shadow DOM 隔离样式，可传 nonce 为样式标签匹配宿主 CSP，也可只使用 SDK 构建自身 UI。
 
 ```ts
 await client.knowledgeCatalogue();
@@ -93,7 +93,7 @@ await client.reconcileAction(preview.id);
 内置面板包含知识问答、可用业务操作表单、模型生成操作预览和确认/回执。完整问题列表、Run 历史等可通过 SDK 自行组合，演示 Console 已展示这些能力。业务示例和注册方法见[业务操作指南](business-actions.md)。
 
 
-## 0.4 的三种界面入口
+## 网站中的三种界面入口
 
 部署者可以先运行 `pnpm setup:ui`，在向导中登记项目、公钥和网站 Origin，然后取得对应接入代码。详见 [安装指南](installation.md)。
 
@@ -147,3 +147,12 @@ function disconnectSupport() {
 ## 业务操作经过谁
 
 前端调用的是 agent18 API。最终写业务数据的是 **SaaS 后端**：agent18 Core 在用户确认后，携带 Support Token 调用已注册业务桥，SaaS 再核验用户、对象权限和业务条件。前端成功回调用于刷新显示，不承担权限判断；没有自动点击原网页或读取其 DOM 的执行器。参见 [业务桥协议](business-actions.md)。
+
+
+## 0.5 接入工作台
+
+初始化完成后，本地工作台默认进入运行总览。系统与能力页面可以维护现有项目的 Issuer/Audience/公开 JWKS、精确站点 Origin、租户登记，导入 OpenAPI 查询并配置业务操作。租户编辑是新增/更新，不会删除已存在数据。
+
+注册业务能力见[OpenAPI 查询](business-queries.md)与[代操作协议](business-actions.md)。先保存配置，再“应用到运行服务”，最后从 SaaS 当前用户测试；Core 成功重启不等于 SaaS 业务权限已经验证。
+
+客户页面和 SDK 现已支持问题消息、处理进展、解决与重开。本地部署者在“客户问题”选择项目和问题后回复；客户只能读自己范围内的回复。完整接口见[API 与 SDK](../reference/api.md)。

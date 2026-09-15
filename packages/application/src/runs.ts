@@ -60,9 +60,10 @@ export class RunService {
       state,
       reason,
     ]);
-    await client.query("UPDATE core.cases SET status='needs_human',updated_at=now() WHERE id=$1", [
-      run.case_id,
-    ]);
+    await client.query(
+      "UPDATE core.cases SET status='needs_human',updated_at=now() WHERE id=$1 AND status<>'resolved'",
+      [run.case_id],
+    );
     await this.step(
       client,
       scope,
@@ -169,9 +170,10 @@ export class RunService {
         'INSERT INTO control.dispatch (id,run_id,organization_id,project_id,tenant_id,subject) VALUES ($1,$2,$3,$4,$5,$6)',
         [randomUUID(), next, ...scopeValues(scope)],
       );
-      await client.query("UPDATE core.cases SET status='open',updated_at=now() WHERE id=$1", [
-        parent.case_id,
-      ]);
+      await client.query(
+        "UPDATE core.cases SET status='open',updated_at=now() WHERE id=$1 AND status<>'resolved'",
+        [parent.case_id],
+      );
       await auditInTransaction(client, scope, {
         caseId: parent.case_id,
         requestId,

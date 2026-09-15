@@ -90,3 +90,14 @@ pnpm knowledge disable product-guide
 - `NO_INDEXABLE_FILES`：路径、include 或过滤结果为空；检查支持格式及文件权限。
 - `GIT_READ_FAILED`：检查宿主机 SSH、host key、仓库权限、ref 和 60 秒单命令超时。
 - 网站没有知识：检查项目 `knowledge: indexed`、构建是否发布、受众/租户范围。`pnpm knowledge enable` 可更新本地项目配置，随后重启 Core。
+
+
+## 持续更新与多项目
+
+`pnpm knowledge watch 300` 每五分钟重读来源配置并构建变化。内容、修订、受众、模型身份与构建规则签名相同则复用最近就绪构建；任何变化产生新草稿，需要再次审核发布。失败保留上一发布版。此进程不会因浏览器关闭而停止，可由主机 systemd/launchd 管理。
+
+工作台按项目保存 `.local/knowledge.PROJECT.json`，切换向导项目时恢复对应来源。`.local/knowledge.json` 是当前选择；持续任务建议通过 `AGENT18_KNOWLEDGE_CONFIG=.local/knowledge.PROJECT.json` 固定到一个项目，避免向导切换影响进程。同一项目由一份完整来源配置管理；不同项目可运行独立 watch。
+
+watch 每轮对配置中已移除的来源执行撤下，对受众收紧立即撤下旧版。关闭 watch 不删除已经发布的内容。只修改模型环境文件需要重启进程；命令启动时加载模型配置。
+
+模型生成条目仍需要业务审核。客户可见来源宜选操作指南、FAQ 和公开接口资料，内部源码保持 internal；不要把“自动生成”理解成无需审核就能完整公开所有仓库内容。

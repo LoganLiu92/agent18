@@ -2,23 +2,29 @@ import type {
   ReportCase,
   SupportCase,
   CaseDetail,
+  CaseMessage,
   SearchResult,
   KnowledgeArticle,
   KnowledgeCatalogue,
   AnswerResult,
   ActionDefinition,
   ActionProposal,
+  BusinessQuery,
+  QueryResult,
 } from '@agent18/contracts';
 export type {
   ReportCase,
   SupportCase,
   CaseDetail,
+  CaseMessage,
   SearchResult,
   KnowledgeArticle,
   KnowledgeCatalogue,
   AnswerResult,
   ActionDefinition,
   ActionProposal,
+  BusinessQuery,
+  QueryResult,
 } from '@agent18/contracts';
 export class Agent18Error extends Error {
   constructor(
@@ -98,6 +104,22 @@ export class Agent18 {
   getCase(id: string) {
     return this.request<CaseDetail>(`/api/cases/${encodeURIComponent(id)}`);
   }
+  caseMessages(id: string) {
+    return this.request<{ messages: CaseMessage[] }>(`/api/cases/${encodeURIComponent(id)}/messages`);
+  }
+  addCaseMessage(id: string, body: string, key: string) {
+    return this.request<{ replayed: boolean }>(
+      `/api/cases/${encodeURIComponent(id)}/messages`,
+      'POST',
+      { body },
+      key,
+    );
+  }
+  setCaseStatus(id: string, status: 'resolved' | 'needs_human') {
+    return this.request<{ case: SupportCase }>(`/api/cases/${encodeURIComponent(id)}/status`, 'POST', {
+      status,
+    });
+  }
   reportCase(input: Omit<ReportCase, 'context'>, idempotencyKey: string) {
     return this.request<{ case: SupportCase; replayed: boolean }>(
       '/api/cases',
@@ -117,6 +139,12 @@ export class Agent18 {
   }
   askKnowledge(query: string) {
     return this.request<AnswerResult>('/api/knowledge/ask', 'POST', { query });
+  }
+  listBusinessQueries() {
+    return this.request<{ queries: BusinessQuery[] }>('/api/business/queries');
+  }
+  queryBusiness(queryId: string, args: Record<string, string | number | boolean>) {
+    return this.request<QueryResult>('/api/business/query', 'POST', { queryId, arguments: args });
   }
   listActions() {
     return this.request<{ actions: ActionDefinition[] }>('/api/actions');

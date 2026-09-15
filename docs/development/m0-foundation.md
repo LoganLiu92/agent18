@@ -43,7 +43,7 @@ Operator / Workload 有类型定义；本次只实装客户身份与固定 Worke
 
 ## 开发方式
 
-一键演示：根目录执行 `pnpm install --frozen-lockfile` → `pnpm setup` → `pnpm demo:start`。访问 `http://localhost:4318`。
+一键演示：根目录执行 `pnpm install --frozen-lockfile` → `pnpm run setup` → `pnpm demo:start`。访问 `http://localhost:4318`。
 
 前端热更新：保留 Compose 服务，运行 `pnpm dev:console`，打开 `http://localhost:5173`。Vite 将 `/api` 转发到本地 Server。
 

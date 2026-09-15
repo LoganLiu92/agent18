@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { registerDemoQueries } from './queries.js';
 import { registerDemoBusiness } from './business.js';
 import { SignJWT, importJWK } from 'jose';
 import { readFile } from 'node:fs/promises';
@@ -71,6 +72,11 @@ app.post('/token', async (request) => {
   return { token, projectKey: profile.project, label: profile.label };
 });
 registerDemoBusiness(
+  app,
+  process.env.AGENT18_DEMO_BUSINESS_DB ?? resolve(localDirectory, 'business-data/preferences.sqlite'),
+  { keys: [config.publicJwk] },
+);
+registerDemoQueries(
   app,
   process.env.AGENT18_DEMO_BUSINESS_DB ?? resolve(localDirectory, 'business-data/preferences.sqlite'),
   { keys: [config.publicJwk] },

@@ -1,107 +1,102 @@
 # agent18
 
-**Turn your SaaS code and documentation into an embedded, evidence-based assistant.**
+**An open-source assistant that connects your SaaS knowledge, users and business APIs.**
 
-agent18 为现有 SaaS 提供知识库、客户支持和业务操作助手。配置代码仓库与文档，使用自己的模型 API，接入网站身份与业务接口，让用户在原网站中找到答案、提交问题，并以自己的身份完成业务操作。
+[![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
+[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.5-overview.md) · [贡献指南](CONTRIBUTING.md)
 
-**当前版本：0.4.0 开发预览。** 提供五步初始化向导、浮动助手、嵌入区块、独立支持页，以及可运行的源码/文档知识构建、按版本发布、带引用检索与模型问答、用户确认的业务操作、持久化支持任务、权限隔离与网站 SDK。真实业务的身份校验和操作接口仍需要 SaaS 接入；日志调查、自动修复代码和 PR 尚未实现。
+agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与业务助手。连接已有代码和文档，使用自己的模型 API，沿用用户身份，让客户在原网站找答案、查业务、经确认办理业务，并持续跟进尚未解决的问题。
 
-[整体机制与实现综述](docs/overview/agent18-0.4-experience.md) · [安装向导](docs/guides/installation.md) · [知识库配置](docs/guides/knowledge.md) · [网站与身份接入](docs/guides/integration.md) · [业务操作接口](docs/guides/business-actions.md)
+**0.5.0 集成预览版**，覆盖知识、身份、业务接口与支持闭环。提供初始化向导、部署工作台、网站浮窗/内嵌/独立页、API 文档、诊断与备份恢复工具。运行时日志调查和自动代码修复仍为后续扩展。
 
-## 本地运行
+## 从这里运行
 
-需要 Node 24.14.x、pnpm 11.19.0、Docker Compose。Git 知识源另需宿主机 Git 和对应只读访问权限。
+需要 Node 24.14.x、pnpm 11.19.0、Docker Compose v2；Git 知识源需要宿主机 Git 读取权限。
 
 ```sh
+git clone git@github.com:LoganLiu92/agent18.git
+cd agent18
 pnpm install --frozen-lockfile
 pnpm start
 ```
 
-终端显示部署访问码后，打开 [初始化向导](http://localhost:4321/setup)，依次配置系统身份、模型、知识来源和网站入口。已有服务只需运行 `pnpm setup:ui`。
+打开终端显示的 [本地工作台](http://localhost:4321/setup)，输入 Owner access code。依次配置项目身份、模型、知识来源、审核发布与网站入口。安装完成后默认进入运行总览与接入工作台。
 
-打开 [localhost:4318](http://localhost:4318)。默认只绑定回环地址。演示身份签发器用于本地合成数据；现有 SaaS 使用自己的已认证后端签发短期 Token。
+[示例 SaaS 与浮动助手](http://localhost:4319/example) · [内嵌助手](http://localhost:4319/example?mode=inline) · [内置文档站点](http://localhost:4318/docs)
 
-## 从现有代码和文档建立知识库
+没有模型 Key 也可以验证原文索引、引用检索、业务查询、用户确认办理与问题回复。独立支持页从 SaaS 的支持按钮打开，接收当前登录身份。
 
-```sh
-# 若尚无知识配置，先运行 pnpm knowledge init
-# 编辑 .local/knowledge.json：配置本地目录或 Git 仓库、文件范围、受众
-pnpm knowledge sync
-pnpm knowledge status
-pnpm knowledge export <build-id> > .local/review.json
-pnpm knowledge publish <build-id>
-pnpm knowledge enable
-# 重启 Core 应用配置，不影响数据卷
+## 一套接入，完整使用路径
 
-docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml restart server
-```
+| 能力 | 实际行为 |
+| --- | --- |
+| 自有知识体系 | 目录/Git → 版本快照 → 原文或模型整理 → 文件行号引用 → 审核发布；watch 持续发现变化 |
+| 当前用户身份 | SaaS 签发短期 Token，Core 校验项目/租户/用户，数据库 FORCE RLS，精确网站 Origin |
+| 业务查询 | 导入 OpenAPI GET 候选，审核角色与字段，调用当前用户的 SaaS API，返回实时数据 |
+| 代客操作 | 注册动作 → 具体预览 → 用户确认 → 后端执行 → 幂等回执；超时保持不确定并核对 |
+| 客户问题闭环 | 提交与持久化调查 → 查看证据 → 补充说明 → 支持人员回复 → 解决或重新打开 |
+| 接入与运行管理 | 向导、工作台、版本/健康诊断、备份、隔离恢复、公开部署配置、随版本 API 文档 |
 
-`init` 默认配置本项目文档作为客户资料、源码作为内部资料。每个知识源独立构建、发布；默认新增源受众为 `internal`。代码无需执行，Git 来源固定到 commit，文章保留文件/行号引用。失败不替换已发布快照。
+代码帮助理解业务，业务权限由 SaaS 决定。真实接入需要提供已认证的 Token 签发入口和允许的业务 API，不迁移原有登录、业务数据库或网站架构。
 
-无模型时可用原文索引；配置 `.local/model.env`，把知识配置中的 `mode` 改为 `model`，即可让模型自动整理结构化知识条目，网站也可提供带引用回答与业务操作规划。模型 Key 只在部署端使用，详见[配置指南](docs/guides/knowledge.md)。
-
-## 试用业务助手
-
-```sh
-pnpm demo:actions
-pnpm demo:start
-```
-
-也可以打开独立的[示例 SaaS 嵌入页面](http://localhost:4319/example)，验证从原有网站加载 SDK 和跨域身份调用。
-
-在“业务助手”选择“修改我的通知偏好”，生成预览、确认执行、查看回执。业务示例由独立 SaaS 服务校验用户并持久化到自己的 SQLite 数据库；它只保存偏好，不发送邮件。执行超时进入“结果待确认”，查询回执时不会重发写操作。
-
-## 嵌入网站
+## 嵌入你的网站
 
 ```js
-import { Agent18, mountFloatingAssistant } from 'https://support.example.com/sdk/agent18.js';
+import { Agent18, mountFloatingAssistant }
+  from 'https://support.example.com/sdk/agent18.js';
 
 const client = new Agent18({
   baseUrl: 'https://support.example.com',
   projectKey: 'your-saas',
   getToken: async () => {
     const response = await fetch('/api/support-token', { method: 'POST' });
-    if (!response.ok) throw new Error('登录已失效');
+    if (!response.ok) throw new Error('请先登录');
     return (await response.json()).token;
   },
 });
-client.setContext({ pageUrl: location.href, entityType: 'order', entityId: 'current-order-id' });
 const assistant = mountFloatingAssistant(client, { title: '产品助手' });
-// 离开页面或切换登录身份：assistant.destroy(); client.destroy();
+// 页面卸载或用户切换时：assistant.destroy(); client.destroy();
 ```
 
-此外提供 `mountAssistant(container, client)` 嵌入区块和 `openSupportPage(options)` 独立支持页。独立页从 SaaS 的按钮打开并安全传递当前身份，不能用无登录上下文的裸 URL 代替。
+也支持 `mountAssistant(container, client)` 与 `openSupportPage(options)`，或仅使用 SDK 自建 UI。示例 `/api/support-token` 由你的 SaaS 后端基于真实会话实现，不能直接信任浏览器传入的用户与租户。
 
-先按[接入指南](docs/guides/integration.md)注册项目、公钥、租户与站点 Origin。可以使用内置面板，也可以只使用 SDK 构建自己的 UI。SDK 不收集 Cookie、DOM、完整 URL 或网络请求内容。
+## 接入和运维文档
 
-## 开发与验证
+- [安装与公开部署](docs/guides/installation.md)：本地启动、初始化、HTTPS、演示与正式部署分开。
+- [网站与身份](docs/guides/integration.md)：Support Token、公钥、租户、CORS、三种前端入口。
+- [知识构建与更新](docs/guides/knowledge.md)：源码/文档、模型、范围、版本、发布和 watch。
+- [OpenAPI 查询](docs/guides/business-queries.md)、[业务操作协议](docs/guides/business-actions.md)：用户身份下的真实业务调用。
+- [诊断、备份与恢复](docs/guides/operations.md)：从检查失败到独立新库恢复和切换。
+- [API 与 SDK](docs/reference/api.md)、[配置参考](docs/reference/configuration.md)、[技术标准与边界](docs/reference/standards.md)。
+
+## 开发与验收
 
 ```sh
-pnpm build
-pnpm test
+pnpm check
 pnpm test:policy
-pnpm test:integration  # 使用本地合成数据；生命周期测试会暂停并恢复本项目 Worker
-pnpm test:recovery     # 会暂停并恢复本项目 Server/Worker
-pnpm logs
-pnpm demo:stop         # 保留数据卷与 .local 配置
+pnpm test:integration
+pnpm test:recovery
+pnpm test:journey
+pnpm run doctor
+pnpm backup
 ```
 
-`.github/workflows/ci.yml` 定义上述检查；远程 CI 是否通过以 GitHub 的实际运行结果为准。
+集成与恢复测试使用本地合成数据，部分会暂停/恢复本项目服务；不要直接指向正式实例。`test:journey` 从新配置、新数据库和独立 Compose 项目开始验证完整路径。结束后只清理它自己创建的资源。
+
+`release:check` 在 `.local/release` 生成 SDK、OpenAPI、许可证和 SHA-256 清单。当前通过源码自托管，不依赖已经发布的公共 npm 包或镜像。
+
+## 仓库结构
 
 ```text
-apps/console, server, worker     首页/支持页、HTTP API、持久化任务
-apps/setup                       宿主机本地初始化配置服务
-packages/knowledge              扫描、分块、模型整理、增量缓存、发布与检索
-packages/actions                业务注册表、预览、确认、回执核对
-packages/application, policy    Case / Run 编排、工具网关与 OPA
-packages/persistence            PostgreSQL migration 与 RLS
-packages/web-sdk                无框架 SDK 与可选嵌入面板
-examples/identity-bridge        独立本地 SaaS 身份及业务接口示例
-scripts                        部署配置、知识构建、项目注册与验证
+apps/console, server, worker   客户入口、Core API、持久化任务
+apps/setup                    本机初始化和部署工作台
+packages/knowledge            扫描、索引、模型整理、版本发布和检索
+packages/actions              OpenAPI 查询、动作注册、确认与回执
+packages/application          Case / Run、消息、状态、工具编排
+packages/policy, persistence   OPA、迁移、RLS、审计和 outbox
+packages/web-sdk              无框架 SDK 与可选 Shadow DOM 助手
+examples/identity-bridge       独立 SaaS 身份、OpenAPI、业务数据库和桥接示例
+scripts                       配置、构建、诊断、恢复与安装旅程
 ```
 
-历史记录：[0.2 运行综述](docs/overview/agent18-overview-20260915.md)（[历史 Word 版](docs/overview/agent18-运行机制与实现综述-20260915.docx)）、[组件评估](docs/research/component-evaluation.md)。当前能力以 0.3 文档与测试为准。
-
-[贡献说明](CONTRIBUTING.md) · [安全边界](SECURITY.md) · [GitHub](https://github.com/LoganLiu92/agent18)
-
-Core 使用 [Apache-2.0](LICENSE)，Web SDK 使用 [MIT](packages/web-sdk/LICENSE)。尚未发布 npm 包或公共容器镜像。
+Core 使用 Apache-2.0，Web SDK 使用 MIT。许可证不改变客户业务 API 和知识来源的权限。[安全策略](SECURITY.md)描述已实现边界和剩余部署责任。

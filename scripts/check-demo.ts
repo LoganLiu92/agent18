@@ -5,6 +5,6 @@ try {
     if (!response.ok) throw new Error('unready');
   }
 } catch {
-  console.error('Local demo is not ready. Run pnpm setup && pnpm demo:start before integration tests.');
+  console.error('Local demo is not ready. Run pnpm run setup && pnpm demo:start before integration tests.');
   process.exit(1);
 }

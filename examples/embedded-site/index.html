@@ -121,6 +121,20 @@
         display: grid;
         place-content: center;
       }
+      #profile {
+        max-width: 180px;
+        border: 1px solid #d8e4d9;
+        border-radius: 7px;
+        padding: 7px;
+        background: white;
+        color: #36553f;
+        font: inherit;
+      }
+      #preferences-summary {
+        color: #47734d;
+        font-size: 12px;
+        padding: 12px 0;
+      }
       .user small {
         display: block;
         color: #adb6bd;
@@ -433,8 +447,14 @@
       <header class="topbar">
         <div class="crumb">工作空间 <span>/</span> 订单中心</div>
         <div class="user">
-          <span class="avatar">AL</span>
-          <div>Alice<small>Aurora Studio</small></div>
+          <span class="avatar" id="avatar">AL</span>
+          <div>
+            <select id="profile" aria-label="演示用户">
+              <option value="aurora">Alice · Aurora</option>
+              <option value="colleague">Bob · 同租户</option>
+              <option value="northwind">Nina · 另一租户</option></select
+            ><small>独立 SaaS 登录身份</small>
+          </div>
         </div>
       </header>
       <main class="content">
@@ -446,9 +466,15 @@
           <button class="help-button" id="help"><span>↗</span>支持中心</button>
         </div>
         <div class="stats">
-          <div class="stat"><small>全部订单</small><strong>3</strong><span>本地示例</span></div>
-          <div class="stat"><small>等待处理</small><strong>1</strong><span>待跟进</span></div>
-          <div class="stat"><small>已完成</small><strong>2</strong><span>已归档</span></div>
+          <div class="stat">
+            <small>全部订单</small><strong id="order-total">—</strong><span>本地示例</span>
+          </div>
+          <div class="stat">
+            <small>等待处理</small><strong id="order-pending">—</strong><span>待跟进</span>
+          </div>
+          <div class="stat">
+            <small>已完成</small><strong id="order-completed">—</strong><span>已归档</span>
+          </div>
         </div>
         <section class="list">
           <div class="list-header"><b>最近订单</b><span>仅展示合成数据</span></div>
@@ -457,32 +483,17 @@
               <tr>
                 <th>订单编号</th>
                 <th>客户</th>
-                <th>项目</th>
+                <th>金额</th>
                 <th>状态</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="order-rows">
               <tr>
-                <td>DEMO-018</td>
-                <td>Aurora Studio</td>
-                <td>团队协作订阅</td>
-                <td><span class="status">等待处理</span></td>
-              </tr>
-              <tr>
-                <td>DEMO-017</td>
-                <td>Aurora Studio</td>
-                <td>知识管理服务</td>
-                <td><span class="status done">已完成</span></td>
-              </tr>
-              <tr>
-                <td>DEMO-016</td>
-                <td>Aurora Studio</td>
-                <td>工作空间扩容</td>
-                <td><span class="status done">已完成</span></td>
+                <td colspan="4">正在读取当前用户的订单…</td>
               </tr>
             </tbody>
           </table>
-          <div class="table-footer">共 3 条合成订单 · 用于展示助手在业务系统中的接入位置</div>
+          <div class="table-footer" id="order-summary">来自示例 SaaS 数据库</div>
         </section>
         <section class="onboarding">
           <span class="onboarding-icon">✳</span>
@@ -493,11 +504,12 @@
           <button id="show-assistant">打开助手 →</button>
         </section>
         <div id="support-assistant" hidden></div>
+        <p id="preferences-summary" role="status"></p>
         <p id="completed" role="status"></p>
         <p id="notice" role="alert"></p>
         <p class="demo-note">
-          这是运行在独立端口的示例 SaaS。助手沿用 Alice 的短期身份；示例业务 API 只修改 Alice
-          的邮件通知偏好，不更改订单、不发送邮件。订单列表及侧栏用于展示接入布局。
+          这是独立运行的示例 SaaS，订单为合成数据，按当前用户从 SQLite
+          实际读取。助手查询相同接口，办理只修改当前用户的通知偏好，不更改订单、不发送邮件。切换演示用户可验证同租户和跨租户隔离。
         </p>
         <div class="mode-links">
           <a href="/example">浮动入口</a><a href="/example?mode=inline">嵌入区块</a
@@ -512,6 +524,18 @@
         mountFloatingAssistant,
         openSupportPage,
       } from 'http://localhost:4318/sdk/agent18.js';
+      const params = new URLSearchParams(location.search);
+      const profile = ['aurora', 'colleague', 'northwind'].includes(params.get('profile'))
+        ? params.get('profile')
+        : 'aurora';
+      document.querySelector('#profile').value = profile;
+      document.querySelector('#profile').onchange = (event) => {
+        params.set('profile', event.target.value);
+        location.search = params.toString();
+      };
+      document.querySelector('#avatar').textContent = { aurora: 'AL', colleague: 'BO', northwind: 'NI' }[
+        profile
+      ];
       const options = {
         baseUrl: 'http://localhost:4318',
         projectKey: 'invoice-demo',
@@ -519,14 +543,18 @@
           const response = await fetch('/token', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ profile: 'aurora' }),
+            body: JSON.stringify({ profile }),
           });
           if (!response.ok) throw new Error('DEMO_IDENTITY_UNAVAILABLE');
           return (await response.json()).token;
         },
       };
       const client = new Agent18(options);
-      client.setContext({ pageUrl: location.href, entityType: 'order', entityId: 'DEMO-018' });
+      client.setContext({
+        pageUrl: location.href,
+        entityType: 'order',
+        entityId: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
+      });
       const pages = new Set();
       const openPage = () => {
         try {
@@ -539,6 +567,7 @@
         title: 'Aurora 助手',
         onOpenPage: openPage,
         onActionComplete: (p) => {
+          void loadBusiness().catch(showFailure);
           document.querySelector('#completed').textContent =
             '业务回执：' + (p.result?.message ?? '通知偏好已更新。');
         },
@@ -554,6 +583,50 @@
         if (inline) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         else widget.open();
       };
+      function showFailure(error) {
+        document.querySelector('#notice').textContent = '业务数据读取未完成：' + error.message;
+      }
+      async function loadBusiness() {
+        const token = await options.getToken();
+        const read = async (path) => {
+          const response = await fetch(path, {
+            headers: { authorization: 'Bearer ' + token },
+            cache: 'no-store',
+          });
+          if (!response.ok) throw new Error('SAAS_API_UNAVAILABLE');
+          return response.json();
+        };
+        const [orders, preferences] = await Promise.all([read('/api/orders'), read('/api/preferences')]);
+        const rows = document.querySelector('#order-rows');
+        rows.replaceChildren();
+        for (const order of orders) {
+          const row = document.createElement('tr');
+          for (const key of ['id', 'customer', 'amount', 'status']) {
+            const cell = document.createElement('td');
+            cell.textContent = String(order[key]);
+            row.append(cell);
+          }
+          rows.append(row);
+        }
+        document.querySelector('#order-total').textContent = orders.length;
+        document.querySelector('#order-pending').textContent = orders.filter(
+          (o) => o.status !== '已完成',
+        ).length;
+        document.querySelector('#order-completed').textContent = orders.filter(
+          (o) => o.status === '已完成',
+        ).length;
+        document.querySelector('#order-summary').textContent =
+          '当前用户可访问 ' + orders.length + ' 条合成订单 · 与助手查询使用同一业务 API';
+        document.querySelector('#preferences-summary').textContent =
+          '我的邮件通知：' +
+          (preferences.emailNotifications ? '开启' : '关闭') +
+          ' · 数据版本 ' +
+          preferences.revision;
+      }
+      if (inline)
+        document.querySelector('.onboarding p').textContent =
+          '助手已嵌入下方。查找知识、查询和办理业务，或把问题交给支持团队。';
+      void loadBusiness().catch(showFailure);
       window.addEventListener('pagehide', () => {
         widget.destroy();
         client.destroy();

@@ -34,7 +34,7 @@ export class KnowledgeIndexer {
   ) {}
   async sync(
     source: SourceConfig,
-    config: Pick<KnowledgeConfig, 'mode' | 'maxModelCalls'>,
+    config: Pick<KnowledgeConfig, 'mode' | 'maxModelCalls'> & { skipUnchanged?: boolean },
     signal = AbortSignal.timeout(30 * 60_000),
   ) {
     const lock = await this.db.connect();
@@ -45,6 +45,13 @@ export class KnowledgeIndexer {
       locked = (await lock.query('SELECT pg_try_advisory_lock(hashtextextended($1,18)) AS locked', [lockKey]))
         .rows[0].locked;
       if (!locked) throw new KnowledgeError('SOURCE_BUSY');
+      // Revoke a previous customer snapshot before scanning; inaccessible source files must not delay a visibility change.
+      await scoped(this.db, this.scope, (client) =>
+        client.query(
+          'UPDATE knowledge.sources SET enabled=CASE WHEN audience<>$2 OR tenant_ids<>$3 THEN false ELSE enabled END,audience=$2,tenant_ids=$3 WHERE source_key=$1',
+          [source.id, source.audience, source.tenantIds],
+        ),
+      );
       if (config.mode === 'model' && !this.model) throw new KnowledgeError('MODEL_NOT_CONFIGURED');
       const snapshot = await scan(source, process.cwd(), this.cacheDirectory, signal);
       const chunks = chunkFiles(snapshot.files);
@@ -74,6 +81,39 @@ export class KnowledgeIndexer {
         ).rows[0];
         return row.id as string;
       });
+      const buildSignature = hash(
+        JSON.stringify([
+          snapshot.fingerprint,
+          snapshot.revision,
+          source,
+          config.mode,
+          this.model?.identity ?? null,
+          instruction,
+        ]),
+      );
+      if (config.skipUnchanged) {
+        const previous = await scoped(
+          this.db,
+          this.scope,
+          async (client) =>
+            (
+              await client.query(
+                "SELECT id,report FROM knowledge.builds WHERE source_id=$1 AND state='ready' ORDER BY created_at DESC LIMIT 1",
+                [sourceId],
+              )
+            ).rows[0],
+        );
+        if (previous?.report?.buildSignature === buildSignature)
+          return {
+            buildId: previous.id as string,
+            source: source.id,
+            revision: snapshot.revision,
+            mode: config.mode,
+            state: 'ready',
+            unchanged: true,
+            ...previous.report,
+          };
+      }
       buildId = randomUUID();
       await scoped(this.db, this.scope, async (client) => {
         // A previous process may have exited while building. Its draft was never published.
@@ -175,6 +215,7 @@ export class KnowledgeIndexer {
         });
       }
       const report = {
+        buildSignature,
         audience: source.audience,
         tenantIds: source.tenantIds,
         files: snapshot.files.length,
@@ -215,6 +256,13 @@ export class KnowledgeIndexer {
       if (locked) await lock.query('SELECT pg_advisory_unlock(hashtextextended($1,18))', [lockKey]);
       lock.release();
     }
+  }
+  async activeSourceKeys(): Promise<string[]> {
+    return scoped(this.db, this.scope, async (client) =>
+      (await client.query('SELECT source_key FROM knowledge.sources WHERE enabled=true')).rows.map(
+        (r) => r.source_key,
+      ),
+    );
   }
   async status() {
     return scoped(

@@ -28,7 +28,10 @@ export class IndexedKnowledgeProvider implements KnowledgeProvider {
       if (!terms.length) return [];
       const rows = (
         await client.query(
-          `SELECT *, (SELECT count(*) FROM unnest(tokens) t WHERE t=ANY($1::text[])) AS score
+          `SELECT *, (
+          (SELECT count(*) FROM unnest(tokens) t WHERE t=ANY($1::text[])) +
+          2 * (SELECT count(*) FROM unnest($1::text[]) t WHERE position(t in lower(title)) > 0)
+        ) / sqrt(GREATEST(cardinality(tokens),16)::float) AS score
         FROM knowledge.articles WHERE tokens && $1::text[] ORDER BY score DESC,created_at DESC,id LIMIT $2`,
           [terms, Math.min(input.limit, 5)],
         )

@@ -96,6 +96,34 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
     const article = await provider.article(scope, citationId);
     expect(article?.references[0]).toMatchObject({ path: 'guide.md', startLine: 1 });
   });
+  it('watch deduplicates unchanged drafts but rebuilds changed visibility without auto-publication', async () => {
+    const beforeCalls = calls;
+    const same = await indexer.sync(source, { mode: 'model', maxModelCalls: 10, skipUnchanged: true });
+    expect(same.unchanged).toBe(true);
+    expect(same.buildId).toBe(first);
+    expect(calls).toBe(beforeCalls);
+    const restricted = await indexer.sync(
+      { ...source, audience: 'internal' },
+      { mode: 'model', maxModelCalls: 10, skipUnchanged: true },
+    );
+    expect(restricted.buildId).not.toBe(first);
+    expect(await search()).toHaveLength(0);
+    const restored = await indexer.sync(source, { mode: 'model', maxModelCalls: 10, skipUnchanged: true });
+    expect(restored.buildId).not.toBe(restricted.buildId);
+    expect(await search()).toHaveLength(0);
+    await indexer.publish(first);
+  });
+  it('revokes a published snapshot before a failed scan after audience tightening', async () => {
+    await expect(
+      indexer.sync(
+        { ...source, audience: 'internal', location: join(root, 'missing-directory') },
+        { mode: 'model', maxModelCalls: 10, skipUnchanged: true },
+      ),
+    ).rejects.toThrow();
+    expect(await search()).toHaveLength(0);
+    await indexer.sync(source, { mode: 'model', maxModelCalls: 10, skipUnchanged: true });
+    await indexer.publish(first);
+  });
   it('serves indexed catalogue, article and model-free answers with authenticated HTTP scope', async () => {
     const config = readConfig();
     config.projects[0]!.knowledge = 'indexed';
@@ -201,5 +229,27 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
       (await scoped(indexDb, scope, (c) => c.query('SELECT * FROM knowledge.builds WHERE id=$1', [second])))
         .rowCount,
     ).toBe(1);
+  });
+  it('ranks a focused guide above a broad overview without including hidden exact matches', async () => {
+    const query = 'OpenAPI 接入业务查询';
+    await writeFile(join(root, 'guide.md'), '# OpenAPI 业务查询\n导入接口定义，再选择角色并启用业务查询。');
+    await writeFile(
+      join(root, 'overview.md'),
+      '# 系统概览\nOpenAPI 接入业务查询。' + Array.from({ length: 150 }, (_, i) => `module${i} `).join(''),
+    );
+    const build = await indexer.sync(source, { mode: 'extractive', maxModelCalls: 10 });
+    try {
+      await indexer.publish(build.buildId);
+      expect((await search(scope, query))[0]?.title).toContain('guide.md');
+      expect(
+        (await search({ ...scope, tenantId: 'tenant-b' }, query)).some((r) =>
+          /^(guide|overview)\.md/.test(r.title),
+        ),
+      ).toBe(false);
+      await indexer.sync({ ...source, audience: 'internal' }, { mode: 'extractive', maxModelCalls: 10 });
+      expect((await search(scope, query)).some((r) => r.title.includes('guide.md'))).toBe(false);
+    } finally {
+      await indexer.disable(source.id);
+    }
   });
 });

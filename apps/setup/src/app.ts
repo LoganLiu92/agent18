@@ -1,4 +1,6 @@
 import Fastify from 'fastify';
+import { registerOperations } from './operations.js';
+import { atomicJson } from '../../../scripts/lib/atomic.js';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import { timingSafeEqual, randomUUID } from 'node:crypto';
@@ -35,8 +37,7 @@ export async function buildSetupApp(options: SetupOptions) {
   const directory = resolve(options.directory),
     port = options.port ?? 4321;
   const json = async (name: string) => JSON.parse(await readFile(resolve(directory, name), 'utf8'));
-  const save = async (name: string, value: unknown) =>
-    writeFile(resolve(directory, name), JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
+  const save = async (name: string, value: unknown) => atomicJson(resolve(directory, name), value);
   const settings = async () => configSchema.parse(await json('server.json'));
   const environment = async () =>
     parseEnv(await readFile(resolve(directory, 'model.env'), 'utf8').catch(() => ''));
@@ -104,6 +105,7 @@ export async function buildSetupApp(options: SetupOptions) {
       .code(error instanceof KnowledgeError ? (error.code === 'SETUP_BUSY' ? 409 : 400) : 400)
       .send({ error: { code: error instanceof KnowledgeError ? error.code : 'SETUP_REQUEST_FAILED' } }),
   );
+  registerOperations(app, directory, mutate);
   app.get('/owner/state', async () => {
     const config = await settings(),
       env = await environment();
@@ -125,6 +127,7 @@ export async function buildSetupApp(options: SetupOptions) {
         allowedOrigins: p.allowedOrigins,
         knowledge: p.knowledge,
         businessBridge: p.businessBridge,
+        businessQueries: p.businessQueries,
       })),
       model: {
         baseUrl: env.AGENT18_MODEL_BASE_URL ?? '',
@@ -218,6 +221,29 @@ export async function buildSetupApp(options: SetupOptions) {
       return { saved: true };
     }),
   );
+  app.post('/owner/knowledge/select', async (request) =>
+    mutate(async () => {
+      const { projectKey } = z
+        .object({ projectKey: z.string().regex(/^[a-z][a-z0-9-]{1,63}$/) })
+        .strict()
+        .parse(request.body);
+      if (!(await settings()).projects.some((p) => p.key === projectKey))
+        throw new KnowledgeError('PROJECT_NOT_FOUND');
+      const previous = await json('knowledge.json').catch(() => null);
+      if (previous?.projectKey) await save('knowledge.' + previous.projectKey + '.json', previous);
+      const next =
+        previous?.projectKey === projectKey
+          ? previous
+          : await json('knowledge.' + projectKey + '.json').catch(() => ({
+              projectKey,
+              mode: 'extractive',
+              maxModelCalls: 100,
+              sources: [],
+            }));
+      await save('knowledge.json', next);
+      return { knowledge: next };
+    }),
+  );
   app.post('/owner/knowledge', async (request) =>
     mutate(async () => {
       const input = knowledgeConfigSchema.parse(request.body);
@@ -248,6 +274,7 @@ export async function buildSetupApp(options: SetupOptions) {
           });
       }
       await save('knowledge.json', input);
+      await save('knowledge.' + input.projectKey + '.json', input);
       return { saved: true };
     }),
   );
