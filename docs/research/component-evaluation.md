@@ -1,5 +1,7 @@
 # 开源组件评估与版本证据
 
+> 历史版本/选型记录。当前能力与真实监控接入见 [0.7 运行综述](../overview/agent18-0.7-operations.md)。
+
 核验日期：**2026-09-14**。结论用于架构选型，尚未执行组件部署、性能基准、租户隔离联调或正式许可证合规审查。
 
 方法：实时查询官方 GitHub `releases/latest`，排除 prerelease；读取对应版本的 LICENSE 并保存 SHA-256。API/SDK 能力查询官方文档和仓库；滚动文档可能领先稳定版本，因此进入 M0 后仍须对锁定版本做合同测试。原始事实见 [component-snapshot.json](component-snapshot.json)。部署复杂度是根据依赖和信任边界作出的工程判断，不是实测资源消耗。

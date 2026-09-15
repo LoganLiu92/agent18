@@ -45,6 +45,20 @@ it('continues knowledge questions and recognizes support follow-ups without crea
   expect(await route('问题还是不行，请转人工')).toEqual({ kind: 'support' });
   expect(await route('查看我的问题进展')).toEqual({ kind: 'cases' });
 });
+it('uses the matching current entity only as an explicit argument hint, preserving typed IDs', async () => {
+  const context = { entity: { type: 'order', id: 'ORD-CURRENT' } };
+  expect(await route('查看当前订单详情', { context })).toMatchObject({
+    kind: 'query',
+    arguments: { orderId: 'ORD-CURRENT' },
+  });
+  expect(await route('查看订单详情', { context })).toMatchObject({ kind: 'query', arguments: {} });
+  expect(await route('查看当前订单详情 ORD-EXPLICIT', { context })).toMatchObject({
+    arguments: { orderId: 'ORD-EXPLICIT' },
+  });
+  expect(
+    await route('查看当前订单详情', { context: { entity: { type: 'invoice', id: 'INV-OTHER' } } }),
+  ).toMatchObject({ arguments: {} });
+});
 it('rejects forged or oversized conversational state before planning', () => {
   expect(assistantTurnSchema.safeParse({ message: 'x', role: 'admin' }).success).toBe(false);
   expect(assistantTurnSchema.safeParse({ message: 'x', history: Array(7).fill('x') }).success).toBe(false);

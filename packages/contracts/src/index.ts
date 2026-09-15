@@ -10,6 +10,52 @@ export const scopeSchema = z
   })
   .strict();
 export type Scope = z.infer<typeof scopeSchema>;
+export const pageCaptureSchema = z
+  .object({
+    capturedAt: z.string().datetime(),
+    page: z
+      .object({
+        title: z.string().max(200),
+        path: z.string().max(256),
+        language: z.string().max(32),
+        width: z.number().int().min(0).max(10000),
+        height: z.number().int().min(0).max(10000),
+        online: z.boolean(),
+      })
+      .strict(),
+    text: z.string().max(8000),
+    errors: z.array(z.string().max(500)).max(10),
+    breadcrumbs: z
+      .array(
+        z
+          .object({
+            at: z.string().datetime(),
+            type: z.enum(['click', 'navigation']),
+            detail: z.string().max(200),
+          })
+          .strict(),
+      )
+      .max(20),
+    requests: z
+      .array(
+        z
+          .object({
+            path: z.string().max(256),
+            status: z.number().int().min(0).max(599),
+            durationMs: z.number().int().min(0).max(3600000),
+          })
+          .strict(),
+      )
+      .max(10),
+    screenshot: z
+      .string()
+      .max(700000)
+      .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/)
+      .optional(),
+    notice: z.string().max(300),
+  })
+  .strict();
+export type PageCapture = z.infer<typeof pageCaptureSchema>;
 export const contextSchema = z
   .object({
     pagePath: z
@@ -66,6 +112,7 @@ export const reportCaseSchema = z
     title: z.string().trim().min(3).max(180),
     description: z.string().trim().min(3).max(4000),
     context: contextSchema.default({}),
+    capture: pageCaptureSchema.optional(),
   })
   .strict();
 export type ClientContext = z.infer<typeof contextSchema>;
@@ -78,6 +125,7 @@ export const assistantTurnSchema = z
   .object({
     message: z.string().trim().min(1).max(1000),
     history: z.array(z.string().max(500)).max(6).default([]),
+    context: contextSchema.optional(),
     pending: z
       .object({
         kind: z.enum(['query', 'action']),
@@ -156,7 +204,14 @@ export type AuditView = {
   reason: string;
   createdAt: string;
 };
-export type CaseDetail = { case: SupportCase; runs: RunView[]; evidence: EvidenceView[]; audit: AuditView[] };
+export type CaseDetail = {
+  case: SupportCase;
+  runs: RunView[];
+  evidence: EvidenceView[];
+  audit: AuditView[];
+  capture?: PageCapture;
+  investigation?: { state: string; summary: string; updatedAt: string };
+};
 export type SearchResult = { mode: 'retrieval_only'; citations: SafeCitation[]; notice: string };
 
 export type KnowledgeArticle = {

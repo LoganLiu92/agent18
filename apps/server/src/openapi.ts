@@ -7,6 +7,7 @@ import {
   evidenceViewSchema,
   searchSchema,
   assistantTurnSchema,
+  pageCaptureSchema,
 } from '@agent18/contracts';
 const schema = (s: z.ZodType) => z.toJSONSchema(s, { target: 'draft-2020-12', io: 'input' });
 const ref = (name: string) => ({ $ref: '#/components/schemas/' + name });
@@ -254,7 +255,7 @@ export const openApi = {
   openapi: '3.1.0',
   info: {
     title: 'agent18 Customer API',
-    version: '0.6.0',
+    version: '0.7.0',
     description:
       'Project-, tenant- and subject-scoped API. Local owner and workload APIs are intentionally separate. JSON requests; unsupported input fields are rejected. Never pass tenant or subject in request bodies.',
   },
@@ -348,6 +349,7 @@ export const openApi = {
       }),
       Case: schema(caseSchema),
       Context: schema(contextSchema),
+      PageCapture: schema(pageCaptureSchema),
       Citation: schema(safeCitationSchema),
       Evidence: schema(evidenceViewSchema),
       Message: object({
@@ -356,20 +358,25 @@ export const openApi = {
         body: string,
         createdAt: string,
       }),
-      CaseDetail: object({
-        case: ref('Case'),
-        runs: array(ref('Run')),
-        evidence: array(ref('Evidence')),
-        audit: array(
-          object({
-            id: uuid,
-            action: string,
-            decision: { enum: ['ALLOW', 'DENY', 'APPROVAL_REQUIRED'] },
-            reason: string,
-            createdAt: string,
-          }),
-        ),
-      }),
+      CaseDetail: object(
+        {
+          case: ref('Case'),
+          runs: array(ref('Run')),
+          capture: ref('PageCapture'),
+          investigation: object({ state: string, summary: string, updatedAt: string }),
+          evidence: array(ref('Evidence')),
+          audit: array(
+            object({
+              id: uuid,
+              action: string,
+              decision: { enum: ['ALLOW', 'DENY', 'APPROVAL_REQUIRED'] },
+              reason: string,
+              createdAt: string,
+            }),
+          ),
+        },
+        ['case', 'runs', 'evidence', 'audit'],
+      ),
       Run: object({
         id: uuid,
         state: { enum: ['pending', 'running', 'completed', 'blocked', 'cancelled', 'failed'] },

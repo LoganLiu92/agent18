@@ -3,22 +3,22 @@
 **Open-source AI support platform for SaaS — from customer questions toward production investigation and engineering resolution.**
 
 [![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
-[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.6-core.md) · [贡献指南](CONTRIBUTING.md)
+[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.7-operations.md) · [贡献指南](CONTRIBUTING.md)
 
 **准备接入已有项目？先读 [接入任务书](INTEGRATE.md)**：明确两个仓库分别改什么，按知识与支持 → 实时查询 → 确认办理推进；附可发给编码助手的任务描述和[目标系统验收报告](docs/reference/integration-acceptance.md)。
 
 agent18 为现有 SaaS 提供一套可自行部署、配置和嵌入的支持与业务助手。连接已有代码和文档，使用自己的模型 API，沿用用户身份，让客户在原网站找答案、查业务、经确认办理业务，并持续跟进尚未解决的问题。
 
-**0.6.0 核心基础预览版**，覆盖知识、身份、业务接口与支持闭环。提供初始化向导、部署工作台、网站浮窗/内嵌/独立页、API 文档、诊断与备份恢复工具。Context、Evidence、RunStep、工具/Provider 注册与策略决策已泛化。运行时日志调查和自动代码修复仍为后续扩展。
+**0.7.0 全场景集成预览版**。提供初始化向导、单一对话入口、知识构建、当前用户业务接口、页面上下文上报、真实 Loki / Prometheus 自动排查、周期巡检、异常合并与恢复，以及内部经验草稿。部署、API 文档、诊断与备份恢复随仓库交付。
 
-用户提问 → 知识 → 业务上下文 → 问题报告 → 运行证据 → 根因 → 修复建议。前三层和问题闭环已经运行；后三项是分阶段目标。
+用户提问 → 知识与业务 → 页面问题报告 → 日志与指标证据 → 待核实分析 → 支持回复与经验草稿。周期巡检主动发现异常，人工核实处理；自动代码修复仍在规划中。
 
 | 层级 | 当前状态 |
 | --- | --- |
 | L1 知识与支持 | ✅ 已实现 |
 | L2 身份与上下文 | ✅ 已实现 |
 | L3 查询与明确确认的业务操作 | ✅ 已实现 |
-| L4 运行调查 | 🚧 核心抽象就绪，真实连接器与 RCA 待实现 |
+| L4 运行调查 | ✅ HTTP / Loki / Prometheus、证据报告与巡检；完整 Trace / 自动根因证明未实现 |
 | L5 代码修复 | 🗺 规划中 |
 
 ## 从这里运行
@@ -38,6 +38,8 @@ pnpm start
 
 没有模型 Key 也可以验证原文索引、引用检索、业务查询、用户确认办理与问题回复。独立支持页从 SaaS 的支持按钮打开，接收当前登录身份。
 
+体验真实运行排查：完成启动后执行 `pnpm observability:demo`，在演示网站点击“模拟业务异常”并通过助手上报，Owner 工作台查看工程证据；再运行 `pnpm test:observability`。参见[监控接入指南](docs/guides/observability.md)。
+
 ## 一套接入，完整使用路径
 
 | 能力 | 实际行为 |
@@ -46,7 +48,8 @@ pnpm start
 | 当前用户身份 | SaaS 签发短期 Token，Core 校验项目/租户/用户，数据库 FORCE RLS，精确网站 Origin |
 | 业务查询 | 导入 OpenAPI GET 候选，审核角色与字段，调用当前用户的 SaaS API，返回实时数据 |
 | 代客操作 | 注册动作 → 具体预览 → 用户确认 → 后端执行 → 幂等回执；超时保持不确定并核对 |
-| 客户问题闭环 | 提交与持久化调查 → 查看证据 → 补充说明 → 支持人员回复 → 解决或重新打开 |
+| 客户问题闭环 | 页面文字/错误/可选截图预览 → 工单与持久任务 → 日志/指标排查 → 支持回复 → 解决或重新打开 |
+| 主动巡检与经验 | 周期健康/日志/指标检查 → 异常合并、接手、恢复 → 内部知识草稿 |
 | 接入与运行管理 | 向导、工作台、版本/健康诊断、备份、隔离恢复、公开部署配置、随版本 API 文档 |
 
 代码帮助理解业务，业务权限由 SaaS 决定。真实接入需要提供已认证的 Token 签发入口和允许的业务 API，不迁移原有登录、业务数据库或网站架构。
@@ -60,6 +63,7 @@ import { Agent18, mountFloatingAssistant }
 const client = new Agent18({
   baseUrl: 'https://support.example.com',
   projectKey: 'your-saas',
+  capture: { enabled: true, pageText: true, screenshot: false },
   getToken: async () => {
     const response = await fetch('/api/support-token', { method: 'POST' });
     if (!response.ok) throw new Error('请先登录');
@@ -75,6 +79,7 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 ## 接入和运维文档
 
 - [已有项目接入任务书](INTEGRATE.md)、[接入验收报告模板](docs/reference/integration-acceptance.md)：从仓库 URL 到真实网站效果，记录实际通过与未接入项。
+- [0.7 全场景机制](docs/overview/agent18-0.7-operations.md)、[页面采集与监控接入](docs/guides/observability.md)。
 - [0.6 核心抽象审查与升级](docs/overview/agent18-0.6-core.md)、[Provider / Tool 注册规范](docs/reference/providers.md)。
 
 - [安装与公开部署](docs/guides/installation.md)：本地启动、初始化、HTTPS、演示与正式部署分开。
@@ -107,7 +112,8 @@ apps/console, server, worker   客户入口、Core API、持久化任务
 apps/setup                    本机初始化和部署工作台
 packages/knowledge            扫描、索引、模型整理、版本发布和检索
 packages/actions              OpenAPI 查询、动作注册、确认与回执
-packages/application          Case / Run、消息、状态、工具编排
+packages/application          Case / Run、消息、状态、工具编排与持久观测
+providers/observability       HTTP / Loki / Prometheus 只读工程证据
 packages/policy, persistence   OPA、迁移、RLS、审计和 outbox
 packages/web-sdk              无框架 SDK 与可选 Shadow DOM 助手
 examples/identity-bridge       独立 SaaS 身份、OpenAPI、业务数据库和桥接示例

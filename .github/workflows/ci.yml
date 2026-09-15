@@ -20,6 +20,7 @@ jobs:
       - run: pnpm check
       - run: pnpm run setup && pnpm demo:start
       - run: pnpm test:policy && pnpm test:integration && pnpm test:recovery && pnpm test:journey
+      - run: pnpm observability:demo && pnpm test:observability
       - uses: actions/upload-artifact@v4
         with:
           name: agent18-sdk-api-and-acceptance

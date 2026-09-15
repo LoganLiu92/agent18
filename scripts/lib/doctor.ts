@@ -42,14 +42,14 @@ export async function diagnose(directory: string): Promise<DoctorReport> {
     );
     const tables = (
       await db.query(
-        "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='core' AND c.relkind='r' AND relname IN ('cases','case_messages','action_proposals','audit')",
+        "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='core' AND c.relkind='r' AND relname IN ('cases','case_messages','action_proposals','audit','case_captures','observation_reports')",
       )
     ).rows;
     add(
       'rls',
       '租户与用户隔离',
-      tables.length === 4 && tables.every((t) => t.relrowsecurity && t.relforcerowsecurity) ? 'pass' : 'fail',
-      `${tables.filter((t) => t.relrowsecurity && t.relforcerowsecurity).length}/4 个关键数据表强制启用 RLS。`,
+      tables.length === 6 && tables.every((t) => t.relrowsecurity && t.relforcerowsecurity) ? 'pass' : 'fail',
+      `${tables.filter((t) => t.relrowsecurity && t.relforcerowsecurity).length}/6 个关键数据表强制启用 RLS。`,
       'pnpm db:migrate',
     );
   } catch {
@@ -99,6 +99,22 @@ export async function diagnose(directory: string): Promise<DoctorReport> {
       pending ? 'warn' : 'pass',
       pending ? `${pending} 个调度已超过 5 分钟；需要检查 worker。` : '没有超过 5 分钟的未完成调度。',
       'pnpm logs；pnpm test:recovery（仅演示环境）',
+    );
+    const observations =
+      (
+        await admin.query(
+          "SELECT count(*)::int AS total FROM control.observation_jobs WHERE state IN ('pending','running') AND created_at < now()-interval '5 minutes' AND project_id=ANY($1::uuid[])",
+          [config.projects.map((p) => p.projectId)],
+        )
+      ).rows[0]?.total ?? 0;
+    add(
+      'observations',
+      '排查与巡检积压',
+      observations ? 'warn' : 'pass',
+      observations
+        ? `${observations} 个观测任务超过 5 分钟；检查 Worker、连接器与租约。`
+        : '活动项目没有超过 5 分钟的待处理观测。',
+      '工作台 → 巡检与排查；pnpm logs',
     );
   } catch {
     add(

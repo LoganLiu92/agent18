@@ -1,0 +1,17 @@
+{
+  "name": "@agent18/observability",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts"
+  },
+  "dependencies": {
+    "@agent18/contracts": "workspace:*",
+    "@agent18/domain": "workspace:*",
+    "@agent18/provider-contracts": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "license": "Apache-2.0"
+}

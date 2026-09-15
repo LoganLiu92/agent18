@@ -22,7 +22,7 @@ const post = async (path: string, body: unknown, lease?: string) => {
       ...(lease ? { 'x-run-lease': lease } : {}),
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(path === '/internal/observations/tick' ? 60000 : 20_000),
   });
   if (!response.ok) throw new Error(`Core request status ${response.status}`);
   return response.json();
@@ -43,7 +43,22 @@ await boss.work<{ dispatchId: string }>(
   },
 );
 console.log('agent18 worker ready; queue IDs only, no business database access');
+let observing = false;
+const observe = async () => {
+  if (observing) return;
+  observing = true;
+  try {
+    await post('/internal/observations/tick', {});
+  } catch {
+    console.error('agent18 observation tick failed; durable jobs retained');
+  } finally {
+    observing = false;
+  }
+};
+const observationTimer = setInterval(() => void observe(), 10000);
+void observe();
 for (const signal of ['SIGINT', 'SIGTERM'])
   process.once(signal, () => {
+    clearInterval(observationTimer);
     void boss.stop({ graceful: true }).then(() => process.exit(0));
   });

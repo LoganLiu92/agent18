@@ -1,6 +1,6 @@
 name: ${AGENT18_STACK_NAME:-agent18}
 x-app: &app
-  image: agent18:0.6.0-local
+  image: agent18:0.7.0-local
   pull_policy: never
   user: '${AGENT18_UID:-1000}:${AGENT18_GID:-1000}'
   init: true
@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
     networks: [core, host-access]
   opa:
-    labels: { org.agent18.policy-version: '0.6.0' }
+    labels: { org.agent18.policy-version: '0.7.0' }
     image: openpolicyagent/opa:1.20.2-static@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d
     command: [run, --server, --addr=0.0.0.0:8181, --log-level=error, /policy/gateway.rego]
     volumes: ['../../packages/policy/rego/gateway.rego:/policy/gateway.rego:ro']
@@ -55,6 +55,8 @@ services:
     environment: { AGENT18_CONFIG: /run/config/server.json }
     env_file:
       - path: ${AGENT18_LOCAL_DIR}/model.env
+        required: false
+      - path: ${AGENT18_LOCAL_DIR}/observability.env
         required: false
     volumes: ['${AGENT18_LOCAL_DIR}/server.docker.json:/run/config/server.json:ro']
     ports: ['127.0.0.1:4318:4318']
@@ -87,6 +89,7 @@ services:
       {
         AGENT18_IDENTITY_CONFIG: /run/config/identity.json,
         AGENT18_DEMO_BUSINESS_DB: /data/preferences.sqlite,
+        AGENT18_DEMO_LOKI_URL: 'http://loki:3100',
       }
     volumes:
       - ${AGENT18_LOCAL_DIR}/identity.json:/run/config/identity.json:ro
@@ -104,8 +107,27 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+  loki:
+    profiles: [observability]
+    image: grafana/loki:3.7.7@sha256:d70e4659623f3e109af669cae76fe2a5dd5be54e2298fe8aed380d982fbc2500
+    command: [-config.file=/etc/loki/agent18.yaml]
+    volumes: ['../observability/loki.yaml:/etc/loki/agent18.yaml:ro', 'loki-data:/loki']
+    ports: ['127.0.0.1:31310:3100']
+    restart: unless-stopped
+    networks: [core, host-access]
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v3.14.0@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
+    command: [--config.file=/etc/prometheus/agent18.yaml, --storage.tsdb.retention.time=7d]
+    volumes:
+      ['../observability/prometheus.yaml:/etc/prometheus/agent18.yaml:ro', 'prometheus-data:/prometheus']
+    ports: ['127.0.0.1:39090:9090']
+    restart: unless-stopped
+    networks: [core, host-access]
 volumes:
   postgres-data:
+  loki-data:
+  prometheus-data:
 networks:
   core:
     internal: true

@@ -19,6 +19,7 @@ const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', class
 };
 function frame(target: HTMLElement, options: AssistantOptions) {
   const host = element('div');
+  host.setAttribute('data-agent18-widget', '');
   const shadow = host.attachShadow({ mode: 'open' });
   const style = element('style', styles);
   if (options.nonce) style.nonce = options.nonce;
@@ -451,6 +452,37 @@ function mountContents(
       ref.append(element('summary', e.citation?.title ?? e.resource.type), element('p', e.summary));
       card.append(ref);
     }
+    if (detail.investigation) {
+      const investigation = element('div', '', 'data-card');
+      const states: Record<string, string> = {
+        pending: '等待处理',
+        running: '正在检查',
+        completed: '检查完成',
+        failed: '检查未完成',
+        cancelled: '配置已变更',
+      };
+      investigation.append(
+        element('b', '自动排查 · ' + (states[detail.investigation.state] ?? detail.investigation.state)),
+        element('p', detail.investigation.summary),
+      );
+      card.append(investigation);
+    }
+    if (detail.capture) {
+      const captured = element('details');
+      captured.append(
+        element('summary', '上报时的页面上下文'),
+        element('p', detail.capture.page.title + ' · ' + detail.capture.page.path),
+        element('p', detail.capture.text),
+      );
+      if (detail.capture.screenshot) {
+        const img = element('img');
+        img.src = detail.capture.screenshot;
+        img.alt = '已脱敏的上报页面截图';
+        img.style.width = '100%';
+        captured.append(img);
+      }
+      card.append(captured);
+    }
     suggestions(card, [
       [
         '回复这个问题',
@@ -476,7 +508,7 @@ function mountContents(
       message('好的，我们继续。');
     });
   }
-  function support() {
+  async function support() {
     pending = undefined;
     replyCase = undefined;
     const card = message('我可以把问题交给支持团队。先核对一下要提交的内容：'),
@@ -501,6 +533,37 @@ function mountContents(
     submit.type = 'submit';
     form.append(titleLabel, bodyLabel, submit);
     card.append(form);
+    submit.disabled = true;
+    const capture = await client.capturePage();
+    if (!alive) return;
+    const includeCapture = element('input');
+    includeCapture.type = 'checkbox';
+    includeCapture.checked = true;
+    if (capture) {
+      const preview = element('details'),
+        label = element('label', '附上页面上下文，帮助支持团队排查');
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      includeCapture.style.width = 'auto';
+      label.prepend(includeCapture);
+      preview.append(
+        element('summary', '查看将提交的页面信息'),
+        element('p', capture.page.title + ' · ' + capture.page.path),
+        element('p', capture.text),
+        element('p', capture.errors.join('\n')),
+        element('small', capture.notice),
+      );
+      if (capture.screenshot) {
+        const img = element('img');
+        img.src = capture.screenshot;
+        img.alt = '提交前截图预览';
+        img.style.width = '100%';
+        preview.append(img);
+      }
+      form.insertBefore(label, submit);
+      form.insertBefore(preview, submit);
+    }
+    submit.disabled = false;
     let submitted = false,
       key = crypto.randomUUID();
     controls.set(submit, () => !submitted);
@@ -511,7 +574,14 @@ function mountContents(
       e.preventDefault();
       if (submitted) return;
       void run(async () => {
-        const result = await client.reportCase({ title: title.value, description: description.value }, key);
+        const result = await client.reportCase(
+          {
+            title: title.value,
+            description: description.value,
+            ...(capture && includeCapture.checked ? { capture } : {}),
+          },
+          key,
+        );
         if (!alive) return;
         submitted = true;
         form.remove();
@@ -557,7 +627,7 @@ function mountContents(
     if (route.kind === 'knowledge') await knowledge(route.query);
     else if (route.kind === 'help') await help();
     else if (route.kind === 'cases') await showCases();
-    else if (route.kind === 'support') support();
+    else if (route.kind === 'support') await support();
     else {
       dismissPreview?.();
       message('好的，这件事先放下。你可以继续提问；尚未确认的预览不会自动执行。');

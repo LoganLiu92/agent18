@@ -60,3 +60,9 @@ Support Token 使用 Ed25519/EdDSA，带 `kind: customer`、`project_key`、`ten
 - Run 尝试次数、时间预算、取消和恢复规则由数据库及应用层共同检查。
 
 公开服务需要在反向代理和业务 API 侧配置符合自身流量的速率、资源与连接限制；当前内置预算不等同于完整 API 防滥用平台。
+
+## operations 与观测凭据（0.7）
+
+项目可选 `operations` 保存 enabled、autoInvestigate、intervalSeconds、modelAnalysis 与最多八项 checks。检查支持 http / loki / prometheus，schema 见 `providers/observability/src/config.ts`，完整示例见[监控配置](../guides/observability.md)。默认 disabled、300 秒周期、自动关联工单、模型分析关闭。
+
+只读 Bearer 值保存在 `.local/observability.env` 的 `AGENT18_OBS_*` 变量，配置只引用 `credentialEnv` 名称。Owner 保存后应用配置，Core 重新创建以加载环境文件。不要提交秘密文件或在前端配置中复制值。

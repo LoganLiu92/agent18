@@ -1,4 +1,5 @@
-import type { ProviderRegistry } from '@agent18/provider-contracts';
+import { ProviderRegistry } from '@agent18/provider-contracts';
+import { observabilityProvider } from '@agent18/observability';
 import { registerDocs } from './docs.js';
 import { openApi } from './openapi.js';
 import Fastify, { type FastifyRequest } from 'fastify';
@@ -29,6 +30,7 @@ import {
   addCaseMessage,
   changeCaseStatus,
   messageInput,
+  ObservationRuntime,
 } from '@agent18/application';
 import type { Config } from '../../../scripts/config.js';
 import { customerVerifier, verifyWorkload } from './auth.js';
@@ -70,7 +72,10 @@ export async function buildApp(
     projectFor(scope).knowledge === 'indexed';
   const indexed = new IndexedKnowledgeProvider(db);
   const provider = new ProjectKnowledgeProvider(indexed, new FixtureKnowledgeProvider(), isIndexed);
-  const gateway = new ToolGateway(db, policy, provider, options.providers, options.environment);
+  const providers = options.providers ?? new ProviderRegistry();
+  if (!providers.get('observability'))
+    providers.register(observabilityProvider((scope) => projectFor(scope)?.operations));
+  const gateway = new ToolGateway(db, policy, provider, providers, options.environment);
   const modelConfig = modelFromEnvironment();
   const model = modelConfig ? new CompatibleModel(modelConfig) : undefined;
   const actions = new ActionService(
@@ -99,7 +104,8 @@ export async function buildApp(
       activeExpensive--;
     }
   };
-  const cases = new CaseService(db, gateway, options.caseWorkflow);
+  const cases = new CaseService(db, gateway, options.caseWorkflow, (scope) => projectFor(scope)?.operations);
+  const observations = new ObservationRuntime(db, gateway, () => config.projects, model);
   const dispatcher = new Dispatcher(db, config.queueDatabaseUrl, (scope, runId, reason) =>
     cases.runs.reconcile(scope, runId, reason),
   );
@@ -121,7 +127,7 @@ export async function buildApp(
     );
   });
   app.addHook('onRequest', async (request, reply) => {
-    if (!request.url.startsWith('/api/') && request.url !== '/sdk/agent18.js') return;
+    if (!request.url.startsWith('/api/') && !request.url.startsWith('/sdk/')) return;
     const origin = request.headers.origin;
     const allowed = new Set([config.consoleOrigin, ...config.projects.flatMap((p) => p.allowedOrigins)]);
     if (origin && !allowed.has(origin)) throw new AppError('ORIGIN_DENIED', 403);
@@ -195,7 +201,7 @@ export async function buildApp(
   app.get('/public/installation', async () => ({
     setupCompleted: config.setupCompleted,
     displayName: config.displayName,
-    version: '0.6.0',
+    version: '0.7.0',
   }));
   app.get('/public/projects/:projectKey', async (request, reply) => {
     const { projectKey } = z.object({ projectKey: z.string().max(100) }).parse(request.params);
@@ -230,7 +236,7 @@ export async function buildApp(
     };
   });
   app.get('/api/cases', async (request) => ({ cases: await cases.list(principal(request)) }));
-  app.post('/api/cases', async (request, reply) => {
+  app.post('/api/cases', { bodyLimit: 800000 }, async (request, reply) => {
     const key = id.parse(request.headers['idempotency-key']);
     const result = await cases.report(
       principal(request),
@@ -402,6 +408,13 @@ export async function buildApp(
   app.get('/sdk/agent18.js', async (_request, reply) =>
     reply.type('text/javascript; charset=utf-8').send(await readFile('packages/web-sdk/dist/agent18.js')),
   );
+  app.get('/sdk/capture.js', async (_request, reply) =>
+    reply.type('text/javascript; charset=utf-8').send(await readFile('packages/web-sdk/dist/capture.js')),
+  );
+  app.post('/internal/observations/tick', async (request) => {
+    z.object({}).strict().parse(request.body);
+    return observations.tick(AbortSignal.timeout(55000));
+  });
   app.post('/api/runs/:runId/cancel', async (request) => {
     z.object({}).strict().parse(request.body);
     const runId = z.object({ runId: id }).parse(request.params).runId;
@@ -461,5 +474,5 @@ export async function buildApp(
     await db.end();
   });
   await app.ready();
-  return { app, db, cases, gateway, dispatcher, customerRoutes };
+  return { app, db, cases, gateway, dispatcher, customerRoutes, observations };
 }

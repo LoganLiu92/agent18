@@ -5,6 +5,13 @@ import { OpaPolicy } from '@agent18/policy';
 import { ProviderRegistry, validateEvidence, type KnowledgeProvider } from '@agent18/provider-contracts';
 import { ToolRegistry } from './registry.js';
 import { knowledgeBinding } from './knowledge-binding.js';
+export type GatewayPrincipal =
+  | CustomerPrincipal
+  | (Scope & {
+      kind: 'operator';
+      permissions: readonly string[];
+      expiresAt: number;
+    });
 export class ToolGateway {
   readonly registry: ToolRegistry;
   readonly providers: ProviderRegistry;
@@ -39,7 +46,7 @@ export class ToolGateway {
     return result;
   }
   async authorize(
-    principal: CustomerPrincipal,
+    principal: GatewayPrincipal,
     requestId: string,
     capability?: Capability,
     toolId = capability?.toolId ?? 'knowledge.search',
@@ -65,7 +72,11 @@ export class ToolGateway {
     const { tool, fingerprint } = registered;
     const now = Date.now();
     const decision = await this.policy.decide({
-      principal: { kind: principal.kind, scope },
+      principal: {
+        kind: principal.kind,
+        scope,
+        ...(principal.kind === 'operator' ? { permissions: principal.permissions } : {}),
+      },
       action: tool,
       resource: {
         type: tool.resourceTypes[0]!,
@@ -100,7 +111,7 @@ export class ToolGateway {
     return scope;
   }
   async invoke(
-    principal: CustomerPrincipal,
+    principal: GatewayPrincipal,
     toolId: string,
     input: unknown,
     requestId: string,

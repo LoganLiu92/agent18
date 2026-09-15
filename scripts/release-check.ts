@@ -15,9 +15,16 @@ const sdk = await readFile('packages/web-sdk/dist/agent18.js');
 if (gzipSync(sdk).length > 15 * 1024) throw new Error('SDK_BUDGET_EXCEEDED');
 await writeFile(resolve(output, 'openapi.json'), JSON.stringify(openApi, null, 2) + '\n');
 await writeFile(resolve(output, 'agent18.js'), sdk);
+const capture = await readFile('packages/web-sdk/dist/capture.js');
+if (gzipSync(capture).length > 80 * 1024) throw new Error('CAPTURE_BUDGET_EXCEEDED');
+await writeFile(resolve(output, 'capture.js'), capture);
+await writeFile(
+  resolve(output, 'LICENSE-html2canvas'),
+  await readFile('packages/web-sdk/node_modules/html2canvas/LICENSE'),
+);
 await writeFile(resolve(output, 'LICENSE-SDK'), await readFile('packages/web-sdk/LICENSE'));
 const files = [];
-for (const name of ['agent18.js', 'openapi.json', 'LICENSE-SDK']) {
+for (const name of ['agent18.js', 'capture.js', 'openapi.json', 'LICENSE-SDK', 'LICENSE-html2canvas']) {
   const data = await readFile(resolve(output, name));
   files.push({ name, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') });
 }
@@ -25,6 +32,7 @@ const manifest = {
   version,
   apiOperations: publicApiDefinitions.length,
   sdkGzipBytes: gzipSync(sdk).length,
+  optionalCaptureGzipBytes: gzipSync(capture).length,
   files,
 };
 await writeFile(resolve(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

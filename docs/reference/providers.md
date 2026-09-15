@@ -72,3 +72,9 @@ Manifest 的结构：
 - 高风险需要真实审批验证；本版本没有通用审批签发服务，不应伪造 valid=true。
 
 可运行参考是 `tests/security/registry.integration.test.ts` 的合成日志 Provider，以及 `packages/application/src/knowledge-binding.ts` 的现有知识适配器。前者证明替换能力的执行机制，后者是实际默认工作流；真实第三方连接器需另行做供应商和现场验收。
+
+## 内置 observability Provider（0.7）
+
+迁移 009 注册已审核的 `observability@1.0.0` 和 `operations.observe` v1，实际项目检查默认禁用。READ / LOW / ENGINEERING，资源 log、metric、health；只有内部 Operator 的对应工具权限可以使用，客户可见目录为空。工具输入只接受 checkId、配置指纹、任务模式、登记时间和可选 traceId，URL、凭据、固定查询来自 Owner 配置。
+
+工单排查使用可信租户及可选用户标签；项目巡检使用内部调度 scope。HTTP/Loki/Prometheus 返回有界 Evidence，通过 Gateway 与策略校验，再保存到 RLS 保护的 observation report。它复用工具合同，但使用独立持久 observation job 调度，原有 Case Run 知识链路保持独立。详见[0.7 运行机制](../overview/agent18-0.7-operations.md)。

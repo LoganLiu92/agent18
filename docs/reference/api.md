@@ -70,7 +70,7 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 
 每次请求调用 getToken；应用可自行实现短期缓存和刷新，但切换用户后必须销毁旧实例并建立新实例。独立页通过校验 window、精确 Origin、project、channel、requestId 的 postMessage 握手索取短期身份，Token 不出现在 URL、Cookie 或本地持久化中。
 
-浮窗与内嵌面板使用 Shadow DOM。可传 `nonce` 为样式标签配合宿主 CSP；其他站点的全局样式不会污染助手。SDK 只收集调用方明确提供的上下文，pageUrl 会剥离 query/fragment。销毁使用 `assistant.destroy(); client.destroy()`。
+浮窗与内嵌面板使用 Shadow DOM。可传 `nonce` 为样式标签配合宿主 CSP；其他站点的全局样式不会污染助手。`setContext` 接收显式业务线索，pageUrl 会剥离 query/fragment；`capturePage()` 准备有界页面报告，浮窗上报自动调用并提供预览。详见[页面采集](../guides/observability.md)。销毁使用 `assistant.destroy(); client.destroy()`。
 
 ## 问题处理约定
 

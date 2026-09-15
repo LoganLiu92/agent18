@@ -26,6 +26,9 @@ importers:
       '@agent18/knowledge-basic':
         specifier: workspace:*
         version: link:providers/knowledge-basic
+      '@agent18/observability':
+        specifier: workspace:*
+        version: link:providers/observability
       '@agent18/persistence':
         specifier: workspace:*
         version: link:packages/persistence
@@ -195,6 +198,9 @@ importers:
       '@agent18/domain':
         specifier: workspace:*
         version: link:../domain
+      '@agent18/observability':
+        specifier: workspace:*
+        version: link:../../providers/observability
       '@agent18/persistence':
         specifier: workspace:*
         version: link:../persistence
@@ -276,6 +282,9 @@ importers:
       '@agent18/contracts':
         specifier: workspace:*
         version: link:../contracts
+      html2canvas:
+        specifier: 1.4.1
+        version: 1.4.1
 
   providers/knowledge-basic:
     dependencies:
@@ -285,6 +294,21 @@ importers:
       '@agent18/provider-contracts':
         specifier: workspace:*
         version: link:../../packages/provider-contracts
+
+  providers/observability:
+    dependencies:
+      '@agent18/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@agent18/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@agent18/provider-contracts':
+        specifier: workspace:*
+        version: link:../../packages/provider-contracts
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
 
 packages:
 
@@ -787,6 +811,10 @@ packages:
   avvio@9.3.0:
     resolution: {integrity: sha512-g2tQ7LE7oOSqDfwEm3M+ZCMTJc7KiZCdJ4UwyZJb5ckTKyYu50OYmvv0mCFXPuYXoM4zkSt8zM9XQ9KCvxA74A==}
 
+  base64-arraybuffer@1.0.2:
+    resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
+    engines: {node: '>= 0.6.0'}
+
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
     engines: {node: '>=18'}
@@ -798,6 +826,9 @@ packages:
   cron-parser@5.10.1:
     resolution: {integrity: sha512-pKRrRagItwk9rGIStcUyMxFX34x56zoX3KDf9HJ4ttwkXIK1qxK63EvXvEDmlxI9AdPJ+Y7TEKRftRlW5eSS7A==}
     engines: {node: '>=18'}
+
+  css-line-break@2.1.0:
+    resolution: {integrity: sha512-FHcKFCZcAha3LwfVBhCQbW2nCNbkZXn7KVUJcsT5/P8YmfsVja0FMPJr0B903j/E69HUphKiV9iQArX8SDYA4w==}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -870,6 +901,10 @@ packages:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+
+  html2canvas@1.4.1:
+    resolution: {integrity: sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA==}
+    engines: {node: '>=8.0.0'}
 
   ipaddr.js@2.5.0:
     resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
@@ -1181,6 +1216,9 @@ packages:
   temporal-spec@1.0.1:
     resolution: {integrity: sha512-wxVoanmDeavXie1vu2JaQ3WIc3JZnWAOYFBsJyATaVsXsycKYUflGsyBmrRSnoCpZJpwPyr38VpgSUlQ8CbFxg==}
 
+  text-segmentation@1.0.3:
+    resolution: {integrity: sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==}
+
   thread-stream@4.2.0:
     resolution: {integrity: sha512-e2zZ96wSChazBsbENf/Pcm/4swHt2cEKQ92rhUjkL9GCKiTDJIaTBenjE/m9DXi0QBmTMDkFDdOomUy20A1tDQ==}
     engines: {node: '>=20'}
@@ -1220,6 +1258,9 @@ packages:
 
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+
+  utrie@1.0.2:
+    resolution: {integrity: sha512-1MLa5ouZiOmQzUbjbu9VmjLzn1QLXBhwpUa7kdLUQK+KQ5KA9I1vk5U4YHe/X2Ch7PYnJfWuWT+VbuxbGwljhw==}
 
   vite@8.3.0:
     resolution: {integrity: sha512-lhZBVvEHefgE+HQZC9O7EBJgCU/nVzFNl7vkS4RE0APtWLP02/8QVIkQtzBxPquh7lq5/78NHipTj7ODQ6XuyQ==}
@@ -1616,6 +1657,8 @@ snapshots:
       '@fastify/error': 4.2.0
       fastq: 1.20.3
 
+  base64-arraybuffer@1.0.2: {}
+
   chai@6.2.2: {}
 
   cookie@1.1.1: {}
@@ -1623,6 +1666,10 @@ snapshots:
   cron-parser@5.10.1:
     dependencies:
       luxon: 3.7.2
+
+  css-line-break@2.1.0:
+    dependencies:
+      utrie: 1.0.2
 
   csstype@3.2.3: {}
 
@@ -1724,6 +1771,11 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  html2canvas@1.4.1:
+    dependencies:
+      css-line-break: 2.1.0
+      text-segmentation: 1.0.3
 
   ipaddr.js@2.5.0: {}
 
@@ -1994,6 +2046,10 @@ snapshots:
 
   temporal-spec@1.0.1: {}
 
+  text-segmentation@1.0.3:
+    dependencies:
+      utrie: 1.0.2
+
   thread-stream@4.2.0:
     dependencies:
       real-require: 1.0.0
@@ -2045,6 +2101,10 @@ snapshots:
   uc.micro@2.1.0: {}
 
   undici-types@7.16.0: {}
+
+  utrie@1.0.2:
+    dependencies:
+      base64-arraybuffer: 1.0.2
 
   vite@8.3.0(@types/node@24.10.1)(esbuild@0.28.2)(tsx@4.23.13):
     dependencies:

@@ -97,3 +97,9 @@ pnpm test:journey
 后几项使用本地合成业务环境。原有恢复测试会暂停并恢复本项目 Server/Worker，不要对正式实例直接运行。journey 创建隔离的临时 Compose 项目完成全新安装旅程，使用独立端口和数据卷，结束后只清理自己创建的资源。
 
 `pnpm release:check` 生成 `.local/release`：SDK ES module、OpenAPI JSON、MIT 许可证和校验清单。发布者可将它们放入自托管静态资源或 GitHub Release；当前没有声称公共 npm 包或预构建镜像已经发布。
+
+## 运行排查与巡检数据
+
+0.7 新增的页面上下文、排查报告、任务、调度和异常状态在 Core PostgreSQL 内，随数据库快照备份；`observability.env` 随秘密配置备份，恢复演练也检查捕获和报告的 RLS。Loki / Prometheus 数据卷不包含在 Core 备份中，应按各组件方案另行备份。内部经验 Markdown 可从报告重新生成。
+
+`pnpm observability:demo && pnpm test:observability` 验证真实监控组件的工单、告警、恢复流程；仅限合成演示环境。接入自有服务器/日志见[监控指南](observability.md)。

@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import { registerOperations } from './operations.js';
+import { registerObservations } from './observations.js';
 import { atomicJson } from '../../../scripts/lib/atomic.js';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
@@ -106,6 +107,7 @@ export async function buildSetupApp(options: SetupOptions) {
       .send({ error: { code: error instanceof KnowledgeError ? error.code : 'SETUP_REQUEST_FAILED' } }),
   );
   registerOperations(app, directory, mutate);
+  registerObservations(app, directory, mutate);
   app.get('/owner/state', async () => {
     const config = await settings(),
       env = await environment();

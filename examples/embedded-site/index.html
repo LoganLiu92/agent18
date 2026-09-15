@@ -313,6 +313,18 @@
         margin-top: 22px;
         max-width: 800px;
       }
+      #simulate-error,
+      #recover-demo {
+        font: inherit;
+        font-size: 11px;
+        padding: 9px 13px;
+        border: 1px solid #d5e1d8;
+        border-radius: 7px;
+        background: white;
+        color: #315948;
+        cursor: pointer;
+        margin-right: 8px;
+      }
       .mode-links {
         display: flex;
         gap: 18px;
@@ -507,6 +519,10 @@
         <p id="preferences-summary" role="status"></p>
         <p id="completed" role="status"></p>
         <p id="notice" role="alert"></p>
+        <div class="mode-links">
+          <button id="simulate-error">模拟业务异常</button><button id="recover-demo">恢复演示服务</button>
+          <small data-agent18-private>隐私标记示例 · PRIVATE-CAPTURE-CANARY · 此区域不上报</small>
+        </div>
         <p class="demo-note">
           这是独立运行的示例 SaaS，订单为合成数据，按当前用户从 SQLite
           实际读取。助手查询相同接口，办理只修改当前用户的通知偏好，不更改订单、不发送邮件。切换演示用户可验证同租户和跨租户隔离。
@@ -539,6 +555,7 @@
       const options = {
         baseUrl: 'http://localhost:4318',
         projectKey: 'invoice-demo',
+        capture: { enabled: true, pageText: true, screenshot: true },
         getToken: async () => {
           const response = await fetch('/token', {
             method: 'POST',
@@ -554,7 +571,40 @@
         pageUrl: location.href,
         entityType: 'order',
         entityId: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
+        entity: {
+          type: 'order',
+          id: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
+        },
       });
+      document.querySelector('#simulate-error').onclick = async () => {
+        const response = await fetch('/simulate-error', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ profile }),
+        });
+        const error = await response.json();
+        client.setContext({
+          pageUrl: location.href,
+          entity: {
+            type: 'order',
+            id: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
+          },
+          traceId: error.traceId,
+        });
+        document.querySelector('#notice').textContent =
+          '模拟订单保存失败 · ' +
+          error.traceId +
+          '。请在助手中联系支持，页面上下文会随工单提交。' +
+          (error.logged ? '关联日志已写入 Loki。' : '可先运行 pnpm observability:demo 连接日志与巡检。');
+        window.dispatchEvent(
+          new ErrorEvent('error', { message: 'ORDER_SAVE_TIMEOUT traceId=' + error.traceId }),
+        );
+      };
+      document.querySelector('#recover-demo').onclick = async () => {
+        await fetch('/recover-demo', { method: 'POST' });
+        document.querySelector('#notice').textContent =
+          '演示服务已恢复。HTTP 与指标检查会恢复；错误日志窗口到期后，日志异常才会解除。';
+      };
       const pages = new Set();
       const openPage = () => {
         try {

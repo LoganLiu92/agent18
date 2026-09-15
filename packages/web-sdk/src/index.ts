@@ -1,4 +1,5 @@
 import type { ClientContext } from '@agent18/contracts';
+import { captureCollector, type CaptureOptions } from './capture.js';
 import type {
   ReportCase,
   SupportCase,
@@ -16,6 +17,7 @@ import type {
   AssistantRoute,
 } from '@agent18/contracts';
 export type {
+  PageCapture,
   ReportCase,
   SupportCase,
   CaseDetail,
@@ -31,6 +33,7 @@ export type {
   AssistantTurn,
   AssistantRoute,
 } from '@agent18/contracts';
+export type { CaptureOptions } from './capture.js';
 export class Agent18Error extends Error {
   constructor(
     public readonly code: string,
@@ -49,11 +52,34 @@ export type Agent18Options = {
   projectKey: string;
   getToken: () => Promise<string>;
   fetch?: typeof fetch;
+  capture?: CaptureOptions;
 };
 export class Agent18 {
   private context: ReportCase['context'] = {};
   private readonly abort = new AbortController();
-  constructor(private readonly options: Agent18Options) {}
+  private readonly collector;
+  constructor(private readonly options: Agent18Options) {
+    this.collector = captureCollector(options.capture);
+  }
+  async capturePage() {
+    this.abort.signal.throwIfAborted();
+    const capture = this.collector.snapshot();
+    if (capture && this.options.capture?.screenshot) {
+      try {
+        const url = this.options.baseUrl.replace(/\/$/, '') + '/sdk/capture.js';
+        const module = (await import(/* @vite-ignore */ url)) as {
+          captureViewport(): Promise<string | undefined>;
+        };
+        const screenshot = await module.captureViewport();
+        if (screenshot) capture.screenshot = screenshot;
+        else capture.notice += ' 截图过大，已省略。';
+      } catch {
+        capture.notice += ' 当前页面无法生成截图，其他上下文仍可提交。';
+      }
+    }
+    this.abort.signal.throwIfAborted();
+    return capture;
+  }
   setContext(input: Omit<ClientContext, 'pagePath'> & { pageUrl?: string }) {
     let pagePath: string | undefined;
     if (input.pageUrl) {
@@ -64,7 +90,7 @@ export class Agent18 {
         /* Unparseable URLs are omitted. */
       }
     }
-    // Never collect cookies, DOM, query strings, fragments, network payloads or full URLs.
+    // Business context accepts explicit hints only; page capture is collected separately on report preview.
     const extras: Record<string, unknown> = {};
     for (const key of [
       'entity',
@@ -189,7 +215,7 @@ export class Agent18 {
     return this.request<AnswerResult>('/api/knowledge/ask', 'POST', { query });
   }
   routeConversation(input: AssistantTurn) {
-    return this.request<AssistantRoute>('/api/assistant/route', 'POST', input);
+    return this.request<AssistantRoute>('/api/assistant/route', 'POST', { ...input, context: this.context });
   }
   listBusinessQueries() {
     return this.request<{ queries: BusinessQuery[] }>('/api/business/queries');
@@ -241,6 +267,7 @@ export class Agent18 {
   }
   destroy() {
     this.abort.abort();
+    this.collector.dispose();
     this.context = {};
   }
 }

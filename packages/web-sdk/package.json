@@ -1,11 +1,12 @@
 {
   "name": "@agent18/web-sdk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@agent18/contracts": "workspace:*"
+    "@agent18/contracts": "workspace:*",
+    "html2canvas": "1.4.1"
   },
   "license": "MIT"
 }

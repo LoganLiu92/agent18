@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { bridgeSchema, queriesSchema } from '@agent18/actions';
+import { operationsConfigSchema } from '@agent18/observability/config';
 
 export const localDirectory = resolve(process.env.AGENT18_LOCAL_DIR ?? '.local');
 export const configSchema = z.object({
@@ -19,6 +20,7 @@ export const configSchema = z.object({
         displayName: z.string().max(120).optional(),
         businessBridge: bridgeSchema.optional(),
         businessQueries: queriesSchema.optional(),
+        operations: operationsConfigSchema.optional(),
         knowledge: z.enum(['fixture', 'indexed']).default('fixture'),
         allowedOrigins: z.array(z.string().url()).default([]),
         organizationId: z.string().uuid(),

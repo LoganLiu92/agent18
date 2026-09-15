@@ -2,7 +2,7 @@
 
 agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已有文档、代码、模型和用户身份，让客户找答案、查业务、经确认办理业务，并让支持人员接着处理尚未解决的问题。
 
-当前交付为 **0.6.0 核心基础预览版**。知识、网站入口、业务接口和问题跟进已经形成可运行的闭环；部署者工作台、诊断、备份恢复和接口规范随项目一起交付。Context、Evidence、RunStep、Provider/Tool 注册与策略已经泛化；真实运行时调查与代码修复仍属于后续扩展。
+当前交付为 **0.7.0 全场景集成预览版**：知识与业务对话、页面问题上报、HTTP/Loki/Prometheus 自动排查、周期巡检、异常恢复与内部知识草稿。[整体运行机制](overview/agent18-0.7-operations.md)说明完整流程，[监控接入指南](guides/observability.md)提供真实组件演示和生产配置；自动代码修复仍未实现。
 
 将仓库交给一个已有项目接入时，从[接入任务书](../INTEGRATE.md)开始，最终填写[目标系统验收报告](reference/integration-acceptance.md)。
 
@@ -19,6 +19,7 @@ agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已
 | 维护线上运行 | [运维指南](guides/operations.md) | 诊断可执行，备份通过隔离恢复演练 |
 | 自建页面或接入客户端 | [API 与 SDK](reference/api.md) | 使用同一套身份、错误和幂等语义 |
 | 理解配置与技术边界 | [配置参考](reference/configuration.md)、[技术标准](reference/standards.md) | 清楚配置在哪生效、由谁授权、如何恢复 |
+| 接上日志与巡检 | [页面采集与监控](guides/observability.md) | 数据源、标签、权限、异常处理与恢复 |
 | 了解整体实现 | [0.6 核心抽象](overview/agent18-0.6-core.md)、[支持闭环综述](overview/agent18-0.5-overview.md) | 从用户请求追溯到接口、策略、存储和回执 |
 
 ## 最短体验路径

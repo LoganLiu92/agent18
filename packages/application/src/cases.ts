@@ -10,6 +10,8 @@ import { AppError } from '@agent18/domain';
 import { audit, caseView, scoped, scopeValues, requireTenant, type Database } from '@agent18/persistence';
 import type { ToolGateway } from './gateway.js';
 import { RunService } from './runs.js';
+import { enqueueObservation } from './observations.js';
+import type { OperationsConfig } from '@agent18/observability/config';
 // Server-owned workflow selection; customer context never chooses tools or broadens capabilities.
 export type CaseWorkflow = { toolId: string; input: (input: ReportCase) => unknown };
 const supportWorkflow: CaseWorkflow = {
@@ -23,6 +25,7 @@ export class CaseService {
     private readonly db: Database,
     private readonly gateway: ToolGateway,
     private readonly workflow: CaseWorkflow = supportWorkflow,
+    private readonly operationsFor?: (scope: Scope) => OperationsConfig | undefined,
   ) {
     this.runs = new RunService(db, gateway);
   }
@@ -43,6 +46,13 @@ export class CaseService {
         return { case: caseView(previous), replayed: true };
       }
       const { tool, binding, fingerprint } = await this.gateway.registry.resolve(this.workflow.toolId);
+      if (input.capture)
+        await client.query(
+          'INSERT INTO core.case_captures(case_id,organization_id,project_id,tenant_id,subject,payload) VALUES($1,$2,$3,$4,$5,$6)',
+          [caseId, ...scopeValues(scope), input.capture],
+        );
+      const operations = this.operationsFor?.(scope);
+      if (operations) await enqueueObservation(client, scope, operations, 'case', 'case:' + caseId, caseId);
       if (!binding || tool.effect !== 'READ' || tool.stage !== 'READ')
         throw new AppError('RUN_REQUIRES_READ_TOOL', 403);
       const parameters = binding.inputSchema.safeParse(this.workflow.input(input));
@@ -93,8 +103,27 @@ export class CaseService {
           [caseId],
         )
       ).rows;
+      const capture = (
+        await client.query('SELECT payload FROM core.case_captures WHERE case_id=$1', [caseId])
+      ).rows[0]?.payload;
+      const investigation = (
+        await client.query(
+          "SELECT j.state,j.updated_at,r.payload->>'summary' AS summary FROM control.observation_jobs j LEFT JOIN core.observation_reports r ON r.job_id=j.id WHERE j.case_id=$1 AND j.organization_id=$2 AND j.project_id=$3 AND j.tenant_id=$4 AND j.subject=$5 ORDER BY j.created_at DESC LIMIT 1",
+          [caseId, ...scopeValues(scope)],
+        )
+      ).rows[0];
       return {
         case: caseView(row),
+        ...(capture ? { capture } : {}),
+        ...(investigation
+          ? {
+              investigation: {
+                state: investigation.state,
+                summary: investigation.summary ?? '排查任务已登记，处理进展将在这里更新。',
+                updatedAt: investigation.updated_at.toISOString(),
+              },
+            }
+          : {}),
         runs,
         evidence: evidence.map((e) => evidenceSchema.parse(e.payload)),
         audit: records.map((r) => ({

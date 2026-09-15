@@ -90,7 +90,7 @@ await client.confirmAction(preview.id);
 await client.reconcileAction(preview.id);
 ```
 
-不要在模型规划结束后自动调用 `confirmAction`。前端切换登录用户或租户时销毁旧面板和 SDK 实例、清除旧页面状态，并用新身份重新创建。SDK 只接收显式传入的页面路径、通用实体、traceId/sessionId、环境与版本等有界上下文，不读取 Cookie、DOM 或网络响应；上下文不作为可信授权依据。
+不要在模型规划结束后自动调用 `confirmAction`。前端切换登录用户或租户时销毁旧面板和 SDK 实例、清除旧页面状态，并用新身份重新创建。SDK 接收页面路径、通用实体、traceId/sessionId、环境与版本等显式线索；另在问题上报预览时准备有界页面文字/错误及可选截图，不读取 Cookie 或网络正文。参见[页面采集](observability.md)；任何页面内容都不是可信授权依据。
 
 浮窗与内嵌面板使用一个消息流和输入框，持续引导知识问答、业务参数补充、预览确认、回执以及问题提交、进展和回复。独立支持页提供目录与工作区，也可用 SDK 自建界面。业务示例和注册方法见[业务操作指南](business-actions.md)。
 

@@ -86,6 +86,52 @@ it('saves model settings without returning secrets and preserves a masked existi
   expect(env.AGENT18_MODEL_API_KEY).toBe(model.apiKey);
   expect(env.AGENT18_MODEL_NAME).toBe('updated-model');
 });
+it('keeps observation credentials private and rejects unsafe environment encoding and customer access', async () => {
+  const payload = { name: 'AGENT18_OBS_TEST', value: 'synthetic-ReadOnly.token/+' };
+  expect(
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/owner/observations/credentials',
+        headers: { ...headers, authorization: 'Bearer customer' },
+        payload,
+      })
+    ).statusCode,
+  ).toBe(401);
+  const saved = await app.inject({
+    method: 'POST',
+    url: '/owner/observations/credentials',
+    headers,
+    payload,
+  });
+  expect(saved.statusCode).toBe(200);
+  expect(saved.body).not.toContain(payload.value);
+  expect(parseEnv(await readFile(resolve(directory, 'observability.env'), 'utf8'))[payload.name]).toBe(
+    payload.value,
+  );
+  expect((await stat(resolve(directory, 'observability.env'))).mode & 0o777).toBe(0o600);
+  for (const value of ['line\nbreak', 'value"quote', 'value$dollar'])
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/owner/observations/credentials',
+          headers,
+          payload: { ...payload, value },
+        })
+      ).statusCode,
+    ).toBe(400);
+  expect(
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/owner/observations/credentials',
+        headers,
+        payload: { name: 'PATH', value: 'override' },
+      })
+    ).statusCode,
+  ).toBe(400);
+});
 it('connection test uses the owner-supplied candidate without saving it or returning provider errors', async () => {
   const fetch = vi.fn(async () =>
     Response.json({ choices: [{ finish_reason: 'stop', message: { content: '{"connected":true}' } }] }),

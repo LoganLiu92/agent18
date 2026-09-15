@@ -1,6 +1,6 @@
 {
   "name": "@agent18/application",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
@@ -8,6 +8,7 @@
     "@agent18/contracts": "workspace:*",
     "@agent18/domain": "workspace:*",
     "@agent18/persistence": "workspace:*",
+    "@agent18/observability": "workspace:*",
     "@agent18/policy": "workspace:*",
     "@agent18/provider-contracts": "workspace:*",
     "pg-boss": "12.31.1"

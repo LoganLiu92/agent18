@@ -69,6 +69,7 @@ export function registerOperations(
             ...input.project,
             businessBridge: p.businessBridge,
             businessQueries: p.businessQueries,
+            operations: p.operations,
           },
         },
         directory,

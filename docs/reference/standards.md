@@ -8,7 +8,7 @@ agent18 的集成合同优先采用已有标准；扩展只覆盖自身支持工
 | --- | --- | --- |
 | 身份 | JWT、EdDSA / Ed25519、公开 JWK Set、Bearer Authorization | 静态签发者和公钥；现有 OIDC/SSO 由 SaaS 会话适配为短期 Support Token |
 | API 说明 | OpenAPI 3.1 客户接口；导入 3.0/3.1 受限 GET 子集 | 不自动接受任意认证、远程引用、复杂参数或写操作 |
-| 浏览器接入 | ES Module、Fetch、CORS、CSP、Shadow DOM、postMessage | 精确 Origin 与窗口绑定；不读取宿主 DOM、Cookie 或网络记录 |
+| 浏览器接入 | ES Module、Fetch、CORS、CSP、Shadow DOM、postMessage | 精确 Origin 与窗口绑定；页面报告有界采集可见文字/错误及可选截图；不读取 Cookie、表单值、网络正文 |
 | 参数与配置 | TypeScript + Zod，严格字段与运行预算 | 模型输出与业务回包均视为不可信输入 |
 | 授权策略 | OPA / Rego，默认拒绝，READ / PROPOSE / EXECUTE | 注册、当前身份、业务权限与最终执行分层验证 |
 | 数据持久化 | PostgreSQL 17、事务、外键、唯一键、FORCE RLS | 核心组织/项目/租户/用户范围；数据库管理员本身具有管理权 |
@@ -38,12 +38,12 @@ Case 创建、首个 Run、outbox 和审计同一事务提交。Worker 接收调
 
 ## 当前可交付范围
 
-| 层级 | 0.6 实现情况 |
+| 层级 | 0.7 实现情况 |
 | --- | --- |
 | L1 产品知识与客服 | 文档/代码索引、模型整理、审核发布、引用问答、客户问题与人工回复 |
 | L2 用户与页面上下文 | 短期身份、项目/租户/用户 scope、显式页面和业务对象上下文 |
 | L3 业务能力 | OpenAPI GET 导入、字段投影、用户身份查询、显式确认的单步办理 |
-| L4 运行调查 | 通用 Evidence/RunStep、注册中心与策略已落地，合成日志适配器通过完整执行测试；尚未连接 SaaS 日志、指标、Trace 或数据库调查工具 |
+| L4 运行调查 | 已连接 HTTP/Loki/Prometheus，持久排查与周期巡检、异常合并恢复；完整 Trace 与数据库调查尚未实现 |
 | L5 代码修复 | 尚未接入编码代理、沙箱、修复分支或 PR；不会在部署机器上执行客户仓库 |
 
 当前检索是可解释的词项匹配与可替换 provider 边界，不是成熟向量数据库的全面替代。PDF/OCR、外部知识服务、MCP、GraphQL、W3C Trace Context/OTel、远程 JWKS 轮换、企业管理 SSO、跨实例全局限流、自动多步任务与 HA 均未宣称完成。继续扩展应使用适配器接入成熟组件，保持当前身份和审批边界。

@@ -4,6 +4,7 @@ import type { Config } from '../../../scripts/config.js';
 import type { DoctorReport } from '../../../scripts/lib/doctor.js';
 import type { SupportCase, CaseMessage } from '@agent18/contracts';
 import { ProductMark } from './setup.js';
+import { ObservationCenter, CaptureView } from './observations.js';
 
 type Project = Config['projects'][number];
 type InboxCase = SupportCase & { tenantId: string; subject: string };
@@ -19,7 +20,7 @@ export function OperationsCenter({
   coreUrl: string;
   onWizard: () => void;
 }) {
-  const [page, setPage] = useState<'overview' | 'connect' | 'inbox' | 'guide'>('overview'),
+  const [page, setPage] = useState<'overview' | 'connect' | 'inbox' | 'guide' | 'observe'>('overview'),
     [selected, setSelected] = useState(projects[0]?.key ?? ''),
     [report, setReport] = useState<DoctorReport>(),
     [error, setError] = useState(''),
@@ -69,6 +70,7 @@ export function OperationsCenter({
               ['overview', '◈', '运行总览'],
               ['connect', '↔', '系统与能力'],
               ['inbox', '◎', '客户问题'],
+              ['observe', '◉', '巡检与排查'],
               ['guide', '▤', '接入与运维'],
             ] as const
           ).map(([id, icon, label]) => (
@@ -106,7 +108,9 @@ export function OperationsCenter({
                 ? '系统与能力'
                 : page === 'inbox'
                   ? '客户问题'
-                  : '接入与运维'}
+                  : page === 'observe'
+                    ? '巡检与排查'
+                    : '接入与运维'}
           </span>
           <select aria-label="当前项目" value={selected} onChange={(e) => setSelected(e.target.value)}>
             {projects.map((p) => (
@@ -215,6 +219,7 @@ export function OperationsCenter({
           />
         )}
         {page === 'inbox' && <OwnerInbox key={selected} projectKey={selected} request={request} />}
+        {page === 'observe' && <ObservationCenter key={selected} projectKey={selected} request={request} />}
         {page === 'guide' && (
           <>
             <div className="ops-heading">
@@ -721,6 +726,7 @@ function OwnerInbox({ projectKey, request }: { projectKey: string; request: Owne
               </span>
               <h2>{selected.title}</h2>
               <p className="ops-description">{selected.description}</p>
+              <CaptureView key={selected.id} projectKey={projectKey} caseId={selected.id} request={request} />
               <div className="case-thread">
                 {messages.map((m) => (
                   <article key={m.id} className={'case-message ' + m.author}>

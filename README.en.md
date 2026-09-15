@@ -4,7 +4,7 @@ An open-source assistant for existing SaaS products. Connect code and documentat
 
 **Integrating an existing product? Start with the [integration task brief](INTEGRATE.md)** (Chinese). It maps responsibilities across repositories, defines staged outcomes, and includes a task prompt and [acceptance report template](docs/reference/integration-acceptance.md) for your target system.
 
-**0.6.0 integration preview.** This release connects the adoption and operation workflow: setup wizard, local operator workspace, three customer entry modes, versioned knowledge, OpenAPI reads, delegated actions, support replies, diagnostics and backup/restore. Runtime investigation and autonomous code repair are not implemented.
+**0.7.0 integration preview.** Setup, versioned knowledge, current-user API reads and confirmed business actions now connect to page-context reports, real Loki / Prometheus investigation, durable inspections, incident deduplication/recovery, and internal knowledge drafts. Autonomous code repair is not implemented. See the [runtime overview](docs/overview/agent18-0.7-operations.md) and [observability guide](docs/guides/observability.md).
 
 ## Run locally
 
@@ -50,7 +50,7 @@ const assistant = mountFloatingAssistant(client, { title: 'Product assistant' })
 // On logout/user change: assistant.destroy(); client.destroy();
 ```
 
-Also available: `mountAssistant(container, client)` and `openSupportPage(options)`. The browser SDK is framework independent; optional UI uses Shadow DOM and never inspects host cookies or page contents. Current built-in UI and most detailed guides are Chinese.
+Also available: `mountAssistant(container, client)` and `openSupportPage(options)`. The browser SDK is framework independent; optional UI uses Shadow DOM and collects bounded report context without cookies or form values; optional screenshots require configuration and a report preview. Current built-in UI and most detailed guides are Chinese.
 
 ## Operate and contribute
 
@@ -72,4 +72,8 @@ See [the handbook](docs/README.md), [architecture and implementation overview](d
 
 ## Core Foundation in 0.6
 
-Context, Evidence, RunStep, Provider/Tool registries and three-state policy decisions now support domain-neutral read workflows. L1 knowledge, L2 identity and L3 confirmed business actions remain implemented; real runtime connectors, RCA and code fixes remain roadmap work. See the [0.6 review and migration guide](docs/overview/agent18-0.6-core.md) and [registry contracts](docs/reference/providers.md). Public npm SDK packages and official images are not published yet.
+Context, Evidence, RunStep, Provider/Tool registries and three-state policy decisions now support domain-neutral read workflows. L1 knowledge, L2 identity and L3 confirmed business actions remain implemented; 0.7 adds HTTP / Loki / Prometheus evidence and inspection reports; full trace correlation, proven RCA and code fixes remain roadmap work. See the [0.6 review and migration guide](docs/overview/agent18-0.6-core.md) and [registry contracts](docs/reference/providers.md). Public npm SDK packages and official images are not published yet.
+
+## Real monitoring demo
+
+After `pnpm demo:start`, run `pnpm observability:demo` and `pnpm test:observability`. Optional Compose profiles run pinned Loki and Prometheus images with synthetic business errors and recovery. Production deployments configure existing monitoring endpoints, scopes and read-only credentials in the Owner workspace. Page capture defaults to bounded text/error context; screenshots are off by default. Mark sensitive regions with `data-agent18-private` and review the capture before submission.

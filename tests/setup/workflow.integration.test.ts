@@ -101,7 +101,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       expect(metadata.body).not.toContain('jwks');
       expect((await core.app.inject({ url: '/public/installation' })).json()).toMatchObject({
         setupCompleted: false,
-        version: '0.6.0',
+        version: '0.7.0',
       });
       expect((await core.app.inject({ url: '/public/projects/absent' })).statusCode).toBe(404);
       for (const url of ['/', '/console', '/support'])
@@ -224,6 +224,66 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       expect(
         JSON.parse(await readFile(resolve(directory, 'server.docker.json'), 'utf8')).setupCompleted,
       ).toBe(true);
+    });
+    it('saves project-bound observations, rejects scope collisions and deduplicates Owner requests', async () => {
+      const base = `/owner/projects/${key}/observations`;
+      const operations = {
+        enabled: true,
+        intervalSeconds: 300,
+        checks: [
+          {
+            id: 'owner-health',
+            kind: 'http',
+            title: 'Owner configured service',
+            url: 'https://health.example/status',
+          },
+        ],
+      };
+      expect(
+        (await app.inject({ method: 'POST', url: base + '/config', headers, payload: operations }))
+          .statusCode,
+      ).toBe(200);
+      const state = await app.inject({ url: base, headers });
+      expect(state.statusCode).toBe(200);
+      expect(state.json().config.checks[0].id).toBe('owner-health');
+      expect(state.body).not.toContain('databaseUrl');
+      for (const file of ['server.json', 'server.docker.json'])
+        expect(
+          JSON.parse(await readFile(resolve(directory, file), 'utf8')).projects.find(
+            (p: { key: string }) => p.key === key,
+          ).operations.enabled,
+        ).toBe(true);
+      const bad = {
+        ...operations,
+        checks: [
+          {
+            id: 'bad-scope',
+            kind: 'loki',
+            title: 'Invalid',
+            url: 'https://logs.example',
+            labels: { tenant_id: 'fixed-customer' },
+          },
+        ],
+      };
+      expect(
+        (await app.inject({ method: 'POST', url: base + '/config', headers, payload: bad })).statusCode,
+      ).toBe(400);
+      const idempotency = crypto.randomUUID(),
+        request = {
+          method: 'POST' as const,
+          url: base + '/run',
+          headers: { ...headers, 'idempotency-key': idempotency },
+          payload: {},
+        };
+      const first = await app.inject(request),
+        second = await app.inject(request);
+      expect(first.statusCode).toBe(200);
+      expect(second.json().jobId).toBe(first.json().jobId);
+      const invisible = await app.inject({
+        url: '/owner/projects/invoice-demo/observations/' + first.json().jobId,
+        headers,
+      });
+      expect(invisible.statusCode).not.toBe(200);
     });
   },
 );

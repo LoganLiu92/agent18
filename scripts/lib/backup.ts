@@ -108,7 +108,7 @@ export async function createBackup(directory: string, destination?: string) {
       output: resolve(target, 'database.dump'),
     });
     const allowed =
-      /^(server(?:\.docker)?\.json|worker(?:\.docker)?\.json|migration(?:\.docker)?\.json|indexer\.json|knowledge(?:\.[a-z][a-z0-9-]*)?\.json|model\.env|identity\.json|postgres-password)$/;
+      /^(server(?:\.docker)?\.json|worker(?:\.docker)?\.json|migration(?:\.docker)?\.json|indexer\.json|knowledge(?:\.[a-z][a-z0-9-]*)?\.json|model\.env|observability\.env|identity\.json|postgres-password)$/;
     for (const name of await readdir(directory))
       if (allowed.test(name)) {
         await copyFile(resolve(directory, name), resolve(target, name));
@@ -184,7 +184,7 @@ export async function restoreBackup(directory: string, source: string, verifyOnl
       input: resolve(source, 'database.dump'),
     });
     const query =
-      "SELECT json_build_object('cases',(SELECT count(*) FROM core.cases),'messages',(SELECT count(*) FROM core.case_messages),'articles',(SELECT count(*) FROM knowledge.articles),'proposals',(SELECT count(*) FROM core.action_proposals),'migrations',(SELECT count(*) FROM public.agent18_migrations))";
+      "SELECT json_build_object('cases',(SELECT count(*) FROM core.cases),'messages',(SELECT count(*) FROM core.case_messages),'articles',(SELECT count(*) FROM knowledge.articles),'proposals',(SELECT count(*) FROM core.action_proposals),'captures',(SELECT count(*) FROM core.case_captures),'observationReports',(SELECT count(*) FROM core.observation_reports),'migrations',(SELECT count(*) FROM public.agent18_migrations))";
     const counts = JSON.parse(
       (
         await composeRun(directory, [
@@ -211,9 +211,9 @@ export async function restoreBackup(directory: string, source: string, verifyOnl
       '-v',
       'ON_ERROR_STOP=1',
       '-c',
-      'SET ROLE agent18_app; SELECT count(*) FROM core.cases; SELECT count(*) FROM core.case_messages; SELECT count(*) FROM core.action_proposals;',
+      'SET ROLE agent18_app; SELECT count(*) FROM core.cases; SELECT count(*) FROM core.case_messages; SELECT count(*) FROM core.action_proposals; SELECT count(*) FROM core.case_captures; SELECT count(*) FROM core.observation_reports;',
     ]);
-    if (!/0\s+0\s+0\s*$/.test(isolated)) throw new Error('RESTORE_RLS_CHECK_FAILED');
+    if (!/0\s+0\s+0\s+0\s+0\s*$/.test(isolated)) throw new Error('RESTORE_RLS_CHECK_FAILED');
     keep = !verifyOnly;
     if (keep) {
       await mkdir(resolve(directory, 'restores'), { recursive: true, mode: 0o700 });

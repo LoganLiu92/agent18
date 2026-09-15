@@ -7,3 +7,4 @@ export { caseMessages, addCaseMessage, changeCaseStatus, messageInput } from './
 
 export { ToolRegistry } from './registry.js';
 export { knowledgeBinding } from './knowledge-binding.js';
+export * from './observations.js';

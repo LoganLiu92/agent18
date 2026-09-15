@@ -13,7 +13,7 @@
 
 Compose 的 Node、PostgreSQL 17 和 OPA 1.20.2 已固定镜像 digest，见 `deploy/compose/compose.yaml` 与 Dockerfile。固定版本用于复现，不代表已完成发布安全审核。
 
-Core 按架构建议采用 Apache-2.0；`packages/web-sdk` 采用 MIT。上述依赖保留各自许可证，第三方许可证文件保留于包/镜像中。外部 RAGFlow、OpenObserve、Loki、OpenHands、MCP 尚未打包或运行，不应把[选型评估](../research/component-evaluation.md)误读为已分发组件清单。
+Core 按架构建议采用 Apache-2.0；`packages/web-sdk` 采用 MIT。上述依赖保留各自许可证，第三方许可证文件保留于包/镜像中。0.7 可选 Compose profile 使用 Loki 3.7.7（AGPL-3.0）与 Prometheus 3.14.0（Apache-2.0），由官方独立镜像运行，固定 digest；截图模块使用 html2canvas 1.4.1（MIT），分发同时附带许可证。外部 RAGFlow、OpenObserve、OpenHands、MCP 尚未打包或运行，不应把[选型评估](../research/component-evaluation.md)误读为已分发组件清单。
 
 本地安装遇到 pnpm 11 的构建脚本许可配置变更，使用 `allowBuilds.esbuild: true` 明确允许 esbuild 安装脚本。两个当日发布的固定依赖在 `minimumReleaseAgeExclude` 中逐项列出；没有关闭全部依赖的发布年龄检查。
 
