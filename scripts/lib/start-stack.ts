@@ -21,8 +21,9 @@ export async function startStack(
   if (build) await run(['build', 'server']);
   await run(['up', '-d', '--wait', 'postgres']);
   await run(['up', '-d', '--no-deps', '--force-recreate', 'opa']);
-  // A fresh one-off container reads the current migration config, including restored DB targets.
-  await run(['run', '--rm', '--no-deps', 'migrate']);
+  // Keep the completed service so later `compose start` can verify server's migration dependency.
+  // Recreate it on each deployment to read the current file mount, including restored DB targets.
+  await run(['up', '--no-deps', '--force-recreate', '--exit-code-from', 'migrate', 'migrate']);
   await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'server']);
   await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'worker']);
   if (demo) await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'identity-demo']);

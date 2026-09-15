@@ -67,6 +67,9 @@ try {
   await startStack(compose, { build: false });
   assert.equal((await execute('docker', [...compose, 'ps', '-q', 'identity-demo'])).stdout.trim(), '');
   pass('Clean configuration and deployment startup without the demo identity service');
+  await execute('docker', [...compose, 'stop', 'worker']);
+  await execute('docker', [...compose, 'start', 'worker']);
+  pass('Worker stop/start resolves the completed migration dependency on a fresh deployment');
   const postgresId = (await execute('docker', [...compose, 'ps', '-q', 'postgres'])).stdout.trim();
   // The independent synthetic SaaS is only needed for the business acceptance below.
   await execute('docker', [...compose, 'up', '-d', '--no-deps', '--wait', 'identity-demo'], {
