@@ -323,3 +323,4 @@ export class ActionService {
 }
 
 export { queriesSchema, querySchema, importOpenApi, QueryService, type QueryConfig } from './queries.js';
+export { routeConversation } from './conversation.js';

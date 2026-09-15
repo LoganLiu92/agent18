@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { z, ZodError } from 'zod';
-import { reportCaseSchema, searchSchema, id } from '@agent18/contracts';
+import { reportCaseSchema, searchSchema, assistantTurnSchema, id } from '@agent18/contracts';
 import { AppError, type CustomerPrincipal } from '@agent18/domain';
 import { Pool, scoped, requireTenant, audit } from '@agent18/persistence';
 import { OpaPolicy } from '@agent18/policy';
@@ -17,7 +17,7 @@ import {
   answerQuestion,
   KnowledgeError,
 } from '@agent18/knowledge';
-import { ActionService, QueryService } from '@agent18/actions';
+import { ActionService, QueryService, routeConversation } from '@agent18/actions';
 import { FixtureKnowledgeProvider } from '@agent18/knowledge-basic';
 import {
   ToolGateway,
@@ -298,6 +298,20 @@ export async function buildApp(config: Config, options: { dispatch?: boolean } =
     });
   });
   app.get('/api/business/queries', async (request) => ({ queries: queries.list(principal(request)) }));
+  app.post('/api/assistant/route', async (request) => {
+    const p = principal(request),
+      input = assistantTurnSchema.parse(request.body);
+    return bounded(p, async () => {
+      await gateway.authorize(p, request.id);
+      await audit(db, p, {
+        requestId: request.id,
+        action: 'assistant.route',
+        decision: 'ALLOW',
+        reason: 'GUIDANCE_ONLY',
+      });
+      return routeConversation(input, { queries: queries.list(p), actions: actions.list(p) }, model);
+    });
+  });
   app.post('/api/business/query', async (request) => {
     const input = z
       .object({ queryId: z.string().max(80), arguments: z.record(z.string(), z.unknown()) })

@@ -103,6 +103,41 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('complete scoped connec
     expect(r.body).not.toContain('internal-only');
     expect(r.json().requestId).toBeTruthy();
   });
+  it('routes scoped conversation turns without executing business calls or creating proposals', async () => {
+    const before = (await admin.query('SELECT count(*)::int AS n FROM core.action_proposals')).rows[0].n;
+    const r = await server.app.inject({
+      method: 'POST',
+      url: '/api/assistant/route',
+      headers: h(),
+      payload: { message: '查询订单详情' },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toEqual({ kind: 'query', id: 'orders.get', arguments: {} });
+    const followup = await server.app.inject({
+      method: 'POST',
+      url: '/api/assistant/route',
+      headers: h(),
+      payload: {
+        message: 'ORD-1001',
+        pending: { kind: 'query', id: 'orders.get', arguments: {}, field: 'orderId' },
+      },
+    });
+    expect(followup.json()).toMatchObject({ kind: 'query', arguments: { orderId: 'ORD-1001' } });
+    const denied = await server.app.inject({
+      method: 'POST',
+      url: '/api/assistant/route',
+      headers: { ...h(), authorization: emptyRoles },
+      payload: {
+        message: 'ORD-1001',
+        pending: { kind: 'query', id: 'orders.get', arguments: {}, field: 'orderId' },
+      },
+    });
+    expect(denied.json().kind).toBe('knowledge');
+    expect((await admin.query('SELECT count(*)::int AS n FROM core.action_proposals')).rows[0].n).toBe(
+      before,
+    );
+    expect(r.body).not.toContain('Acme');
+  });
   it('enforces tenant and object ownership again in the independent SaaS API', async () => {
     for (const authorization of [bob, nina]) {
       const r = await server.app.inject({

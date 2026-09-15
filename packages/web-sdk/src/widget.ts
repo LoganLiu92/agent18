@@ -9,7 +9,7 @@ export type AssistantOptions = {
   onActionComplete?: (proposal: ActionProposal) => void;
 };
 const styles = `
-:host{all:initial;font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#203d38;color-scheme:light;display:block}*{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer;color:inherit}button:disabled{opacity:.5;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #177e69;outline-offset:3px}[hidden]{display:none!important}.assistant{background:#fff;border:1px solid #e2e9e5;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;min-height:530px;height:100%;box-shadow:0 14px 50px #19372d0d}header{display:flex;align-items:center;gap:11px;padding:20px 22px;background:#173e34;color:#fff}header strong{display:block;font-size:16px;letter-spacing:.2px}header small{color:#b7d6c9;font-size:11px;display:block;margin-top:2px}.mark{height:37px;width:37px;display:grid;place-items:center;border:1px solid #527669;border-radius:12px;font-weight:700;letter-spacing:-1px;background:#2f5548}.head-actions{margin-left:auto;display:flex;gap:6px}.icon{background:transparent;border:0;padding:6px;color:inherit;font-size:21px;line-height:1}.tabs{display:flex;gap:5px;padding:10px 17px;border-bottom:1px solid #edf0ed;background:#fff}.tab{flex:1;background:none;border:0;border-radius:9px;padding:9px 5px;color:#7a8782;font-weight:550;font-size:13px}.tab[aria-selected=true]{background:#eaf4ef;color:#1c6a50}.body{padding:22px;overflow:auto;flex:1;min-height:0;background:linear-gradient(#fbfcfa,#fff 220px)}.intro{margin:0 0 20px}.eyebrow{color:#819188;font-size:10px;letter-spacing:1.5px}.intro h2{font-size:21px;line-height:1.4;margin:6px 0 8px;font-weight:650;letter-spacing:-.5px}.intro p{font-size:12px;color:#7f8e86;margin:0}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0}.chip{background:#fff;border:1px solid #dee8e1;padding:6px 10px;border-radius:7px;font-size:12px;color:#64776d}form{display:grid;gap:13px}label{display:grid;gap:6px;font-size:12px;font-weight:550;color:#52685d}input,select,textarea{width:100%;min-width:0;border:1px solid #dce5dd;border-radius:9px;background:white;color:#203d38;padding:10px 11px;resize:vertical}input::placeholder,textarea::placeholder{color:#9aa89f}textarea{min-height:74px}button.primary{background:#22694e;color:#fff;border:1px solid #22694e;border-radius:9px;padding:10px 15px;font-weight:550}.secondary{background:#fff;border:1px solid #dce5dd;border-radius:9px;padding:9px 13px}.hint{font-size:11px;color:#8b978e;line-height:1.7;margin:12px 0 0}.response{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.8;border:1px solid #e3eae2;border-radius:12px;padding:16px;background:#fff;margin:18px 0 0}.response:empty{display:none}.response h3{font-size:14px;margin:0 0 9px}.response p{margin:6px 0 12px}.response button{margin:12px 6px 0 0}.response small{display:block;color:#89968d;font-size:10px}.response details{border-top:1px solid #edf0ed;margin-top:14px;padding-top:10px;font-size:12px}.response summary{cursor:pointer;color:#50755d}.status{font-size:11px;border-radius:5px;padding:4px 8px;background:#edf5ef;display:inline-block}.error{color:#a94130}.arguments{background:#f6f8f5;padding:12px;border-radius:7px;margin:12px 0}.arguments div{display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0}.arguments b{font-weight:550;text-align:right}footer{padding:11px;text-align:center;font-size:10px;color:#9aa69e;border-top:1px solid #f0f3ef;background:#fff;letter-spacing:.4px}.plan-form{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #e4ebe4}.launcher{width:56px;height:56px;border-radius:19px;background:#22694e;color:#fff;border:1px solid #ffffff30;box-shadow:0 5px 25px #164e3540;display:flex;align-items:center;justify-content:center;font-size:27px}.floating{width:min(400px,calc(100% - 32px));pointer-events:none;position:fixed;bottom:24px;right:24px;z-index:2147483000;display:flex;align-items:flex-end;flex-direction:column;gap:14px}.floating>*{pointer-events:auto}.floating.left{right:auto;left:24px;align-items:flex-start}.panel{width:100%;height:min(650px,calc(100dvh - 108px));box-shadow:0 22px 80px #172d3429;border-radius:20px;outline:0}.panel .assistant{min-height:0}.panel[hidden]{display:none}@media(max-width:480px){.floating{bottom:16px;right:16px}.floating.left{left:16px}.panel{height:min(640px,calc(100dvh - 104px))}.body{padding:18px}header{padding:16px 18px}}
+:host{all:initial;font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#203d38;color-scheme:light;display:block}*{box-sizing:border-box}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #177e69;outline-offset:3px}[hidden]{display:none!important}.assistant{background:#fff;border:1px solid #dfe8e2;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;height:650px;max-height:100%;box-shadow:0 14px 50px #19372d0d}header{display:flex;align-items:center;gap:11px;padding:18px 20px;color:#fff;background:#173e34;flex-shrink:0}header strong{display:block;font-size:15px}header small{color:#b7d6c9;font-size:10px;display:block;margin-top:3px}.mark{height:36px;width:36px;display:grid;place-items:center;border:1px solid #527669;border-radius:12px;font-weight:700;letter-spacing:-1px;background:#2f5548}.head-actions{margin-left:auto;display:flex;gap:5px}.icon{background:transparent;border:0;padding:5px;color:inherit;font-size:21px;line-height:1}.chat-feed{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 17px;background:#f7f9f6;scrollbar-width:thin}.chat-message{display:flex;gap:8px;align-items:flex-start;margin:0 0 23px}.message-mark{flex:0 0 25px;height:25px;border-radius:8px;color:#36735b;background:#e4eee5;display:grid;place-items:center;font-size:15px;margin-top:3px}.bubble{min-width:0;max-width:calc(100% - 33px);overflow-wrap:anywhere}.bubble>p{white-space:pre-wrap;margin:0 0 10px;font-size:13px;line-height:1.85}.from-user{justify-content:flex-end;margin:6px 0 23px}.from-user .bubble{background:#e2eee4;border:1px solid #d7e6db;border-radius:14px 14px 3px 14px;padding:9px 13px}.from-user .bubble>p{margin:0}.chat-choices{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0 0}.chip{background:white;border:1px solid #dce6dd;border-radius:9px;padding:7px 10px;font-size:11px;text-align:left;line-height:1.6}.chip:hover{background:#eef5ed;border-color:#afc5b3}.bubble>.chip,.bubble>.primary{margin:9px 7px 0 0}.primary{background:#22694e;color:#fff;border:1px solid #22694e;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:550}.data-card{border:1px solid #e0e8df;background:#fff;border-radius:10px;padding:11px 12px;margin:10px 0}.data-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:4px 0}.data-row span{color:#7b8c81}.data-row b{text-align:right;font-weight:550;overflow-wrap:anywhere}.data-card p{white-space:pre-wrap;margin:6px 0;font-size:12px}.bubble small{display:block;font-size:10px;line-height:1.7;color:#85958a;margin-top:8px}.bubble details{margin:10px 0;border:1px solid #e0e8df;background:white;border-radius:9px;padding:10px 12px;font-size:11px}.bubble summary{cursor:pointer;line-height:1.7;color:#55755e}.bubble details p{white-space:pre-wrap;font-size:12px;line-height:1.8}.status{font-size:11px;background:#e4efe4;color:#447350;border-radius:5px;padding:3px 7px;display:inline-block}.typing{font-size:11px;color:#789181;padding:0 0 12px 33px;letter-spacing:1px}.composer{display:flex;align-items:flex-end;gap:10px;border-top:1px solid #e6ebe4;background:#fff;margin:0;padding:14px 17px 5px;flex-shrink:0}.composer textarea{border:0;box-shadow:none;outline:none!important;resize:none;width:100%;min-width:0;line-height:1.8;max-height:120px;padding:4px 0;color:#203d38;font-size:13px;background:transparent}.composer textarea::placeholder{color:#94a296}.send{background:#22694e;color:white;border:0;border-radius:11px;width:37px;height:37px;flex-shrink:0;font-size:23px;line-height:1;display:grid;place-items:center;margin-bottom:4px}.bubble form{display:grid;gap:10px;margin:12px 0}.bubble label{display:grid;gap:6px;font-size:11px;color:#687c6e}.bubble input,.bubble textarea{width:100%;min-width:0;border:1px solid #dce5dd;border-radius:8px;background:white;padding:9px 10px;font-size:12px;resize:vertical;color:#203d38}footer{padding:5px 12px 11px;text-align:center;font-size:9px;color:#9aa69e;background:#fff;letter-spacing:.3px;flex-shrink:0}.launcher{width:56px;height:56px;border-radius:19px;background:#22694e;color:#fff;border:1px solid #ffffff30;box-shadow:0 5px 25px #164e3540;display:flex;align-items:center;justify-content:center;font-size:27px}.floating{width:min(400px,calc(100% - 32px));pointer-events:none;position:fixed;bottom:24px;right:24px;z-index:2147483000;display:flex;align-items:flex-end;flex-direction:column;gap:14px}.floating>*{pointer-events:auto}.floating.left{right:auto;left:24px;align-items:flex-start}.panel{width:100%;height:min(650px,calc(100dvh - 108px));box-shadow:0 22px 80px #172d3429;border-radius:20px;outline:0}.panel .assistant{height:100%}@media(max-width:480px){.floating{bottom:16px;right:16px}.floating.left{left:16px}.panel{height:min(650px,calc(100dvh - 104px))}header{padding:16px}.chat-feed{padding:19px 13px}.composer{padding:12px 14px 4px}}
 `;
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', className = '') => {
   const node = document.createElement(tag);
@@ -35,496 +35,573 @@ function mountContents(
   const root = element('section', '', 'assistant');
   root.setAttribute('aria-label', options.title ?? '产品助手');
   const header = element('header'),
-    heading = element('div');
-  heading.append(element('strong', options.title ?? '产品助手'), element('small', '有问题，随时来这里'));
-  header.append(element('span', 'a18', 'mark'), heading);
-  const headActions = element('div', '', 'head-actions');
-  if (options.onOpenPage) {
-    const open = element('button', '↗', 'icon');
-    open.type = 'button';
-    open.setAttribute('aria-label', '打开独立支持页');
-    open.onclick = options.onOpenPage;
-    headActions.append(open);
-  }
-  if (onClose) {
-    const close = element('button', '×', 'icon');
-    close.type = 'button';
-    close.setAttribute('aria-label', '关闭助手');
-    close.onclick = onClose;
-    headActions.append(close);
-  }
-  header.append(headActions);
-  const tabs = element('nav', '', 'tabs');
-  tabs.setAttribute('aria-label', '助手功能');
-  tabs.setAttribute('role', 'tablist');
-  const body = element('div', '', 'body');
-  root.append(header, tabs, body, element('footer', 'Powered by agent18 · 你的产品助手'));
+    heading = element('div'),
+    headActions = element('div', '', 'head-actions');
+  heading.append(
+    element('strong', options.title ?? '产品助手'),
+    element('small', '陪你找答案，也帮你把事情办好'),
+  );
+  header.append(element('span', 'a18', 'mark'), heading, headActions);
+  const icon = (label: string, text: string, fn: () => void) => {
+    const button = element('button', text, 'icon');
+    button.type = 'button';
+    button.setAttribute('aria-label', label);
+    button.onclick = fn;
+    headActions.append(button);
+  };
+  if (options.onOpenPage) icon('打开独立支持页', '↗', options.onOpenPage);
+  if (onClose) icon('关闭助手', '×', onClose);
+  const feed = element('div', '', 'chat-feed');
+  feed.setAttribute('role', 'log');
+  feed.setAttribute('aria-label', '对话记录');
+  feed.setAttribute('aria-live', 'polite');
+  const composer = element('form', '', 'composer'),
+    input = element('textarea'),
+    send = element('button', '↑', 'send');
+  input.rows = 2;
+  input.maxLength = 1000;
+  input.required = true;
+  input.placeholder = '问一个问题，或告诉我你想做什么…';
+  input.setAttribute('aria-label', '发送给助手');
+  send.type = 'submit';
+  send.setAttribute('aria-label', '发送消息');
+  composer.append(input, send);
+  root.append(header, feed, composer, element('footer', 'agent18 · 业务变更始终由你确认'));
   target.append(root);
   let alive = true,
     busy = false,
     definitions: ActionDefinition[] = [],
-    queries: BusinessQuery[] = [],
-    model = false;
-  const delivered = new Set<string>();
-  const states = {
-    proposed: '等待你确认',
-    executing: '正在等待业务回执',
-    succeeded: '操作成功',
-    rejected: '业务系统拒绝',
-    uncertain: '结果待确认',
-    expired: '预览已过期',
+    queries: BusinessQuery[] = [];
+  let pending: import('@agent18/contracts').AssistantTurn['pending'];
+  let replyCase: string | undefined;
+  let dismissPreview: (() => void) | undefined;
+  const history: string[] = [],
+    delivered = new Set<string>();
+  const controls = new WeakMap<HTMLButtonElement, () => boolean>();
+  const scroll = () => {
+    feed.scrollTop = feed.scrollHeight;
   };
-  const result = element('div', '', 'response');
-  result.setAttribute('aria-live', 'polite');
-  const run = async (fn: () => Promise<void>) => {
-    if (busy || !alive) return;
+  function message(text: string, role: 'assistant' | 'user' = 'assistant') {
+    const row = element('article', '', 'chat-message from-' + role),
+      bubble = element('div', '', 'bubble');
+    row.setAttribute('aria-label', role === 'user' ? '你' : '助手');
+    if (role === 'assistant') row.append(element('span', '✳', 'message-mark'));
+    if (text) bubble.append(element('p', text));
+    row.append(bubble);
+    feed.append(row);
+    scroll();
+    return bubble;
+  }
+  const control = (
+    target: HTMLElement,
+    text: string,
+    fn: () => Promise<void> | void,
+    valid = () => true,
+    primary = false,
+  ) => {
+    const button = element('button', text, primary ? 'primary' : 'chip');
+    button.type = 'button';
+    controls.set(button, valid);
+    button.disabled = busy || !valid();
+    button.onclick = () => {
+      if (valid()) void run(fn);
+    };
+    target.append(button);
+    return button;
+  };
+  function enable() {
+    for (const button of root.querySelectorAll<HTMLButtonElement>('button:not(.icon)'))
+      button.disabled = busy || !(controls.get(button)?.() ?? true);
+    for (const field of root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'))
+      field.disabled = busy;
+  }
+  async function run(fn: () => Promise<void> | void) {
+    if (!alive || busy) return;
     busy = true;
-    body.setAttribute('aria-busy', 'true');
-    for (const button of root.querySelectorAll<HTMLInputElement>(
-      'button:not(.icon), input, select, textarea',
-    ))
-      button.disabled = true;
+    enable();
+    const loading = element('div', '正在处理…', 'typing');
+    loading.setAttribute('role', 'status');
+    feed.append(loading);
+    scroll();
     try {
       await fn();
     } catch (e) {
       if (alive) {
-        result.replaceChildren(
-          element('b', '请求未完成', 'error'),
-          element('p', e instanceof Error ? e.message : '请稍后重试。'),
-        );
+        const code = e instanceof Error ? e.message : '';
+        const errors: Record<string, string> = {
+          BUSINESS_NOT_ACCESSIBLE: '这条记录不存在，或你没有查看权限。可以换一个编号再试。',
+          ACTION_NEEDS_DETAILS: '还需要一些业务信息，我可以引导你补充。',
+          MODEL_NOT_CONFIGURED: '当前可以检索资料和办理已接入的业务，请选择下一步。',
+          RATE_LIMITED: '请求比较频繁，稍等片刻再发送就好。',
+          UNAUTHENTICATED: '登录已失效，请回到业务系统重新登录后打开助手。',
+          ACTION_EXPIRED: '预览已过期，请重新描述需求生成新预览。',
+          ACTION_CONFIGURATION_CHANGED: '业务配置已更新，请重新生成预览。',
+          BUSINESS_UNAVAILABLE: '业务系统暂时没有响应，可以稍后再试。',
+          MODEL_TIMEOUT: '生成回答超时了，可以稍后重试，或将问题交给支持团队。',
+        };
+        const card = message(errors[code] ?? '这一步暂时没有完成。你可以补充说明后重试，或联系支持团队。');
+        if (pending) control(card, '继续补充', () => resume(pending!));
+        control(card, '联系支持', () => support());
       }
     } finally {
+      loading.remove();
       busy = false;
       if (alive) {
-        body.removeAttribute('aria-busy');
-        for (const button of root.querySelectorAll<HTMLInputElement>('button, input, select, textarea'))
-          button.disabled = false;
-      }
-    }
-  };
-  const preview = (p: ActionProposal) => {
-    if (!alive) return;
-    const definition = definitions.find((a) => a.id === p.actionId);
-    result.replaceChildren(element('h3', definition?.title ?? '业务操作'), element('p', p.preview.summary));
-    const args = element('div', '', 'arguments');
-    for (const [key, value] of Object.entries(p.arguments)) {
-      const row = element('div');
-      row.append(
-        element('span', definition?.fields.find((f) => f.name === key)?.label ?? key),
-        element('b', typeof value === 'boolean' ? (value ? '开启' : '关闭') : String(value)),
-      );
-      args.append(row);
-    }
-    result.append(args, element('span', states[p.state], 'status'));
-    if (p.result?.message) result.append(element('p', p.result.message));
-    if (p.state === 'proposed') {
-      result.append(element('small', '确认后，将以你的身份向业务系统提交以上操作。'));
-      const confirm = element('button', '确认执行', 'primary');
-      confirm.type = 'button';
-      confirm.onclick = () => void run(async () => preview(await client.confirmAction(p.id)));
-      result.append(confirm);
-    } else if (['executing', 'uncertain'].includes(p.state)) {
-      const reconcile = element('button', '查询业务回执', 'secondary');
-      reconcile.type = 'button';
-      reconcile.onclick = () => void run(async () => preview(await client.reconcileAction(p.id)));
-      result.append(reconcile, element('small', '仅核对本次执行结果，不会重复提交业务写入。'));
-    } else if (p.state === 'succeeded' && !delivered.has(p.id)) {
-      delivered.add(p.id);
-      // A host refresh failure must not turn a verified business success into an execution error.
-      try {
-        options.onActionComplete?.(p);
-      } catch {
-        result.append(element('small', '业务已完成；请手动刷新原页面查看变化。'));
-      }
-    }
-  };
-  function intro(title: string, description: string) {
-    const div = element('div', '', 'intro');
-    div.append(element('span', 'HERE TO HELP', 'eyebrow'), element('h2', title), element('p', description));
-    return div;
-  }
-  function queryForm(
-    label: string,
-    placeholder: string,
-    submit: string,
-    fn: (query: string) => Promise<void>,
-  ) {
-    const form = element('form');
-    const input = element('textarea');
-    input.required = true;
-    input.minLength = 2;
-    input.maxLength = 300;
-    input.rows = 2;
-    input.placeholder = placeholder;
-    input.setAttribute('aria-label', label);
-    const button = element('button', submit, 'primary');
-    button.type = 'submit';
-    form.append(input, button);
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      void run(() => fn(input.value));
-    };
-    return { form, input };
-  }
-  function knowledge() {
-    body.append(intro('你好，有什么可以帮你？', '使用指南、操作步骤和常见问题，从这里开始。'));
-    const { form, input } = queryForm('你的问题', '描述你想了解的问题…', '查找答案  →', async (query) => {
-      result.textContent = '正在查找相关资料…';
-      const answer = await client.askKnowledge(query);
-      if (!alive) return;
-      result.replaceChildren(
-        element('h3', answer.answer ? '找到了一些线索' : '相关知识'),
-        element('p', answer.answer ?? answer.notice ?? '暂时没有可用答案。'),
-      );
-      for (const citation of answer.citations) {
-        const details = element('details');
-        details.append(
-          element('summary', '▤ ' + citation.title),
-          element('p', citation.excerpt),
-          element('small', citation.source),
-        );
-        result.append(details);
-      }
-    });
-    const chips = element('div', '', 'chips');
-    for (const title of ['如何开始使用？', '支持哪些业务操作？']) {
-      const chip = element('button', title, 'chip');
-      chip.type = 'button';
-      chip.onclick = () => {
-        input.value = title;
+        enable();
+        scroll();
         input.focus();
-      };
-      chips.append(chip);
-    }
-    body.append(chips, form, element('p', '回答来源于已发布、且你有权限访问的知识。', 'hint'), result);
-  }
-  function queryBusiness() {
-    business(true);
-  }
-  function business(read = false) {
-    const available = read ? queries : definitions;
-    body.append(
-      read
-        ? intro('业务进展，一查就知道。', '沿用你的登录权限，获取业务系统的实时数据。')
-        : intro('少点几步，把事情办好。', '选择业务操作，查看预览后再确认执行。'),
-    );
-    const plan = queryForm('业务需求', '例如：帮我关闭邮件通知', '生成操作预览  →', async (query) =>
-      preview(await client.planAction(query)),
-    );
-    plan.form.className = 'plan-form';
-    plan.form.hidden = read || !model;
-    body.append(plan.form);
-    const select = element('select');
-    select.setAttribute('aria-label', read ? '可用业务查询' : '可用业务操作');
-    const empty = element(
-      'option',
-      available.length ? (read ? '选择查询内容' : '选择你想办理的业务') : '当前身份暂无可用业务',
-    );
-    empty.value = '';
-    select.append(empty);
-    for (const a of available) {
-      const option = element('option', a.title);
-      option.value = a.id;
-      select.append(option);
-    }
-    const fields = element('form');
-    select.onchange = () => {
-      fields.replaceChildren();
-      result.replaceChildren();
-      const definition = available.find((a) => a.id === select.value);
-      if (!definition) return;
-      const values = new Map<string, () => string | number | boolean | undefined>();
-      for (const field of definition.fields) {
-        const label = element('label', field.label);
-        if (field.type === 'boolean' || field.enum) {
-          const input = element('select');
-          input.required = field.required;
-          if (!field.required) {
-            const empty = element('option', '不设置此项');
-            empty.value = '';
-            input.append(empty);
-          }
-          for (const value of field.enum ?? ['true', 'false']) {
-            const option = element(
-              'option',
-              field.type === 'boolean' ? (value === 'true' ? '开启' : '关闭') : value,
-            );
-            option.value = value;
-            input.append(option);
-          }
-          values.set(field.name, () =>
-            !field.required && input.value === ''
-              ? undefined
-              : field.type === 'boolean'
-                ? input.value === 'true'
-                : input.value,
-          );
-          label.append(input);
-        } else {
-          const input = element('input');
-          input.type = field.type === 'number' ? 'number' : 'text';
-          input.maxLength = 500;
-          input.required = field.required;
-          if (field.type === 'number') input.step = 'any';
-          values.set(field.name, () =>
-            !field.required && !input.value
-              ? undefined
-              : field.type === 'number'
-                ? Number(input.value)
-                : input.value,
-          );
-          label.append(input);
-        }
-        fields.append(label);
       }
-      const button = element('button', read ? '查询业务  →' : '查看操作预览  →', 'primary');
-      button.type = 'submit';
-      fields.append(button);
-      fields.onsubmit = (e) => {
-        e.preventDefault();
-        void run(async () => {
-          const args = Object.fromEntries(
-            [...values].map(([k, v]) => [k, v()]).filter(([, v]) => v !== undefined),
-          );
-          if (!read) {
-            preview(await client.prepareAction(definition.id, args));
-            return;
-          }
-          const answer = await client.queryBusiness(definition.id, args);
-          if (!alive) return;
-          result.replaceChildren(element('h3', definition.title));
-          if (!answer.rows.length) result.append(element('p', '没有可访问的记录。'));
-          for (const record of answer.rows) {
-            const card = element('div', '', 'arguments');
-            for (const column of answer.columns) {
-              const value = record[column.path],
-                row = element('div');
-              row.append(
-                element('span', column.label),
-                element(
-                  'b',
-                  value === null
-                    ? '—'
-                    : typeof value === 'boolean'
-                      ? value
-                        ? '开启'
-                        : '关闭'
-                      : String(value),
-                ),
-              );
-              card.append(row);
-            }
-            result.append(card);
-          }
-          result.append(
-            element(
-              'small',
-              (answer.truncated ? '已截取前 50 条 · ' : '') +
-                '业务实时响应 · ' +
-                new Date(answer.retrievedAt).toLocaleTimeString(),
-            ),
-          );
-        });
-      };
-    };
-    body.append(select, element('p', '执行主体：你的业务系统 · 身份：当前登录用户', 'hint'), fields, result);
-    if (!available.length)
-      result.textContent = '当前身份没有可用操作。部署者可以为项目注册业务接口和允许使用的角色。';
+    }
   }
-  function cases() {
-    const history = element('button', '我的问题与回复 ↗', 'secondary');
-    history.onclick = () => void run(showCases);
-    body.append(history);
-    body.append(intro('把问题交给我们。', '留下操作步骤和实际表现，方便支持团队继续跟进。'));
-    const form = element('form'),
+  function user(text: string) {
+    message(text, 'user');
+  }
+  const ready = Promise.allSettled([client.listActions(), client.listBusinessQueries()]).then(([a, q]) => {
+    if (!alive) return;
+    if (a.status === 'fulfilled') definitions = a.value.actions;
+    if (q.status === 'fulfilled') queries = q.value.queries;
+  });
+  function suggestions(card: HTMLElement, items: [string, () => void | Promise<void>][]) {
+    const choices = element('div', '', 'chat-choices');
+    for (const [label, action] of items) control(choices, label, action);
+    card.append(choices);
+  }
+  async function help() {
+    await ready;
+    pending = undefined;
+    replyCase = undefined;
+    input.placeholder = '问一个问题，或告诉我你想做什么…';
+    const card = message('可以直接告诉我你想了解什么，或从这些事情开始：');
+    suggestions(
+      card,
+      queries.slice(0, 3).map((q) => [q.title, () => choose('query', q.id)]),
+    );
+    suggestions(
+      card,
+      definitions.slice(0, 2).map((a) => [a.title, () => choose('action', a.id)]),
+    );
+    if (queries.length > 3 || definitions.length > 2) {
+      const more = element('details');
+      more.append(element('summary', '更多可用服务'));
+      suggestions(
+        more,
+        queries.slice(3).map((q) => [q.title, () => choose('query', q.id)]),
+      );
+      suggestions(
+        more,
+        definitions.slice(2).map((a) => [a.title, () => choose('action', a.id)]),
+      );
+      card.append(more);
+    }
+    suggestions(card, [
+      [
+        '我的问题与回复',
+        () => {
+          user('查看我的问题与回复');
+          return showCases();
+        },
+      ],
+      ['联系支持', () => support()],
+    ]);
+  }
+  async function choose(kind: 'query' | 'action', id: string) {
+    const d = (kind === 'query' ? queries : definitions).find((d) => d.id === id);
+    if (!d) return;
+    user(d.title);
+    replyCase = undefined;
+    history.push(d.title);
+    history.splice(0, Math.max(0, history.length - 6));
+    await resume({ kind, id, arguments: {} });
+  }
+  async function resume(next: NonNullable<typeof pending>) {
+    await ready;
+    const d = (next.kind === 'query' ? queries : definitions).find((d) => d.id === next.id);
+    if (!d) {
+      await help();
+      return;
+    }
+    pending = next;
+    const field = d.fields.find((f) => f.required && next.arguments[f.name] === undefined);
+    if (field) {
+      pending = { ...next, field: field.name };
+      const current = pending;
+      const card = message(`好，我们来${d.title}。请告诉我${field.label}。`);
+      if (field.type === 'boolean' || field.enum) {
+        const choices = element('div', '', 'chat-choices');
+        for (const value of field.enum ?? ['true', 'false']) {
+          const label = field.type === 'boolean' ? (value === 'true' ? '开启' : '关闭') : value;
+          control(
+            choices,
+            label,
+            async () => {
+              user(label);
+              await resume({
+                ...next,
+                arguments: {
+                  ...next.arguments,
+                  [field.name]: field.type === 'boolean' ? value === 'true' : value,
+                },
+              });
+            },
+            () => pending === current,
+          );
+        }
+        card.append(choices);
+      }
+      control(
+        card,
+        '先不办这件事',
+        () => {
+          pending = undefined;
+          message('好的。还想了解或办理什么？');
+        },
+        () => pending === current,
+      );
+      return;
+    }
+    if (next.kind === 'action') {
+      const proposal = await client.prepareAction(d.id, next.arguments);
+      if (!alive) return;
+      pending = undefined;
+      preview(proposal);
+      return;
+    }
+    const result = await client.queryBusiness(d.id, next.arguments);
+    if (!alive) return;
+    pending = undefined;
+    const card = message(
+      result.rows.length ? `查到了，这是${d.title}的结果。` : '没有找到符合条件、且你有权限查看的记录。',
+    );
+    for (const record of result.rows) {
+      const item = element('div', '', 'data-card');
+      for (const column of result.columns) {
+        const value = record[column.path],
+          row = element('div', '', 'data-row');
+        row.append(
+          element('span', column.label),
+          element(
+            'b',
+            value === null ? '—' : typeof value === 'boolean' ? (value ? '开启' : '关闭') : String(value),
+          ),
+        );
+        item.append(row);
+      }
+      card.append(item);
+    }
+    card.append(
+      element(
+        'small',
+        '业务实时响应 · ' +
+          new Date(result.retrievedAt).toLocaleTimeString() +
+          (result.truncated ? ' · 最多显示 50 条' : ''),
+      ),
+    );
+    suggestions(card, [
+      [
+        '再查一次',
+        () => {
+          user('再查一次');
+          return resume(next);
+        },
+      ],
+      ['还可以做什么', help],
+    ]);
+  }
+  function preview(proposal: ActionProposal) {
+    dismissPreview?.();
+    const card = message('我已准备好变更，请核对后确认。'),
+      d = definitions.find((a) => a.id === proposal.actionId);
+    let current = proposal,
+      announced = false;
+    const dismiss = () => {
+      if (current.state !== 'proposed') return;
+      current = { ...current, state: 'expired' };
+      card.replaceChildren(element('p', '这项预览已收起，没有提交执行。'));
+      if (dismissPreview === dismiss) dismissPreview = undefined;
+    };
+    dismissPreview = dismiss;
+    const render = () => {
+      card.replaceChildren(element('p', current.preview.summary));
+      const args = element('div', '', 'data-card');
+      for (const [name, value] of Object.entries(current.arguments)) {
+        const row = element('div', '', 'data-row');
+        row.append(
+          element('span', d?.fields.find((f) => f.name === name)?.label ?? name),
+          element('b', typeof value === 'boolean' ? (value ? '开启' : '关闭') : String(value)),
+        );
+        args.append(row);
+      }
+      card.append(args);
+      const states = {
+        proposed: '等待你确认',
+        executing: '正在等待业务回执',
+        uncertain: '结果待核对',
+        succeeded: '操作成功',
+        rejected: '业务系统拒绝了本次操作',
+        expired: '预览已过期',
+      };
+      card.append(element('span', states[current.state], 'status'));
+      if (current.result?.message) card.append(element('p', current.result.message));
+      if (current.state === 'proposed') {
+        card.append(element('small', '确认后，将以你的当前身份提交上面的变更。'));
+        control(
+          card,
+          '确认执行',
+          async () => {
+            user('确认执行这项变更');
+            current = await client.confirmAction(current.id);
+            if (alive) render();
+          },
+          () => current.state === 'proposed',
+          true,
+        );
+        control(card, '暂不执行', dismiss, () => current.state === 'proposed');
+      } else if (['executing', 'uncertain'].includes(current.state)) {
+        control(card, '核对执行结果', async () => {
+          current = await client.reconcileAction(current.id);
+          if (alive) render();
+        });
+        card.append(element('small', '只查询回执，不会重复提交变更。'));
+      } else if (current.state === 'succeeded') {
+        if (!delivered.has(current.id)) {
+          delivered.add(current.id);
+          try {
+            options.onActionComplete?.(current);
+          } catch {
+            card.append(element('small', '业务已完成，请手动刷新原页面。'));
+          }
+        }
+        if (!announced) {
+          announced = true;
+          const receipt = message(current.result?.message ?? '这项操作已完成。');
+          suggestions(receipt, [
+            ['查看最新业务状态', help],
+            [
+              '还有一个问题',
+              () => {
+                message('请继续说，我在。');
+              },
+            ],
+          ]);
+        }
+      }
+      enable();
+      scroll();
+    };
+    render();
+  }
+  async function knowledge(query: string) {
+    const result = await client.askKnowledge(query);
+    if (!alive) return;
+    const card = message(result.answer ?? result.notice ?? '暂时没有找到足够资料，可以补充说明。');
+    for (const citation of result.citations) {
+      const details = element('details');
+      details.append(
+        element('summary', citation.title),
+        element('p', citation.excerpt),
+        element('small', citation.source),
+      );
+      card.append(details);
+    }
+    suggestions(card, [
+      [
+        '继续解释',
+        () => {
+          input.value = '请继续解释这个问题';
+          input.focus();
+        },
+      ],
+      ['问题还没解决', () => support()],
+    ]);
+  }
+  async function showCases() {
+    pending = undefined;
+    const result = await client.listCases();
+    if (!alive) return;
+    const card = message(
+      result.cases.length
+        ? '这是你最近提交的问题，选择一个就能继续跟进。'
+        : '你还没有提交过问题。需要的话，我可以帮你整理给支持团队。',
+    );
+    const older = element('details');
+    older.append(element('summary', `更早的问题（${Math.max(0, result.cases.length - 5)}）`));
+    result.cases.forEach((c, index) =>
+      control(index < 5 ? card : older, (c.status === 'resolved' ? '✓ ' : '◎ ') + c.title, () =>
+        showCase(c.id),
+      ),
+    );
+    if (result.cases.length > 5) card.append(older);
+    control(card, '提交新问题', () => support());
+  }
+  async function showCase(id: string) {
+    const [detail, thread] = await Promise.all([client.getCase(id), client.caseMessages(id)]);
+    if (!alive) return;
+    const card = message(detail.case.title);
+    card.append(
+      element('span', detail.case.status === 'resolved' ? '已解决' : '跟进中', 'status'),
+      element('p', detail.case.description),
+    );
+    for (const m of thread.messages) {
+      const row = element('div', '', 'data-card');
+      row.append(element('small', m.author === 'support' ? '支持团队' : '你'), element('p', m.body));
+      card.append(row);
+    }
+    for (const e of detail.evidence) {
+      const ref = element('details');
+      ref.append(element('summary', e.title), element('p', e.excerpt));
+      card.append(ref);
+    }
+    suggestions(card, [
+      [
+        '回复这个问题',
+        () => {
+          replyCase = id;
+          pending = undefined;
+          input.placeholder = '补充说明，或回复支持团队…';
+          message('接下来这条消息会作为补充说明发送到这个问题。');
+        },
+      ],
+      ['刷新进展', () => showCase(id)],
+      [
+        detail.case.status === 'resolved' ? '重新打开问题' : '问题已解决',
+        async () => {
+          await client.setCaseStatus(id, detail.case.status === 'resolved' ? 'needs_human' : 'resolved');
+          await showCase(id);
+        },
+      ],
+    ]);
+    control(card, '返回助手对话', () => {
+      replyCase = undefined;
+      input.placeholder = '问一个问题，或告诉我你想做什么…';
+      message('好的，我们继续。');
+    });
+  }
+  function support() {
+    pending = undefined;
+    replyCase = undefined;
+    const card = message('我可以把问题交给支持团队。先核对一下要提交的内容：'),
+      form = element('form'),
       title = element('input'),
       description = element('textarea');
     title.required = true;
     title.minLength = 3;
     title.maxLength = 180;
+    title.value = (history.at(-1) ?? '').slice(0, 180);
     title.placeholder = '用一句话描述问题';
     description.required = true;
     description.minLength = 3;
     description.maxLength = 4000;
-    description.rows = 4;
-    description.placeholder = '操作步骤、预期结果与实际表现';
+    description.value = history.join('\n');
+    description.rows = 3;
     const titleLabel = element('label', '问题标题'),
-      descriptionLabel = element('label', '详细说明');
+      bodyLabel = element('label', '问题说明');
     titleLabel.append(title);
-    descriptionLabel.append(description);
-    const submit = element('button', '提交问题  →', 'primary');
+    bodyLabel.append(description);
+    const submit = element('button', '确认提交给支持团队', 'primary');
     submit.type = 'submit';
-    form.append(titleLabel, descriptionLabel, submit);
-    let key = crypto.randomUUID();
+    form.append(titleLabel, bodyLabel, submit);
+    card.append(form);
+    let submitted = false,
+      key = crypto.randomUUID();
+    controls.set(submit, () => !submitted);
     form.oninput = () => {
       key = crypto.randomUUID();
     };
     form.onsubmit = (e) => {
       e.preventDefault();
+      if (submitted) return;
       void run(async () => {
-        const answer = await client.reportCase({ title: title.value, description: description.value }, key);
+        const result = await client.reportCase({ title: title.value, description: description.value }, key);
         if (!alive) return;
-        result.replaceChildren(
-          element('h3', '问题已记录 ✓'),
-          element('p', answer.case.title),
-          element('small', '点击“我的问题与回复”查看进展和补充说明。'),
-        );
-        form.reset();
-        key = crypto.randomUUID();
+        submitted = true;
+        form.remove();
+        card.append(element('p', '问题已记录，之后可以在对话里查看进展和回复。'));
+        control(card, '查看问题进展', () => showCase(result.case.id));
       });
     };
-    body.append(form, element('p', '请勿提交密码、密钥或不必要的个人信息。', 'hint'), result);
   }
-  async function showCases() {
-    const data = await client.listCases();
+  async function turn(text: string) {
+    user(text);
+    await ready;
+    if (replyCase) {
+      if (/^(取消|返回助手|算了)[。！!\s]*$/.test(text)) {
+        replyCase = undefined;
+        input.placeholder = '问一个问题，或告诉我你想做什么…';
+        message('好的，已返回助手对话，没有发送补充说明。');
+        return;
+      }
+      const id = replyCase;
+      await client.addCaseMessage(id, text, crypto.randomUUID());
+      replyCase = undefined;
+      input.placeholder = '问一个问题，或告诉我你想做什么…';
+      await showCase(id);
+      return;
+    }
+    if (/^(确认|确认执行|好的|执行吧)[。！!\s]*$/.test(text) && !pending) {
+      message('如需办理，请点击对应预览卡片中的“确认执行”，这样能明确确认的是哪一项变更。');
+      return;
+    }
+    const route = await client.routeConversation({
+      message: text,
+      history: history.slice(-6),
+      ...(pending ? { pending } : {}),
+    });
     if (!alive) return;
-    result.replaceChildren(element('h3', '我的问题'));
-    if (!data.cases.length) result.append(element('p', '还没有提交过问题。'));
-    for (const c of data.cases) {
-      const button = element('button', (c.status === 'resolved' ? '✓ ' : '◎ ') + c.title, 'secondary');
-      button.onclick = () => void run(() => showCase(c.id));
-      result.append(button);
+    history.push(text.slice(0, 500));
+    history.splice(0, Math.max(0, history.length - 6));
+    if (route.kind === 'query' || route.kind === 'action') {
+      await resume({ ...route });
+      return;
+    }
+    pending = undefined;
+    if (route.kind === 'knowledge') await knowledge(route.query);
+    else if (route.kind === 'help') await help();
+    else if (route.kind === 'cases') await showCases();
+    else if (route.kind === 'support') support();
+    else {
+      dismissPreview?.();
+      message('好的，这件事先放下。你可以继续提问；尚未确认的预览不会自动执行。');
     }
   }
-  async function showCase(id: string) {
-    const [detail, thread] = await Promise.all([client.getCase(id), client.caseMessages(id)]);
-    if (!alive) return;
-    result.replaceChildren(
-      element('h3', detail.case.title),
-      element('span', detail.case.status === 'resolved' ? '已解决' : '跟进中', 'status'),
-      element('p', detail.case.description),
-    );
-    for (const r of detail.runs.slice(0, 1))
-      result.append(
-        element(
-          'small',
-          '自动处理：' +
-            {
-              pending: '排队中',
-              running: '进行中',
-              completed: '资料检索完成',
-              blocked: '等待跟进',
-              failed: '未完成',
-              cancelled: '已取消',
-            }[r.state],
-        ),
-      );
-    for (const e of detail.evidence) {
-      const citation = element('details');
-      citation.append(element('summary', e.title), element('p', e.excerpt));
-      result.append(citation);
-    }
-    for (const m of thread.messages) {
-      const message = element('div', '', 'arguments');
-      message.append(
-        element(
-          'small',
-          (m.author === 'support' ? '支持团队' : '你') + ' · ' + new Date(m.createdAt).toLocaleString(),
-        ),
-        element('p', m.body),
-      );
-      result.append(message);
-    }
-    const input = element('textarea'),
-      form = element('form'),
-      send = element('button', '补充说明', 'primary');
-    input.required = true;
-    input.maxLength = 4000;
-    input.placeholder = '回复支持团队或补充问题';
-    input.setAttribute('aria-label', '补充说明');
-    let key = crypto.randomUUID();
-    input.oninput = () => {
-      key = crypto.randomUUID();
-    };
-    form.append(input, send);
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      void run(async () => {
-        await client.addCaseMessage(id, input.value, key);
-        await showCase(id);
-      });
-    };
-    const close = element(
-      'button',
-      detail.case.status === 'resolved' ? '重新打开问题' : '问题已解决 ✓',
-      'secondary',
-    );
-    close.onclick = () =>
-      void run(async () => {
-        await client.setCaseStatus(id, detail.case.status === 'resolved' ? 'needs_human' : 'resolved');
-        await showCase(id);
-      });
-    const refresh = element('button', '刷新进展', 'secondary');
-    refresh.onclick = () => void run(() => showCase(id));
-    result.append(form, close, refresh);
-  }
-  const render = (page: string) => {
-    body.replaceChildren();
-    result.replaceChildren();
-    for (const button of tabs.querySelectorAll('button'))
-      button.setAttribute('aria-selected', String(button.dataset.page === page));
-    (({ knowledge, business, cases, queryBusiness })[page] ?? knowledge)();
+  composer.onsubmit = (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || busy) return;
+    input.value = '';
+    void run(() => turn(text));
   };
-  for (const [id, label] of [
-    ['knowledge', '▤  找答案'],
-    ['queryBusiness', '⌕  查业务'],
-    ['business', '↔  办业务'],
-    ['cases', '◎  问题'],
-  ]) {
-    const button = element('button', label, 'tab');
-    button.type = 'button';
-    button.dataset.page = id;
-    button.setAttribute('role', 'tab');
-    button.onclick = () => {
-      if (!busy) render(id!);
-    };
-    tabs.append(button);
-  }
-  render('knowledge');
-  void client
-    .listBusinessQueries()
-    .then((data) => {
-      if (alive) {
-        queries = data.queries;
-        if (
-          tabs.querySelector('[data-page=queryBusiness]')?.getAttribute('aria-selected') === 'true' &&
-          !busy
-        )
-          render('queryBusiness');
-      }
-    })
-    .catch(() => {});
-  void client
-    .listActions()
-    .then(({ actions }) => {
-      if (alive) {
-        definitions = actions;
-        if (tabs.querySelector('[data-page=business]')?.getAttribute('aria-selected') === 'true' && !busy)
-          render('business');
-      }
-    })
-    .catch(() => {});
-  void client
-    .session()
-    .then((session) => {
-      if (alive) {
-        model = session.capabilities.model === 'configured';
-        const plan = root.querySelector<HTMLElement>('.plan-form');
-        if (plan && tabs.querySelector('[data-page=business]')?.getAttribute('aria-selected') === 'true')
-          plan.hidden = !model;
-      }
-    })
-    .catch(() => {});
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      composer.requestSubmit();
+    }
+  };
+  const hello = message('你好，我是你的产品助手。\n想了解什么，或者需要我帮你做点什么？');
+  suggestions(hello, [
+    ['查一下我的业务', help],
+    ['如何开始使用？', () => turn('如何开始使用？')],
+    [
+      '我的问题进展',
+      () => {
+        user('我的问题进展');
+        return showCases();
+      },
+    ],
+  ]);
   return {
     focus() {
-      root.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+      input.focus();
     },
     destroy() {
       alive = false;
+      history.length = 0;
+      pending = undefined;
+      replyCase = undefined;
       root.remove();
     },
   };
 }
+
 /** Style-isolated assistant in an element owned by the host application. */
 export function mountAssistant(target: HTMLElement, client: Agent18, options: AssistantOptions = {}) {
   const { host, shadow } = frame(target, options);

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Replace floating and inline feature tabs with one continuous conversation, an anchored composer, contextual choices, query results, citations and explicit action confirmation cards.
+- Add scoped conversation routing, typed parameter follow-ups and bounded user-message context. Model-assisted planning falls back to deterministic guidance and never executes business operations itself.
+- Keep support handoff, case replies and progress inside the same conversation.
+
 ## 0.5.0 — 2026-09-15
 
 A complete source-to-service integration preview.

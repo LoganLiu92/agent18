@@ -6,6 +6,7 @@ export const documents = [
   ['index', '开始使用', 'docs/README.md'],
   ['guides/installation', '安装与公开部署', 'docs/guides/installation.md'],
   ['guides/integration', '网站与身份接入', 'docs/guides/integration.md'],
+  ['guides/conversation', '对话式助手', 'docs/guides/conversation.md'],
   ['guides/knowledge', '知识构建与更新', 'docs/guides/knowledge.md'],
   ['guides/business-queries', '业务查询与 OpenAPI', 'docs/guides/business-queries.md'],
   ['guides/business-actions', '业务代操作协议', 'docs/guides/business-actions.md'],

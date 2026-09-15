@@ -31,6 +31,29 @@ export const reportCaseSchema = z
   .strict();
 export type ReportCase = z.infer<typeof reportCaseSchema>;
 export const searchSchema = z.object({ query: z.string().trim().min(2).max(300) }).strict();
+const assistantArguments = z
+  .record(z.string().max(50), z.union([z.string().max(500), z.number().finite(), z.boolean()]))
+  .refine((v) => Object.keys(v).length <= 20);
+export const assistantTurnSchema = z
+  .object({
+    message: z.string().trim().min(1).max(1000),
+    history: z.array(z.string().max(500)).max(6).default([]),
+    pending: z
+      .object({
+        kind: z.enum(['query', 'action']),
+        id: z.string().max(80),
+        arguments: assistantArguments,
+        field: z.string().max(50).optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+export type AssistantTurn = z.infer<typeof assistantTurnSchema>;
+export type AssistantRoute =
+  | { kind: 'knowledge'; query: string }
+  | { kind: 'query' | 'action'; id: string; arguments: Record<string, string | number | boolean> }
+  | { kind: 'help' | 'cases' | 'support' | 'cancel' };
 export const citationSchema = z
   .object({
     id: z.string().max(200),

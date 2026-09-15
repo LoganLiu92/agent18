@@ -5,6 +5,7 @@ import {
   contextSchema,
   safeCitationSchema,
   searchSchema,
+  assistantTurnSchema,
 } from '@agent18/contracts';
 const schema = (s: z.ZodType) => z.toJSONSchema(s, { target: 'draft-2020-12', io: 'input' });
 const ref = (name: string) => ({ $ref: '#/components/schemas/' + name });
@@ -40,6 +41,20 @@ export const publicApiDefinitions: {
   idempotent?: boolean;
   created?: boolean;
 }[] = [
+  {
+    method: 'post',
+    path: '/api/assistant/route',
+    summary: 'Route a conversational turn to allowed capabilities without executing them',
+    tag: 'Assistant',
+    body: schema(assistantTurnSchema),
+    response: {
+      oneOf: [
+        object({ kind: { enum: ['knowledge'] }, query: string }),
+        object({ kind: { enum: ['query', 'action'] }, id: string, arguments: args }),
+        object({ kind: { enum: ['help', 'cases', 'support', 'cancel'] } }),
+      ],
+    },
+  },
   {
     method: 'get',
     path: '/api/session',

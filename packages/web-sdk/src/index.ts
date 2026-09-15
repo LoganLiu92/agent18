@@ -11,6 +11,8 @@ import type {
   ActionProposal,
   BusinessQuery,
   QueryResult,
+  AssistantTurn,
+  AssistantRoute,
 } from '@agent18/contracts';
 export type {
   ReportCase,
@@ -25,6 +27,8 @@ export type {
   ActionProposal,
   BusinessQuery,
   QueryResult,
+  AssistantTurn,
+  AssistantRoute,
 } from '@agent18/contracts';
 export class Agent18Error extends Error {
   constructor(
@@ -139,6 +143,9 @@ export class Agent18 {
   }
   askKnowledge(query: string) {
     return this.request<AnswerResult>('/api/knowledge/ask', 'POST', { query });
+  }
+  routeConversation(input: AssistantTurn) {
+    return this.request<AssistantRoute>('/api/assistant/route', 'POST', input);
   }
   listBusinessQueries() {
     return this.request<{ queries: BusinessQuery[] }>('/api/business/queries');

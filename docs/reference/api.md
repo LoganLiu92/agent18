@@ -1,5 +1,7 @@
 # API 与 SDK 参考
 
+对话引导：`POST /api/assistant/route`，SDK 方法 `routeConversation({ message, history, pending })`。消息最多 1000 字符、历史最多六条用户消息；返回下一步候选，不执行业务。具体约束与示例见[对话式助手](../guides/conversation.md)。
+
 Core 在 `/openapi.json` 提供 OpenAPI 3.1 JSON。源码中的 API 定义与请求合同共同维护；集成测试核验路由存在、鉴权和业务行为。运行 `pnpm release:check` 可导出同版本 SDK、OpenAPI 与 SHA-256 清单。
 
 ## 身份与请求约定
