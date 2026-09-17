@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { Pool, caseView } from '@agent18/persistence';
 import { addCaseMessage, caseMessages, messageInput } from '@agent18/application';
 import { id } from '@agent18/contracts';
-import { importOpenApi, queriesSchema, bridgeSchema } from '@agent18/actions';
+import { importOpenApi, queriesSchema, querySchema, bridgeSchema } from '@agent18/actions';
 import { KnowledgeError } from '@agent18/knowledge';
 import { configSchema } from '../../../scripts/config.js';
 import { atomicJson } from '../../../scripts/lib/atomic.js';
@@ -45,6 +45,9 @@ export function registerOperations(
   app.post('/owner/openapi/import', { bodyLimit: 550000 }, async (request) =>
     importOpenApi(z.object({ document: z.unknown() }).strict().parse(request.body).document),
   );
+  app.post('/owner/queries/review', async (request) => ({
+    operation: querySchema.parse(request.body),
+  }));
   app.get('/owner/projects/:projectKey', async (request) => {
     const p = await project(request.params);
     const tenants = await withAdmin((db) =>

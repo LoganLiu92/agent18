@@ -4,7 +4,7 @@
 
 [//]: # (agent18:release:start)
 
-当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+当前版本：**0.8.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.8-integration.md)；源码自托管，单机部署。
 
 [//]: # (agent18:release:end)
 
@@ -88,11 +88,15 @@ pnpm setup:ui
 
 **写入：** 按[业务桥协议](docs/guides/business-actions.md)实现固定 POST 端点的 prepare/execute/status。prepare 只读并返回具体变更和 revision；execute 再检查当前权限、对象归属、业务版本，将业务变更和幂等回执同事务保存；status 只读同一回执。网络结果不确定时只核对状态，不自动重发写入。
 
+0.8 可为现有 POST 搜索/筛选接口单独登记只读查询；必须明确审核 `readOnly`、固定 path/query/body 参数与展示字段，不能把写入伪装为查询。自动 OpenAPI 导入继续只接受 GET。详见[业务查询](docs/guides/business-queries.md)。
+
 先用一个测试账户的偏好或备注验证：查询原值 → 生成预览但数据不变 → 点击明确确认 → 得到回执 → 从原系统页面/API 回读新值 → 重复确认不重复写入。再验证另一用户、另一租户、撤权和版本过期。这些检查应复用目标项目的测试框架和数据库断言，不能只截取助手说“成功”的画面。
 
 ## 6. 接上页面报告和监控
 
 按[监控接入指南](docs/guides/observability.md)配置 SDK 的采集选项，为客户机密区域标记 `data-agent18-private`，在真实页面验证文字/截图预览、取消附带与身份切换。宿主显式传入失败请求 traceId、当前实体，不能将它们视为授权。
+
+在宿主错误处理处通过 `client.emit` 报告明确的业务失败/成功事件，路由变化时更新 `setContext`。这样“为什么不行”可以进入对应操作的预览。验收事件过期、恢复、实体切换清理、预览快照与取消附带；[语义上下文指南](docs/guides/semantic-context.md)提供完整示例。独立页目前不自动继承宿主事件。
 
 连接已有 HTTP 健康地址、Loki 和 Prometheus，不必搬迁监控存储。Owner 保存固定项目范围和只读凭据；业务日志具有真实 tenant/subject 标签。让受控测试错误出现在真实日志，提交一个有 traceId 的工单，检查 Worker 报告与客户安全摘要，再验证周期巡检、重复合并、恢复和内部知识草稿。没有上游日志/指标时应标明未接入，不能把空结果当成完整线上巡检成功。
 

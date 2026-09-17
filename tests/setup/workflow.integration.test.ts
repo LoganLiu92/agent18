@@ -101,7 +101,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       expect(metadata.body).not.toContain('jwks');
       expect((await core.app.inject({ url: '/public/installation' })).json()).toMatchObject({
         setupCompleted: false,
-        version: '0.7.0',
+        version: '0.8.0',
       });
       expect((await core.app.inject({ url: '/public/projects/absent' })).statusCode).toBe(404);
       for (const url of ['/', '/console', '/support'])

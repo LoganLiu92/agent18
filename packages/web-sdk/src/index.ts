@@ -1,4 +1,5 @@
-import type { ClientContext } from '@agent18/contracts';
+import type { ClientContext, BusinessEvent } from '@agent18/contracts';
+import { recentEvents } from '@agent18/contracts/context';
 import { captureCollector, type CaptureOptions } from './capture.js';
 import type {
   ReportCase,
@@ -34,6 +35,7 @@ export type {
   AssistantRoute,
 } from '@agent18/contracts';
 export type { CaptureOptions } from './capture.js';
+export type { ClientContext, BusinessEvent } from '@agent18/contracts';
 export class Agent18Error extends Error {
   constructor(
     public readonly code: string,
@@ -56,6 +58,7 @@ export type Agent18Options = {
 };
 export class Agent18 {
   private context: ReportCase['context'] = {};
+  private events: BusinessEvent[] = [];
   private readonly abort = new AbortController();
   private readonly collector;
   constructor(private readonly options: Agent18Options) {
@@ -80,7 +83,8 @@ export class Agent18 {
     this.abort.signal.throwIfAborted();
     return capture;
   }
-  setContext(input: Omit<ClientContext, 'pagePath'> & { pageUrl?: string }) {
+  setContext(input: Omit<ClientContext, 'pagePath' | 'events'> & { pageUrl?: string }) {
+    this.abort.signal.throwIfAborted();
     let pagePath: string | undefined;
     if (input.pageUrl) {
       try {
@@ -100,9 +104,12 @@ export class Agent18 {
       'appVersion',
       'frontendVersion',
       'correlationIds',
+      'route',
     ] as const)
       if (input[key] !== undefined) extras[key] = input[key];
     const bounded = (v: unknown, pattern: RegExp) => typeof v === 'string' && pattern.test(v);
+    if (input.route !== undefined && !bounded(input.route, /^[a-zA-Z0-9_./-]{1,120}$/))
+      throw new Error('CONTEXT_INVALID');
     for (const key of ['sessionId', 'traceId', 'environment', 'appVersion', 'frontendVersion'] as const) {
       const pattern =
         key === 'traceId'
@@ -137,13 +144,74 @@ export class Agent18 {
         throw new Error('CONTEXT_INVALID');
       extras.correlationIds = Object.fromEntries(entries);
     }
-    this.context = {
+    const next = {
       ...(pagePath ? { pagePath } : {}),
       ...(input.entityType ? { entityType: input.entityType } : {}),
       ...(input.entityId ? { entityId: input.entityId.slice(0, 100) } : {}),
       ...(input.requestId ? { requestId: input.requestId.slice(0, 100) } : {}),
       ...extras,
     };
+    if (
+      ['pagePath', 'route', 'entity', 'entityType', 'entityId'].some(
+        (key) =>
+          JSON.stringify(this.context[key as keyof ClientContext]) !==
+          JSON.stringify(next[key as keyof typeof next]),
+      )
+    )
+      this.events = [];
+    this.context = next;
+  }
+
+  /** Bounded semantic hints; nothing is transmitted until a conversational request or report. */
+  emit(input: Omit<BusinessEvent, 'at'>) {
+    this.abort.signal.throwIfAborted();
+    const fail = () => {
+      throw new Error('CONTEXT_EVENT_INVALID');
+    };
+    if (
+      !input ||
+      Object.keys(input).some(
+        (key) => !['type', 'operation', 'entity', 'errorCode', 'traceId', 'requestId'].includes(key),
+      )
+    )
+      fail();
+    if (
+      !['business.operation.failed', 'business.operation.succeeded'].includes(input.type) ||
+      typeof input.operation !== 'string' ||
+      !/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/.test(input.operation)
+    )
+      fail();
+    for (const [key, pattern] of [
+      ['errorCode', /^[a-zA-Z0-9_.-]{1,80}$/],
+      ['traceId', /^[a-fA-F0-9]{16,32}$/],
+      ['requestId', /^[a-zA-Z0-9_.:-]{1,100}$/],
+    ] as const)
+      if (input[key] !== undefined && (typeof input[key] !== 'string' || !pattern.test(input[key]))) fail();
+    const entity = input.entity ?? this.context.entity;
+    if (
+      entity &&
+      (Object.keys(entity).some((key) => !['type', 'id', 'namespace'].includes(key)) ||
+        !/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/.test(entity.type) ||
+        typeof entity.id !== 'string' ||
+        !entity.id.length ||
+        entity.id.length > 128)
+    )
+      fail();
+    const event: BusinessEvent = {
+      ...input,
+      at: new Date().toISOString(),
+      ...(entity ? { entity: { type: entity.type, id: entity.id } } : {}),
+    };
+    this.events = recentEvents([...this.events, event]);
+  }
+  getContext(): ClientContext {
+    this.abort.signal.throwIfAborted();
+    this.events = recentEvents(this.events);
+    return structuredClone({ ...this.context, ...(this.events.length ? { events: this.events } : {}) });
+  }
+  clearContext() {
+    this.context = {};
+    this.events = [];
   }
 
   private async request<T>(path: string, method = 'GET', body?: unknown, key?: string): Promise<T> {
@@ -194,11 +262,11 @@ export class Agent18 {
       status,
     });
   }
-  reportCase(input: Omit<ReportCase, 'context'>, idempotencyKey: string) {
+  reportCase(input: Omit<ReportCase, 'context'> & { context?: ClientContext }, idempotencyKey: string) {
     return this.request<{ case: SupportCase; replayed: boolean }>(
       '/api/cases',
       'POST',
-      { ...input, context: this.context },
+      { ...input, context: input.context ?? this.getContext() },
       idempotencyKey,
     );
   }
@@ -215,7 +283,10 @@ export class Agent18 {
     return this.request<AnswerResult>('/api/knowledge/ask', 'POST', { query });
   }
   routeConversation(input: AssistantTurn) {
-    return this.request<AssistantRoute>('/api/assistant/route', 'POST', { ...input, context: this.context });
+    return this.request<AssistantRoute>('/api/assistant/route', 'POST', {
+      ...input,
+      context: this.getContext(),
+    });
   }
   listBusinessQueries() {
     return this.request<{ queries: BusinessQuery[] }>('/api/business/queries');
@@ -268,7 +339,7 @@ export class Agent18 {
   destroy() {
     this.abort.abort();
     this.collector.dispose();
-    this.context = {};
+    this.clearContext();
   }
 }
 export { mountAssistant, mountFloatingAssistant, type AssistantOptions } from './widget.js';

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ActionDefinition, BusinessQuery, AssistantTurn, AssistantRoute } from '@agent18/contracts';
 import { containsSecret, tokens, type JsonModel } from '@agent18/knowledge';
 import { validateArguments } from './index.js';
+import { latestFailure } from '@agent18/contracts/context';
 type Catalog = { queries: BusinessQuery[]; actions: ActionDefinition[] };
 type Definition = ActionDefinition | BusinessQuery;
 const scalar = (text: string, field: Definition['fields'][number]) => {
@@ -36,8 +37,21 @@ function fallback(input: AssistantTurn, catalog: Catalog): AssistantRoute {
   if (/^(取消|算了|先不办了|不用了|停止|cancel)[。！!\s]*$/i.test(text)) return { kind: 'cancel' };
   if (/^(你好|您好|hello|hi|你能做什么|有什么功能|能帮我做什么)[？?！!。\s]*$/i.test(text))
     return { kind: 'help' };
-  if (/转人工|找人工|联系支持|提交问题|还是不行|没有解决/.test(text)) return { kind: 'support' };
+  if (
+    /转人工|找人工|联系支持|提交问题|还是不行|没有解决/.test(text) ||
+    /^(?:(?:我想要|我要|我想|请帮我|帮我|请)\s*)?(?:上报|报告|提交)(?:一个|这个|此)?(?:问题|故障|异常|工单)[。！!\s]*$/.test(
+      text.trim(),
+    )
+  )
+    return { kind: 'support' };
   if (/我的问题|支持回复|问题进展|工单进度/.test(text)) return { kind: 'cases' };
+  if (
+    latestFailure(input.context) &&
+    /为什么.*(不行|失败|报错)|怎么.*(不行|失败|报错)|刚才.*(失败|报错)|出错了|why.*(fail|work)|what went wrong/i.test(
+      text,
+    )
+  )
+    return { kind: 'support' };
   const question = /^(怎么|如何|为什么|能否|能不能|是否|可以)/.test(text);
   const write =
     !question &&
@@ -105,7 +119,12 @@ export async function routeConversation(
   model?: JsonModel,
 ): Promise<AssistantRoute> {
   const basic = fallback(input, catalog);
-  if (!model || basic.kind === 'cancel' || (['cases', 'support'].includes(basic.kind) && !input.pending))
+  if (
+    !model ||
+    basic.kind === 'cancel' ||
+    (basic.kind === 'support' && latestFailure(input.context)) ||
+    (['cases', 'support'].includes(basic.kind) && !input.pending)
+  )
     return basic;
   if (containsSecret(JSON.stringify(input))) return basic;
   try {

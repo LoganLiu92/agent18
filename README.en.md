@@ -12,7 +12,7 @@ Agent18 is an open-source support agent for SaaS products. Connect your document
 
 [//]: # (agent18:release:start)
 
-Current version: **0.7.0 integration preview**. See the [runtime overview](docs/overview/agent18-0.7-operations.md); source-based, single-host deployment.
+Current version: **0.8.0 integration preview**. See the [runtime overview](docs/overview/agent18-0.8-integration.md); source-based, single-host deployment.
 
 [//]: # (agent18:release:end)
 
@@ -46,9 +46,9 @@ The model proposes registered actions and arguments. Agent18 forwards the curren
 | Capability | Status | Available | Requirements and limits |
 | --- | --- | --- | --- |
 | Answer | Implemented | Directory/Git sources, extractive or model drafts, citations, review, publication and watch | Source scope, audience and answer quality need target-system validation |
-| Query | Implemented | Reviewed OpenAPI GET operations, current-user identity, roles and field projection | SaaS enforces object access; POST/GraphQL reads are not yet supported |
+| Query | Implemented | Reviewed OpenAPI GET and read-only POST operations, current-user identity, roles and field projection | POST needs explicit read-only review and flat scalar parameters; SaaS enforces object access; GraphQL is not supported |
 | Act | Implemented | Registered actions, exact previews, explicit confirmation, reauthorization and receipt reconciliation | SaaS implements transactional idempotency; no arbitrary browser control or autonomous multi-step writes |
-| Investigate | Partial | Page-context previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery | Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented |
+| Investigate | Partial | Semantic business failure events and page previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery | Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented |
 | Handoff and learn | Partial | Persistent cases, follow-ups, local operator replies, resolve/reopen and internal knowledge drafts | Ordinary chat resets on reload; remote operator SSO, assignment and external ticket sync are not implemented |
 | Self-host | Partial | Source installation, setup, floating/inline/standalone entry, diagnostics, backup and isolated restore | Single-host integration preview; official images/npm packages, distributed quotas and HA are not shipped |
 | Code repair | Planned | Planned: engineering evidence handoff, fix proposals, isolated verification and draft PRs | No automated code changes, merge or production deployment |
@@ -58,6 +58,8 @@ The model proposes registered actions and arguments. Agent18 forwards the curren
 Implemented means the repository includes runnable behavior and validation paths. Your real identity, data, model quality and production behavior still need [target-system acceptance](docs/reference/integration-acceptance.md).
 
 ## What you integrate
+
+The 0.8 preview adds explicitly reviewed read-only POST queries and bounded host business events. `client.emit` can attach operation/error/trace hints to a reviewable report; context expires, resets when the current object changes, and can be omitted before submission. See [semantic context](docs/guides/semantic-context.md) and the [0.8 overview](docs/overview/agent18-0.8-integration.md).
 
 1. **Identity:** Your authenticated backend issues a short-lived Ed25519 Support Token. Project, tenant, user and roles are derived from a trusted session. Agent18 verifies signatures and enforces scoped PostgreSQL RLS.
 2. **Knowledge:** Import directories or Git. Build extractive or model-generated drafts with file/line citations. Review and publish. `knowledge watch` builds changed drafts without automatically publishing them.

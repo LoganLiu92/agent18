@@ -1,4 +1,4 @@
-# OpenAPI 业务查询
+# 业务查询：OpenAPI GET 与审核 POST
 
 业务查询用于回答“我的订单处理到哪了”“刚才的设置是否保存”等问题。知识回答解释产品规则，业务查询读取业务系统当前状态；界面明确展示数据来源与查询时间。
 
@@ -7,7 +7,7 @@
 1. 部署者把 SaaS 的 OpenAPI JSON 导入本地工作台。导入过程不访问文档中的 servers 地址，不读取外部引用。
 2. 解析器产生 GET 候选，默认关闭。部署者选择开放的操作、用户角色和返回字段，配置固定 API 基础地址，再保存并应用。
 3. 客户选择查询并填写业务参数。Core 验证当前短期 Token、项目、租户、角色、操作启用状态、参数范围与 OPA 决策，提交审计后才调用后端。
-4. Core 使用当前请求的 Bearer Token 发起 GET。SaaS 再次校验身份和对象权限，按真实业务授权返回数据。
+4. Core 使用当前请求的 Bearer Token 发起登记的 GET 或已审核 POST。SaaS 再次校验身份和对象权限，按真实业务授权返回数据。
 5. Core 只投影批准的字段，最多 50 条记录，返回查询时间与 requestId。不会保存 Token、原始响应或查询结果正文。
 
 这要求业务接口能验证专用 Support Token，或由 SaaS 提供一个很薄的查询适配端点。不能把面向管理账户的开放 API 直接当成用户身份查询；不能把企业级 API Key 放在网页或用它替代客户授权。
@@ -29,7 +29,31 @@
 | 自动排除 | writeOnly 字段，以及常见密码、密钥、Token 字段名 |
 | 不导入 | 写方法、GET body、操作级 servers 覆盖、header/cookie 参数、复杂参数结构 |
 
-GET 方法名不能证明服务端没有副作用，审核时应确认该端点只读。
+GET 方法名不能证明服务端没有副作用，审核时应确认该端点只读。POST 不自动导入；经单独只读审核后可以按下面方式登记。
+
+## 已有 POST 查询接口
+
+工作台 → 系统与能力 → 登记只读 POST 查询。编辑定义后，勾选已确认无业务副作用并检查当前用户授权，加入待启用列表，再核对、启用、保存和应用。修改定义会清除界面上的审核勾选。
+
+```json
+{
+  "id": "orders.search",
+  "title": "按状态筛选订单",
+  "description": "查询当前用户可访问的订单",
+  "method": "POST",
+  "readOnly": true,
+  "path": "/api/orders/search",
+  "fields": [{"name":"status","label":"状态","type":"string","in":"body","required":true,"enum":["处理中","已完成"]}],
+  "rowsPath": "items",
+  "columns": [{"path":"id","label":"订单"},{"path":"status","label":"状态"}],
+  "roles": ["order-reader"],
+  "enabled": false
+}
+```
+
+把定义放在 `businessQueries.operations`，基础地址仍由项目配置固定。POST 必须有 `readOnly: true`，否则配置拒绝。`method` 省略时按 GET 兼容旧配置。POST 参数可在 path/query/body 中逐项声明，body 仅为平铺的 string/number/boolean；未声明参数、嵌套对象、任意头部和自由 URL 都被拒绝。GET 不接受 body 字段。只有 body 字段进入 JSON 请求体，path/query 仍按各自规则编码。
+
+调用方和模型只提交 queryId 与参数，不能更改方法。JSON body 使用 `application/json`，身份仍为当前 Support Token，默认没有上游重试。声明只读是部署者对接口语义的确认，SaaS 必须实际保证无写入副作用；修改、创建、删除一律走[业务桥](business-actions.md)。GraphQL、任意嵌套 RPC 和动态请求模板尚未适配。
 
 不支持的项会逐项说明原因，不会静默注册为可执行能力。原始 OpenAPI 的完整业务验证规则仍由 SaaS 执行；导入器提供受限参数合同，不是通用 OpenAPI 客户端或认证方案自动转换器。
 

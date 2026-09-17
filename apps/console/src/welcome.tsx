@@ -131,7 +131,7 @@ export function Welcome() {
         )}
       </main>
       <footer className="experience-footer">
-        agent18 {state?.version ?? '0.7.0'} · Open source, built for your SaaS.
+        agent18 {state?.version ?? '0.8.0'} · Open source, built for your SaaS.
       </footer>
     </div>
   );

@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — SaaS Integration and Semantic Context
+
+- Add explicitly reviewed read-only POST queries with fixed paths, typed scalar JSON bodies, current-user authorization and response projection; OpenAPI auto-import remains GET-only.
+- Add an Owner registration flow that validates POST definitions and keeps new entries disabled until enabled and applied.
+- Add bounded SDK business success/failure events, route context, expiry, object-change cleanup and explicit context snapshots.
+- Guide recent unresolved failures into a reviewable case report; freeze preview context and allow customers to omit both semantic and captured page context.
+- Persist submitted events in scoped cases, show them to local operators and correlate investigation logs using the reported failure trace ID.
+- Extend the synthetic SaaS and real Loki/Prometheus acceptance journey. Existing GET configurations remain compatible; no new database migration.
+
+See the [0.8 overview](docs/overview/agent18-0.8-integration.md) and [semantic context guide](docs/guides/semantic-context.md). General conversation persistence, remote operator SSO, official package/image distribution and full trace backends remain roadmap work.
+
+### Documentation and review alignment
 
 - Clarify the Chinese and English product introduction around answers, confirmed business actions and runtime evidence, with explicit deployment and capability limits.
 - Synchronize the handbook, contribution guide and public roadmap; add review findings and acceptance gates for future integrations.

@@ -5,6 +5,7 @@ import type { DoctorReport } from '../../../scripts/lib/doctor.js';
 import type { SupportCase, CaseMessage } from '@agent18/contracts';
 import { ProductMark } from './setup.js';
 import { ObservationCenter, CaptureView } from './observations.js';
+import { QueryRegistration } from './query-registration.js';
 
 type Project = Config['projects'][number];
 type InboxCase = SupportCase & { tenantId: string; subject: string };
@@ -466,7 +467,7 @@ function ConnectionEditor({
             <span className="experience-kicker">READ · OPENAPI</span>
             <h2>以用户身份查询业务</h2>
           </div>
-          <span className="experience-badge">GET ONLY</span>
+          <span className="experience-badge">GET / 审核 POST</span>
         </div>
         <p>导入 OpenAPI 3.0 / 3.1 JSON，选择可以开放的接口。导入不访问服务器，也不会自动启用。</p>
         <div className="setup-form-grid">
@@ -555,6 +556,12 @@ function ConnectionEditor({
             </div>
           )}
         </details>
+        <QueryRegistration
+          request={request}
+          onAdd={(query) => {
+            setOperations((items) => [...items.filter((item) => item.id !== query.id), query]);
+          }}
+        />
         {!operations.length ? (
           <div className="build-empty">导入业务接口后，查询能力会列在这里。</div>
         ) : (
@@ -570,7 +577,9 @@ function ConnectionEditor({
                     />
                     <b>{q.title}</b>
                   </label>
-                  <code>GET {q.path}</code>
+                  <code>
+                    {q.method ?? 'GET'} {q.path}
+                  </code>
                 </header>
                 <p>{q.description}</p>
                 <div className="setup-form-grid">
@@ -602,8 +611,10 @@ function ConnectionEditor({
                   </label>
                 </div>
                 <small>
-                  参数：{q.fields.map((f) => `${f.name}${f.required ? '（必填）' : ''}`).join('、') || '无'} ·
-                  返回上限 50 条 · 未选字段不会返回给客户
+                  参数：
+                  {q.fields.map((f) => `${f.name} (${f.in})${f.required ? '（必填）' : ''}`).join('、') ||
+                    '无'}{' '}
+                  · 返回上限 50 条 · 未选字段不会返回给客户
                 </small>
                 <button
                   className="ops-remove"

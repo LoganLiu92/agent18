@@ -23,6 +23,15 @@ import type { Scope } from '@agent18/contracts';
 describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
   'registered non-knowledge tool through the real Case runtime',
   () => {
+    const compose = (...args: string[]) =>
+      promisify(execFile)('docker', [
+        'compose',
+        '--env-file',
+        '.local/compose.env',
+        '-f',
+        'deploy/compose/compose.yaml',
+        ...args,
+      ]);
     let config: ReturnType<typeof readConfig>;
     let db: InstanceType<typeof Pool>, admin: InstanceType<typeof Pool>;
     let scope: Scope;
@@ -83,6 +92,8 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       return { caseId: result.case.id, runId: detail.runs[0]!.id };
     }
     beforeAll(async () => {
+      // These providers exist only in this process; the demo Worker must not consume their runs.
+      await compose('stop', 'worker');
       config = readConfig();
       scope = {
         organizationId: config.projects[0]!.organizationId,
@@ -118,10 +129,14 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       cases = server.cases;
     });
     afterAll(async () => {
-      await admin?.query('DELETE FROM control.tools WHERE id=$1', [tool.id]);
-      await admin?.query('DELETE FROM control.providers WHERE id=$1', [providerId]);
-      await server?.app.close();
-      await admin?.end();
+      try {
+        await admin?.query('DELETE FROM control.tools WHERE id=$1', [tool.id]);
+        await admin?.query('DELETE FROM control.providers WHERE id=$1', [providerId]);
+        await server?.app.close();
+        await admin?.end();
+      } finally {
+        await compose('start', 'worker');
+      }
     });
     it('persists a log Evidence and generic step without changing the executor, and strips private references', async () => {
       const { caseId, runId } = await report();

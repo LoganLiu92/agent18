@@ -568,6 +568,7 @@
       };
       const client = new Agent18(options);
       client.setContext({
+        route: 'order-detail',
         pageUrl: location.href,
         entityType: 'order',
         entityId: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
@@ -583,18 +584,16 @@
           body: JSON.stringify({ profile }),
         });
         const error = await response.json();
-        client.setContext({
-          pageUrl: location.href,
-          entity: {
-            type: 'order',
-            id: profile === 'aurora' ? 'ORD-1001' : profile === 'colleague' ? 'ORD-1003' : 'ORD-2001',
-          },
+        client.emit({
+          type: 'business.operation.failed',
+          operation: 'order.save',
+          errorCode: error.error,
           traceId: error.traceId,
         });
         document.querySelector('#notice').textContent =
           '模拟订单保存失败 · ' +
           error.traceId +
-          '。请在助手中联系支持，页面上下文会随工单提交。' +
+          '。在助手中输入“为什么不行”，核对业务事件与页面信息后提交排查。' +
           (error.logged ? '关联日志已写入 Loki。' : '可先运行 pnpm observability:demo 连接日志与巡检。');
         window.dispatchEvent(
           new ErrorEvent('error', { message: 'ORDER_SAVE_TIMEOUT traceId=' + error.traceId }),
@@ -602,6 +601,7 @@
       };
       document.querySelector('#recover-demo').onclick = async () => {
         await fetch('/recover-demo', { method: 'POST' });
+        client.emit({ type: 'business.operation.succeeded', operation: 'order.save' });
         document.querySelector('#notice').textContent =
           '演示服务已恢复。HTTP 与指标检查会恢复；错误日志窗口到期后，日志异常才会解除。';
       };

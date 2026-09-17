@@ -4,7 +4,7 @@ agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已
 
 [//]: # (agent18:release:start)
 
-当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+当前版本：**0.8.0 集成预览**。实现范围见[运行机制综述](overview/agent18-0.8-integration.md)；源码自托管，单机部署。
 
 [//]: # (agent18:release:end)
 
@@ -26,6 +26,7 @@ agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已
 | 自建页面或接入客户端 | [API 与 SDK](reference/api.md) | 使用同一套身份、错误和幂等语义 |
 | 理解配置与技术边界 | [配置参考](reference/configuration.md)、[技术标准](reference/standards.md) | 清楚配置在哪生效、由谁授权、如何恢复 |
 | 接上日志与巡检 | [页面采集与监控](guides/observability.md) | 数据源、标签、权限、异常处理与恢复 |
+| 让助手理解刚才失败的业务 | [宿主业务事件](guides/semantic-context.md) | 路由/实体、事件、预览、工单与工程证据关联 |
 | 了解整体实现 | [0.7 运行综述](overview/agent18-0.7-operations.md)、[0.6 核心抽象](overview/agent18-0.6-core.md) | 从用户请求追溯到接口、策略、存储和回执 |
 | 选择贡献方向 | [路线图](planning/mvp-roadmap.md)、[评审核验](planning/review-and-priorities.md) | 确认优先级、依赖与验收条件 |
 

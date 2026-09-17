@@ -559,12 +559,21 @@ export function CaptureView({
   request: Request;
 }) {
   const [capture, setCapture] = useState<PageCapture | null>(),
+    [context, setContext] = useState<import('@agent18/contracts').ClientContext | null>(),
     [error, setError] = useState('');
   useEffect(() => {
     let alive = true;
-    void request<{ capture: PageCapture | null }>(`projects/${projectKey}/cases/${caseId}/capture`).then(
+    setCapture(undefined);
+    setContext(undefined);
+    setError('');
+    void request<{ capture: PageCapture | null; context: import('@agent18/contracts').ClientContext | null }>(
+      `projects/${projectKey}/cases/${caseId}/capture`,
+    ).then(
       (r) => {
-        if (alive) setCapture(r.capture);
+        if (alive) {
+          setCapture(r.capture);
+          setContext(r.context);
+        }
       },
       () => {
         if (alive) setError('暂时无法读取页面上下文，请刷新重试。');
@@ -575,29 +584,60 @@ export function CaptureView({
     };
   }, [projectKey, caseId]);
   if (error) return <p role="alert">{error}</p>;
-  if (!capture) return null;
+  if (!capture && !Object.keys(context ?? {}).length) return null;
   return (
     <details className="observation-result">
       <summary>问题发生时的页面上下文</summary>
-      <p>
-        {capture.page.title} · {capture.page.path}
-      </p>
-      <small>
-        {capture.capturedAt} · {capture.page.width} × {capture.page.height}
-      </small>
-      {capture.screenshot && (
-        <img className="capture-preview" src={capture.screenshot} alt="客户上报时的脱敏页面截图" />
+      {context && (
+        <>
+          <p>
+            {context.route} {context.pagePath}{' '}
+            {context.entity && `${context.entity.type} · ${context.entity.id}`}
+          </p>
+          <small>宿主提供的业务线索；用户身份与权限以服务端验证为准。</small>
+          {context.events?.map((event, index) => (
+            <article key={index} className="data-card">
+              <b>
+                {event.operation} · {event.type.endsWith('failed') ? '失败' : '成功'}
+              </b>
+              <p>
+                {event.at} · {event.entity?.type} {event.entity?.id} · {event.errorCode}
+              </p>
+              <pre>
+                {[
+                  event.traceId && `traceId: ${event.traceId}`,
+                  event.requestId && `requestId: ${event.requestId}`,
+                ]
+                  .filter(Boolean)
+                  .join('\n')}
+              </pre>
+            </article>
+          ))}
+        </>
       )}
-      <pre>{capture.text}</pre>
-      <h4>浏览器错误</h4>
-      <pre>{capture.errors.join('\n') || '未捕获到错误'}</pre>
-      <h4>最近操作与失败请求</h4>
-      <pre>
-        {capture.breadcrumbs.map((b) => `${b.at} ${b.type} ${b.detail}`).join('\n')}
-        {'\n'}
-        {capture.requests.map((r) => `${r.status} ${r.path} ${r.durationMs}ms`).join('\n')}
-      </pre>
-      <small>{capture.notice}</small>
+      {capture && (
+        <>
+          <p>
+            {capture.page.title} · {capture.page.path}
+          </p>
+          <small>
+            {capture.capturedAt} · {capture.page.width} × {capture.page.height}
+          </small>
+          {capture.screenshot && (
+            <img className="capture-preview" src={capture.screenshot} alt="客户上报时的脱敏页面截图" />
+          )}
+          <pre>{capture.text}</pre>
+          <h4>浏览器错误</h4>
+          <pre>{capture.errors.join('\n') || '未捕获到错误'}</pre>
+          <h4>最近操作与失败请求</h4>
+          <pre>
+            {capture.breadcrumbs.map((b) => `${b.at} ${b.type} ${b.detail}`).join('\n')}
+            {'\n'}
+            {capture.requests.map((r) => `${r.status} ${r.path} ${r.durationMs}ms`).join('\n')}
+          </pre>
+          <small>{capture.notice}</small>
+        </>
+      )}
     </details>
   );
 }

@@ -1,5 +1,6 @@
 import type { Agent18 } from './index.js';
 import type { ActionProposal, ActionDefinition, BusinessQuery } from '@agent18/contracts';
+import { latestFailure } from '@agent18/contracts/context';
 export type AssistantOptions = {
   title?: string;
   /** Optional CSP nonce for the isolated widget stylesheet. */
@@ -9,7 +10,7 @@ export type AssistantOptions = {
   onActionComplete?: (proposal: ActionProposal) => void;
 };
 const styles = `
-:host{all:initial;font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#203d38;color-scheme:light;display:block}*{box-sizing:border-box}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #177e69;outline-offset:3px}[hidden]{display:none!important}.assistant{background:#fff;border:1px solid #dfe8e2;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;height:650px;max-height:100%;box-shadow:0 14px 50px #19372d0d}header{display:flex;align-items:center;gap:11px;padding:18px 20px;color:#fff;background:#173e34;flex-shrink:0}header strong{display:block;font-size:15px}header small{color:#b7d6c9;font-size:10px;display:block;margin-top:3px}.mark{height:36px;width:36px;display:grid;place-items:center;border:1px solid #527669;border-radius:12px;font-weight:700;letter-spacing:-1px;background:#2f5548}.head-actions{margin-left:auto;display:flex;gap:5px}.icon{background:transparent;border:0;padding:5px;color:inherit;font-size:21px;line-height:1}.chat-feed{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 17px;background:#f7f9f6;scrollbar-width:thin}.chat-message{display:flex;gap:8px;align-items:flex-start;margin:0 0 23px}.message-mark{flex:0 0 25px;height:25px;border-radius:8px;color:#36735b;background:#e4eee5;display:grid;place-items:center;font-size:15px;margin-top:3px}.bubble{min-width:0;max-width:calc(100% - 33px);overflow-wrap:anywhere}.bubble>p{white-space:pre-wrap;margin:0 0 10px;font-size:13px;line-height:1.85}.from-user{justify-content:flex-end;margin:6px 0 23px}.from-user .bubble{background:#e2eee4;border:1px solid #d7e6db;border-radius:14px 14px 3px 14px;padding:9px 13px}.from-user .bubble>p{margin:0}.chat-choices{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0 0}.chip{background:white;border:1px solid #dce6dd;border-radius:9px;padding:7px 10px;font-size:11px;text-align:left;line-height:1.6}.chip:hover{background:#eef5ed;border-color:#afc5b3}.bubble>.chip,.bubble>.primary{margin:9px 7px 0 0}.primary{background:#22694e;color:#fff;border:1px solid #22694e;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:550}.data-card{border:1px solid #e0e8df;background:#fff;border-radius:10px;padding:11px 12px;margin:10px 0}.data-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:4px 0}.data-row span{color:#7b8c81}.data-row b{text-align:right;font-weight:550;overflow-wrap:anywhere}.data-card p{white-space:pre-wrap;margin:6px 0;font-size:12px}.bubble small{display:block;font-size:10px;line-height:1.7;color:#85958a;margin-top:8px}.bubble details{margin:10px 0;border:1px solid #e0e8df;background:white;border-radius:9px;padding:10px 12px;font-size:11px}.bubble summary{cursor:pointer;line-height:1.7;color:#55755e}.bubble details p{white-space:pre-wrap;font-size:12px;line-height:1.8}.status{font-size:11px;background:#e4efe4;color:#447350;border-radius:5px;padding:3px 7px;display:inline-block}.typing{font-size:11px;color:#789181;padding:0 0 12px 33px;letter-spacing:1px}.composer{display:flex;align-items:flex-end;gap:10px;border-top:1px solid #e6ebe4;background:#fff;margin:0;padding:14px 17px 5px;flex-shrink:0}.composer textarea{border:0;box-shadow:none;outline:none!important;resize:none;width:100%;min-width:0;line-height:1.8;max-height:120px;padding:4px 0;color:#203d38;font-size:13px;background:transparent}.composer textarea::placeholder{color:#94a296}.send{background:#22694e;color:white;border:0;border-radius:11px;width:37px;height:37px;flex-shrink:0;font-size:23px;line-height:1;display:grid;place-items:center;margin-bottom:4px}.bubble form{display:grid;gap:10px;margin:12px 0}.bubble label{display:grid;gap:6px;font-size:11px;color:#687c6e}.bubble input,.bubble textarea{width:100%;min-width:0;border:1px solid #dce5dd;border-radius:8px;background:white;padding:9px 10px;font-size:12px;resize:vertical;color:#203d38}footer{padding:5px 12px 11px;text-align:center;font-size:9px;color:#9aa69e;background:#fff;letter-spacing:.3px;flex-shrink:0}.launcher{width:56px;height:56px;border-radius:19px;background:#22694e;color:#fff;border:1px solid #ffffff30;box-shadow:0 5px 25px #164e3540;display:flex;align-items:center;justify-content:center;font-size:27px}.floating{width:min(400px,calc(100% - 32px));pointer-events:none;position:fixed;bottom:24px;right:24px;z-index:2147483000;display:flex;align-items:flex-end;flex-direction:column;gap:14px}.floating>*{pointer-events:auto}.floating.left{right:auto;left:24px;align-items:flex-start}.panel{width:100%;height:min(650px,calc(100dvh - 108px));box-shadow:0 22px 80px #172d3429;border-radius:20px;outline:0}.panel .assistant{height:100%}@media(max-width:480px){.floating{bottom:16px;right:16px}.floating.left{left:16px}.panel{height:min(650px,calc(100dvh - 104px))}header{padding:16px}.chat-feed{padding:19px 13px}.composer{padding:12px 14px 4px}}
+:host{all:initial;font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#203d38;color-scheme:light;display:block}*{box-sizing:border-box}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #177e69;outline-offset:3px}[hidden]{display:none!important}.assistant{background:#fff;border:1px solid #dfe8e2;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;height:650px;max-height:100%;box-shadow:0 14px 50px #19372d0d}header{display:flex;align-items:center;gap:11px;padding:18px 20px;color:#fff;background:#173e34;flex-shrink:0}header strong{display:block;font-size:15px}header small{color:#b7d6c9;font-size:10px;display:block;margin-top:3px}.mark{height:36px;width:36px;display:grid;place-items:center;border:1px solid #527669;border-radius:12px;font-weight:700;letter-spacing:-1px;background:#2f5548}.head-actions{margin-left:auto;display:flex;gap:5px}.icon{background:transparent;border:0;padding:5px;color:inherit;font-size:21px;line-height:1}.chat-feed{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 17px;background:#f7f9f6;scrollbar-width:thin}.chat-message{display:flex;gap:8px;align-items:flex-start;margin:0 0 23px}.message-mark{flex:0 0 25px;height:25px;border-radius:8px;color:#36735b;background:#e4eee5;display:grid;place-items:center;font-size:15px;margin-top:3px}.bubble{min-width:0;max-width:calc(100% - 33px);overflow-wrap:anywhere}.bubble>p{white-space:pre-wrap;margin:0 0 10px;font-size:13px;line-height:1.85}.from-user{justify-content:flex-end;margin:6px 0 23px}.from-user .bubble{background:#e2eee4;border:1px solid #d7e6db;border-radius:14px 14px 3px 14px;padding:9px 13px}.from-user .bubble>p{margin:0}.chat-choices{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0 0}.chip{background:white;border:1px solid #dce6dd;border-radius:9px;padding:7px 10px;font-size:11px;text-align:left;line-height:1.6}.chip:hover{background:#eef5ed;border-color:#afc5b3}.bubble>.chip,.bubble>.primary{margin:9px 7px 0 0}.primary{background:#22694e;color:#fff;border:1px solid #22694e;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:550}.data-card{border:1px solid #e0e8df;background:#fff;border-radius:10px;padding:11px 12px;margin:10px 0}.data-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:4px 0}.data-row span{color:#7b8c81}.data-row b{text-align:right;font-weight:550;overflow-wrap:anywhere}.data-card p{white-space:pre-wrap;margin:6px 0;font-size:12px}.bubble small{display:block;font-size:10px;line-height:1.7;color:#85958a;margin-top:8px}.bubble details{margin:10px 0;border:1px solid #e0e8df;background:white;border-radius:9px;padding:10px 12px;font-size:11px}.bubble pre{white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.6 ui-monospace,monospace}.bubble summary{cursor:pointer;line-height:1.7;color:#55755e}.bubble details p{white-space:pre-wrap;font-size:12px;line-height:1.8}.status{font-size:11px;background:#e4efe4;color:#447350;border-radius:5px;padding:3px 7px;display:inline-block}.typing{font-size:11px;color:#789181;padding:0 0 12px 33px;letter-spacing:1px}.composer{display:flex;align-items:flex-end;gap:10px;border-top:1px solid #e6ebe4;background:#fff;margin:0;padding:14px 17px 5px;flex-shrink:0}.composer textarea{border:0;box-shadow:none;outline:none!important;resize:none;width:100%;min-width:0;line-height:1.8;max-height:120px;padding:4px 0;color:#203d38;font-size:13px;background:transparent}.composer textarea::placeholder{color:#94a296}.send{background:#22694e;color:white;border:0;border-radius:11px;width:37px;height:37px;flex-shrink:0;font-size:23px;line-height:1;display:grid;place-items:center;margin-bottom:4px}.bubble form{display:grid;gap:10px;margin:12px 0}.bubble label{display:grid;gap:6px;font-size:11px;color:#687c6e}.bubble input,.bubble textarea{width:100%;min-width:0;border:1px solid #dce5dd;border-radius:8px;background:white;padding:9px 10px;font-size:12px;resize:vertical;color:#203d38}footer{padding:5px 12px 11px;text-align:center;font-size:9px;color:#9aa69e;background:#fff;letter-spacing:.3px;flex-shrink:0}.launcher{width:56px;height:56px;border-radius:19px;background:#22694e;color:#fff;border:1px solid #ffffff30;box-shadow:0 5px 25px #164e3540;display:flex;align-items:center;justify-content:center;font-size:27px}.floating{width:min(400px,calc(100% - 32px));pointer-events:none;position:fixed;bottom:24px;right:24px;z-index:2147483000;display:flex;align-items:flex-end;flex-direction:column;gap:14px}.floating>*{pointer-events:auto}.floating.left{right:auto;left:24px;align-items:flex-start}.panel{width:100%;height:min(650px,calc(100dvh - 108px));box-shadow:0 22px 80px #172d3429;border-radius:20px;outline:0}.panel .assistant{height:100%}@media(max-width:480px){.floating{bottom:16px;right:16px}.floating.left{left:16px}.panel{height:min(650px,calc(100dvh - 104px))}header{padding:16px}.chat-feed{padding:19px 13px}.composer{padding:12px 14px 4px}}
 `;
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', className = '') => {
   const node = document.createElement(tag);
@@ -511,14 +512,20 @@ function mountContents(
   async function support() {
     pending = undefined;
     replyCase = undefined;
-    const card = message('我可以把问题交给支持团队。先核对一下要提交的内容：'),
+    const context = client.getContext(),
+      failure = latestFailure(context);
+    const card = message(
+        failure
+          ? `页面报告了 ${failure.operation} 操作失败${failure.errorCode ? '（' + failure.errorCode + '）' : ''}。这是一条待核实线索，我可以连同相关信息交给支持团队排查。请先核对：`
+          : '我可以把问题交给支持团队。先核对一下要提交的内容：',
+      ),
       form = element('form'),
       title = element('input'),
       description = element('textarea');
     title.required = true;
     title.minLength = 3;
     title.maxLength = 180;
-    title.value = (history.at(-1) ?? '').slice(0, 180);
+    title.value = (failure ? failure.operation + ' 操作失败' : (history.at(-1) ?? '')).slice(0, 180);
     title.placeholder = '用一句话描述问题';
     description.required = true;
     description.minLength = 3;
@@ -534,26 +541,86 @@ function mountContents(
     form.append(titleLabel, bodyLabel, submit);
     card.append(form);
     submit.disabled = true;
-    const capture = await client.capturePage();
+    let capture = await client.capturePage();
     if (!alive) return;
+    const currentContext = client.getContext();
+    if (
+      ['pagePath', 'route', 'entity', 'entityType', 'entityId'].some(
+        (key) =>
+          JSON.stringify(context[key as keyof typeof context]) !==
+          JSON.stringify(currentContext[key as keyof typeof context]),
+      )
+    ) {
+      capture = undefined;
+      card.append(element('small', '采集期间页面已切换，已省略页面采集，仅保留本次业务快照。'));
+    }
     const includeCapture = element('input');
     includeCapture.type = 'checkbox';
     includeCapture.checked = true;
-    if (capture) {
+    if (capture || Object.keys(context).length) {
       const preview = element('details'),
-        label = element('label', '附上页面上下文，帮助支持团队排查');
+        label = element('label', '附上页面与业务上下文，帮助支持团队排查');
       label.style.display = 'flex';
       label.style.alignItems = 'center';
       includeCapture.style.width = 'auto';
       label.prepend(includeCapture);
       preview.append(
         element('summary', '查看将提交的页面信息'),
-        element('p', capture.page.title + ' · ' + capture.page.path),
-        element('p', capture.text),
-        element('p', capture.errors.join('\n')),
-        element('small', capture.notice),
+        element(
+          'p',
+          [
+            context.route,
+            context.entity ? `${context.entity.type} ${context.entity.id}` : '',
+            context.appVersion,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        ),
+        element(
+          'p',
+          (context.events ?? [])
+            .map(
+              (event) =>
+                `${event.at} ${event.operation} ${event.type.endsWith('failed') ? '失败' : '成功'} ${event.entity?.id ?? ''} ${event.errorCode ?? ''} ${event.traceId ?? ''}`,
+            )
+            .join('\n'),
+        ),
+        element('small', '仅附上已展示的快照；切换页面后不会替换这份报告。业务事件不证明原因或授权。'),
       );
-      if (capture.screenshot) {
+      const contextDetails = element('details');
+      contextDetails.append(
+        element('summary', '完整业务上下文'),
+        element('pre', JSON.stringify(context, null, 2)),
+      );
+      preview.append(contextDetails);
+      if (capture)
+        preview.append(
+          element('p', capture.page.title + ' · ' + capture.page.path),
+          element('p', capture.text),
+          element('p', capture.errors.join('\n')),
+          element('small', capture.notice),
+        );
+      if (capture) {
+        const activity = element('details');
+        activity.append(
+          element('summary', '页面状态、最近操作与失败请求'),
+          element(
+            'pre',
+            JSON.stringify(
+              {
+                capturedAt: capture.capturedAt,
+                page: capture.page,
+                breadcrumbs: capture.breadcrumbs,
+                requests: capture.requests,
+              },
+              null,
+              2,
+            ),
+          ),
+        );
+        preview.append(activity);
+      }
+      if (capture?.screenshot) {
         const img = element('img');
         img.src = capture.screenshot;
         img.alt = '提交前截图预览';
@@ -578,6 +645,7 @@ function mountContents(
           {
             title: title.value,
             description: description.value,
+            context: includeCapture.checked ? context : {},
             ...(capture && includeCapture.checked ? { capture } : {}),
           },
           key,

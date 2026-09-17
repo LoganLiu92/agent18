@@ -13,12 +13,14 @@ const safePath = z
   .max(200)
   .regex(/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$/)
   .refine((v) => !v.split('.').some((p) => ['__proto__', 'constructor', 'prototype'].includes(p)));
-const fields = actionSchema.shape.fields.element.extend({ in: z.enum(['path', 'query']) });
+const fields = actionSchema.shape.fields.element.extend({ in: z.enum(['path', 'query', 'body']) });
 export const querySchema = z
   .object({
     id: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{1,79}$/),
     title: z.string().min(1).max(100),
     description: z.string().max(1000),
+    method: z.enum(['GET', 'POST']).default('GET'),
+    readOnly: z.boolean().default(false),
     path: z
       .string()
       .max(500)
@@ -35,6 +37,12 @@ export const querySchema = z
   })
   .strict()
   .superRefine((q, ctx) => {
+    if (q.method === 'POST' && !q.readOnly)
+      ctx.addIssue({ code: 'custom', message: 'POST queries require explicit read-only review' });
+    if (q.method === 'GET' && q.fields.some((field) => field.in === 'body'))
+      ctx.addIssue({ code: 'custom', message: 'GET queries cannot have body fields' });
+    if (q.fields.some((field) => ['__proto__', 'constructor', 'prototype'].includes(field.name)))
+      ctx.addIssue({ code: 'custom', message: 'Unsafe parameter name' });
     const variables = [...q.path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
     if (
       new Set(q.fields.map((f) => f.name)).size !== q.fields.length ||
@@ -84,7 +92,7 @@ export function importOpenApi(raw: unknown) {
       const item = deref(itemValue),
         op = item?.get;
       if (!op) {
-        skipped.push({ path, reason: '只有 GET 查询可以导入；写操作使用业务桥接协议' });
+        skipped.push({ path, reason: '自动导入仅支持 GET；只读 POST 需单独审核登记，写操作使用业务桥' });
         continue;
       }
       if (item.servers || op.servers || op.requestBody)
@@ -201,7 +209,8 @@ export class QueryService {
       query = config?.operations.find(
         (q) => q.id === queryId && q.enabled && q.roles.some((r) => p.roles.includes(r)),
       );
-    if (!config || !query || p.expiresAt <= Date.now()) throw new AppError('QUERY_NOT_ALLOWED', 403);
+    if (!config || !query || p.expiresAt <= Date.now() || (query.method === 'POST' && !query.readOnly))
+      throw new AppError('QUERY_NOT_ALLOWED', 403);
     const args = validateArguments({ ...query, description: query.description || query.title }, input);
     let path = query.path;
     for (const f of query.fields.filter((f) => f.in === 'path')) {
@@ -246,10 +255,26 @@ export class QueryService {
       );
     try {
       const response = await fetch(url, {
-        method: 'GET',
+        method: query.method,
         redirect: 'error',
         signal: AbortSignal.timeout(10000),
-        headers: { authorization, accept: 'application/json', 'x-request-id': requestId },
+        headers: {
+          authorization,
+          accept: 'application/json',
+          'x-request-id': requestId,
+          ...(query.method === 'POST' ? { 'content-type': 'application/json' } : {}),
+        },
+        ...(query.method === 'POST'
+          ? {
+              body: JSON.stringify(
+                Object.fromEntries(
+                  query.fields
+                    .filter((field) => field.in === 'body' && args[field.name] !== undefined)
+                    .map((field) => [field.name, args[field.name]]),
+                ),
+              ),
+            }
+          : {}),
       });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
         await response.body?.cancel();

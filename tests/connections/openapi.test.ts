@@ -2,6 +2,26 @@ import { it, expect } from 'vitest';
 import { importOpenApi, queriesSchema } from '@agent18/actions';
 import { demoOpenApi } from '../../examples/identity-bridge/queries.js';
 import { documentationHtml } from '../../apps/server/src/docs.js';
+import { demoPostQuery } from '../../examples/identity-bridge/queries.js';
+it('requires explicit POST review, permits bounded body fields and keeps automatic import GET-only', () => {
+  const parse = (q: unknown) => queriesSchema.safeParse({ baseUrl: 'https://saas.example', operations: [q] });
+  expect(parse(demoPostQuery).success).toBe(true);
+  for (const overrides of [
+    { readOnly: false },
+    { readOnly: undefined },
+    { method: 'DELETE' },
+    { method: 'GET' },
+  ])
+    expect(parse({ ...demoPostQuery, ...overrides }).success).toBe(false);
+  for (const name of ['constructor', 'prototype', '__proto__'])
+    expect(parse({ ...demoPostQuery, fields: [{ ...demoPostQuery.fields[0], name }] }).success).toBe(false);
+  const imported = importOpenApi({
+    ...demoOpenApi,
+    paths: { ...demoOpenApi.paths, '/api/orders/search': { post: { operationId: 'orders.search' } } },
+  });
+  expect(imported.operations.some((q) => q.id === 'orders.search')).toBe(false);
+  expect(imported.skipped).toHaveLength(1);
+});
 it('imports local schema references as disabled GET candidates and excludes write-only fields', () => {
   const result = importOpenApi(demoOpenApi);
   expect(result.skipped).toEqual([]);

@@ -1,5 +1,5 @@
-import { importOpenApi } from '@agent18/actions';
-import { demoOpenApi } from '../../examples/identity-bridge/queries.js';
+import { importOpenApi, querySchema } from '@agent18/actions';
+import { demoOpenApi, demoPostQuery } from '../../examples/identity-bridge/queries.js';
 /** The local demo writes only the synthetic user's notification preference. */
 export function demoBridge(docker = false) {
   return {
@@ -20,10 +20,13 @@ export function demoBridge(docker = false) {
 export function demoQueries(docker = false) {
   return {
     baseUrl: docker ? 'http://identity-demo:4319' : 'http://127.0.0.1:4319',
-    operations: importOpenApi(demoOpenApi).operations.map((q) => ({
-      ...q,
-      enabled: true,
-      roles: ['tenant-admin'],
-    })),
+    operations: [
+      ...importOpenApi(demoOpenApi).operations.map((q) => ({
+        ...q,
+        enabled: true,
+        roles: ['tenant-admin'],
+      })),
+      querySchema.parse(demoPostQuery),
+    ],
   };
 }

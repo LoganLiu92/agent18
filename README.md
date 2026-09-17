@@ -5,7 +5,7 @@
 Open-source support agent for SaaS. **Answer. Act. Investigate.**
 
 [![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
-[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.7-operations.md) · [贡献指南](CONTRIBUTING.md)
+[English](README.en.md) · [使用手册](docs/README.md) · [运行机制综述](docs/overview/agent18-0.8-integration.md) · [贡献指南](CONTRIBUTING.md)
 
 **准备接入已有项目？先读 [接入任务书](INTEGRATE.md)**：明确两个仓库分别改什么，按知识与支持 → 实时查询 → 确认办理推进；附可发给编码助手的任务描述和[目标系统验收报告](docs/reference/integration-acceptance.md)。
 
@@ -17,7 +17,7 @@ agent18 是嵌入现有 SaaS 的开源支持助手。连接已有代码和文档
 
 [//]: # (agent18:release:start)
 
-当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+当前版本：**0.8.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.8-integration.md)；源码自托管，单机部署。
 
 [//]: # (agent18:release:end)
 
@@ -59,9 +59,9 @@ pnpm start
 | 能力 | 状态 | 可用内容 | 接入要求与边界 |
 | --- | --- | --- | --- |
 | 知识回答 | 已实现 | 目录/Git、原文或模型整理、引用、审核发布与 watch | 来源范围、受众与回答质量需接入方验证 |
-| 实时查询 | 已实现 | 已审核的 OpenAPI GET、当前用户身份、角色和字段投影 | SaaS 仍需验证对象权限；POST/GraphQL 查询尚未适配 |
+| 实时查询 | 已实现 | 已审核的 OpenAPI GET 与只读 POST、当前用户身份、角色和字段投影 | POST 需明确只读审核、参数为平铺基础类型；SaaS 验证对象权限，GraphQL 未适配 |
 | 确认办理 | 已实现 | 注册动作、具体预览、明确确认、重新授权、回执核对 | SaaS 实现事务化幂等；无任意网页点击或自主多步写入 |
-| 上报与巡检 | 部分实现 | 页面预览、HTTP/Loki/Prometheus、持久排查、异常合并与恢复 | 需真实数据源和可信标签；完整 Trace 与根因证明尚未实现 |
+| 上报与巡检 | 部分实现 | 业务失败事件与页面预览、HTTP/Loki/Prometheus、持久排查、异常合并与恢复 | 需真实数据源和可信标签；完整 Trace 与根因证明尚未实现 |
 | 人工接手与经验 | 部分实现 | 持久工单、客户补充、本地工作人员回复、解决/重开、内部知识草稿 | 普通聊天刷新重置；尚无远程客服 SSO、坐席分工或外部工单同步 |
 | 开源交付 | 部分实现 | 源码安装、初始化、浮窗/内嵌/独立页、诊断、备份与隔离恢复 | 当前为单机集成预览；官方镜像/npm 包、多实例配额与 HA 尚未交付 |
 | 代码修复 | 规划 | 规划：工程证据交接、修复建议、隔离验证与草稿 PR | 当前无自动改代码、合并或生产部署 |
@@ -93,6 +93,8 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 也支持 `mountAssistant(container, client)` 与 `openSupportPage(options)`，或仅使用 SDK 自建 UI。示例 `/api/support-token` 由你的 SaaS 后端基于真实会话实现，不能直接信任浏览器传入的用户与租户。
 
 ## 接入和运维文档
+
+- [0.8 业务接口与语义上下文](docs/overview/agent18-0.8-integration.md)、[宿主业务失败事件](docs/guides/semantic-context.md)：适配现有 POST 查询，让失败报告关联具体业务操作。
 
 - [已有项目接入任务书](INTEGRATE.md)、[接入验收报告模板](docs/reference/integration-acceptance.md)：从仓库 URL 到真实网站效果，记录实际通过与未接入项。
 - [0.7 全场景机制](docs/overview/agent18-0.7-operations.md)、[页面采集与监控接入](docs/guides/observability.md)。

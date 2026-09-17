@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { Scope, Evidence, PageCapture } from '@agent18/contracts';
+import { latestFailure } from '@agent18/contracts/context';
 import { AppError } from '@agent18/domain';
 import { scoped, scopeValues, type Database } from '@agent18/persistence';
 import { configurationHash, redact } from '@agent18/observability';
@@ -154,7 +155,7 @@ export class ObservationRuntime {
         return { processed: true, state: 'cancelled' };
       }
       try {
-        let context: { traceId?: string; requestId?: string } = {},
+        let context: import('@agent18/contracts').ClientContext = {},
           capture: PageCapture | undefined;
         if (job.case_id)
           await scoped(this.db, scope, async (client) => {
@@ -166,6 +167,7 @@ export class ObservationRuntime {
             ).rows[0]?.payload;
           });
         const results: ObservationResult[] = [];
+        const traceId = latestFailure(context, job.created_at.getTime())?.traceId ?? context.traceId;
         for (const check of config.checks) {
           signal.throwIfAborted();
           try {
@@ -182,7 +184,7 @@ export class ObservationRuntime {
                 configHash: job.config_hash,
                 mode: job.kind,
                 observedAt: job.created_at.toISOString(),
-                ...(context.traceId ? { traceId: context.traceId } : {}),
+                ...(traceId ? { traceId } : {}),
               },
               job.id,
               undefined,

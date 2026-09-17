@@ -7,6 +7,12 @@ export const documents = [
   ['index', '开始使用', 'docs/README.md'],
   ['integration', '已有项目接入任务书', 'INTEGRATE.md'],
   ['reference/integration-acceptance', '目标系统验收报告', 'docs/reference/integration-acceptance.md'],
+  [
+    'overview/agent18-0.8-integration',
+    '0.8 业务接口与语义上下文',
+    'docs/overview/agent18-0.8-integration.md',
+  ],
+  ['guides/semantic-context', '宿主业务上下文与失败事件', 'docs/guides/semantic-context.md'],
   ['overview/agent18-0.7-operations', '0.7 全场景运行机制', 'docs/overview/agent18-0.7-operations.md'],
   ['guides/observability', '页面采集、自动排查与巡检', 'docs/guides/observability.md'],
   ['overview/agent18-0.6-core', '0.6 核心抽象与升级', 'docs/overview/agent18-0.6-core.md'],

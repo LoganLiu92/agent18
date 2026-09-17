@@ -95,9 +95,16 @@ try {
   pass('Synthetic business error ingested by real Loki; real Prometheus scraped the failure');
   sdk.setContext({
     pageUrl: 'http://localhost:4319/example?token=omit',
-    traceId: fault.traceId,
+    route: 'order-detail',
     entity: { type: 'order', id: 'ORD-1042' },
   });
+  sdk.emit({
+    type: 'business.operation.failed',
+    operation: 'order.save',
+    errorCode: 'ORDER_SAVE_TIMEOUT',
+    traceId: fault.traceId,
+  });
+  assert.equal((await sdk.routeConversation({ message: '为什么不行', history: [] })).kind, 'support');
   const key = crypto.randomUUID(),
     input = {
       title: '可观测性闭环验收',
@@ -142,7 +149,7 @@ try {
   });
   await assert.rejects(() => other.getCase(created.case.id));
   pass(
-    'One durable Case investigation linked scoped Loki trace and actual HTTP/metric failures; customer sees safe summary, other subject denied',
+    'Semantic failure routed to support and one durable Case investigation linked its scoped Loki trace and actual HTTP/metric failures; customer sees safe summary, other subject denied',
   );
   await inspect();
   await inspect();

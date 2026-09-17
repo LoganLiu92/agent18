@@ -157,6 +157,13 @@ export function registerObservations(
     const p = await project(request.params),
       caseId = z.object({ caseId: id }).parse(request.params).caseId;
     return withDb(async (db) => ({
+      context:
+        (
+          await db.query(
+            'SELECT context FROM core.cases WHERE id=$1 AND organization_id=$2 AND project_id=$3',
+            [caseId, p.organizationId, p.projectId],
+          )
+        ).rows[0]?.context ?? null,
       capture:
         (
           await db.query(

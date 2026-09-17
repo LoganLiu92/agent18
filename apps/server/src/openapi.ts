@@ -255,7 +255,7 @@ export const openApi = {
   openapi: '3.1.0',
   info: {
     title: 'agent18 Customer API',
-    version: '0.7.0',
+    version: '0.8.0',
     description:
       'Project-, tenant- and subject-scoped API. Local owner and workload APIs are intentionally separate. JSON requests; unsupported input fields are rejected. Never pass tenant or subject in request bodies.',
   },

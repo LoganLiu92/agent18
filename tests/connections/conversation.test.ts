@@ -43,6 +43,9 @@ it('continues knowledge questions and recognizes support follow-ups without crea
     query: expect.stringContaining('如何接入现有网站'),
   });
   expect(await route('问题还是不行，请转人工')).toEqual({ kind: 'support' });
+  expect(await route('上报一个问题')).toEqual({ kind: 'support' });
+  expect(await route('请帮我提交一个工单')).toEqual({ kind: 'support' });
+  expect(await route('如何上报问题？')).toMatchObject({ kind: 'knowledge' });
   expect(await route('查看我的问题进展')).toEqual({ kind: 'cases' });
 });
 it('uses the matching current entity only as an explicit argument hint, preserving typed IDs', async () => {
@@ -105,4 +108,31 @@ it('continues deterministic guidance when model output is malformed or unavailab
   expect(
     await routeConversation(assistantTurnSchema.parse({ message: '关闭邮件通知' }), catalog, model),
   ).toMatchObject({ kind: 'action', arguments: { enabled: false } });
+});
+it('routes recent explicit failures to a reviewable report without asking a model or executing a tool', async () => {
+  const complete = vi.fn<JsonModel['complete']>();
+  const event = {
+    type: 'business.operation.failed',
+    operation: 'invoice.submit',
+    at: new Date().toISOString(),
+    errorCode: 'INVALID_TAX_RATE',
+  };
+  const input = assistantTurnSchema.parse({
+    message: '为什么不行',
+    context: { events: [event] },
+    pending: { kind: 'action', id: action.id, arguments: {}, field: 'enabled' },
+  });
+  expect(await routeConversation(input, catalog, { identity: 'must-not-call', complete })).toEqual({
+    kind: 'support',
+  });
+  expect(complete).not.toHaveBeenCalled();
+  expect(await route('为什么不行')).toMatchObject({ kind: 'knowledge' });
+  expect(
+    await route('为什么不行', { context: { events: [{ ...event, at: new Date(0).toISOString() }] } }),
+  ).toMatchObject({ kind: 'knowledge' });
+  expect(
+    await route('为什么不行', {
+      context: { events: [event, { ...event, type: 'business.operation.succeeded' }] },
+    }),
+  ).toMatchObject({ kind: 'knowledge' });
 });

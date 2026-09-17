@@ -56,8 +56,40 @@ export const pageCaptureSchema = z
   })
   .strict();
 export type PageCapture = z.infer<typeof pageCaptureSchema>;
+export const businessEventSchema = z
+  .object({
+    type: z.enum(['business.operation.failed', 'business.operation.succeeded']),
+    operation: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
+    at: z.string().datetime(),
+    entity: z
+      .object({
+        type: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
+        id: z.string().min(1).max(128),
+      })
+      .strict()
+      .optional(),
+    errorCode: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.-]{1,80}$/)
+      .optional(),
+    traceId: z
+      .string()
+      .regex(/^[a-fA-F0-9]{16,32}$/)
+      .optional(),
+    requestId: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.:-]{1,100}$/)
+      .optional(),
+  })
+  .strict();
+export type BusinessEvent = z.infer<typeof businessEventSchema>;
 export const contextSchema = z
   .object({
+    route: z
+      .string()
+      .regex(/^[a-zA-Z0-9_./-]{1,120}$/)
+      .optional(),
+    events: z.array(businessEventSchema).max(5).optional(),
     pagePath: z
       .string()
       .max(256)

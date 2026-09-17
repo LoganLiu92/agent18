@@ -4,7 +4,7 @@
 
 [//]: # (agent18:release:start)
 
-当前版本：**0.7.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.7-operations.md)；源码自托管，单机部署。
+当前版本：**0.8.0 集成预览**。实现范围见[运行机制综述](docs/overview/agent18-0.8-integration.md)；源码自托管，单机部署。
 
 [//]: # (agent18:release:end)
 

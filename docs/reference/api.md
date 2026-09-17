@@ -72,6 +72,12 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 
 浮窗与内嵌面板使用 Shadow DOM。可传 `nonce` 为样式标签配合宿主 CSP；其他站点的全局样式不会污染助手。`setContext` 接收显式业务线索，pageUrl 会剥离 query/fragment；`capturePage()` 准备有界页面报告，浮窗上报自动调用并提供预览。详见[页面采集](../guides/observability.md)。销毁使用 `assistant.destroy(); client.destroy()`。
 
+## 语义上下文 SDK
+
+`setContext({ pageUrl, route, entity, ... })` 替换当前页面线索；`emit({ type, operation, entity?, errorCode?, traceId?, requestId? })` 在内存记录业务成功/失败，最多 5 条、10 分钟。`getContext()` 返回清理过期事件后的独立副本，`clearContext()` 清空显式上下文与事件。退出/切换身份仍须销毁实例。
+
+`reportCase({ title, description, context?, capture? }, idempotencyKey)` 可显式提交预览时冻结的 context；`context: {}` 表示不附带，省略则取提交时当前上下文。浮窗/内嵌已提供冻结预览与取消附带，独立页不自动交接宿主事件。完整字段与拒绝路径见[语义上下文指南](../guides/semantic-context.md)。
+
 ## 问题处理约定
 
 客户问题描述和补充说明按纯文本显示。支持回复只允许本地部署者入口发送，客户不能伪造 author。已解决可重新打开；重新打开不自动重跑工具。后台检索完成也不代表客户已确认解决，不能覆盖 resolved 状态。

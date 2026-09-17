@@ -12,7 +12,7 @@ import { buildApp } from '../../apps/server/src/app.js';
 import { buildSetupApp } from '../../apps/setup/src/app.js';
 import { localDirectory, readConfig } from '../../scripts/config.js';
 import { registerDemoBusiness } from '../../examples/identity-bridge/business.js';
-import { registerDemoQueries, demoOpenApi } from '../../examples/identity-bridge/queries.js';
+import { registerDemoQueries, demoOpenApi, demoPostQuery } from '../../examples/identity-bridge/queries.js';
 import { publicApiDefinitions } from '../../apps/server/src/openapi.js';
 import type { CustomerPrincipal } from '@agent18/domain';
 
@@ -67,11 +67,14 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('complete scoped connec
     const baseUrl = await business.listen({ port: 0, host: '127.0.0.1' });
     queryConfig = queriesSchema.parse({
       baseUrl,
-      operations: importOpenApi(demoOpenApi).operations.map((q) => ({
-        ...q,
-        enabled: true,
-        roles: ['tenant-admin'],
-      })),
+      operations: [
+        ...importOpenApi(demoOpenApi).operations.map((q) => ({
+          ...q,
+          enabled: true,
+          roles: ['tenant-admin'],
+        })),
+        demoPostQuery,
+      ],
     });
     cfg.projects[0]!.businessQueries = queryConfig;
     server = await buildApp(cfg, { dispatch: false });
@@ -102,6 +105,153 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('complete scoped connec
     expect(r.body).not.toContain('internalMemo');
     expect(r.body).not.toContain('internal-only');
     expect(r.json().requestId).toBeTruthy();
+  });
+  it('runs reviewed POST reads with a fixed JSON body and independent SaaS authorization', async () => {
+    for (const [authorization, expected] of [
+      [alice, ['ORD-1001']],
+      [bob, []],
+      [nina, ['ORD-2001']],
+    ] as const) {
+      const response = await server.app.inject({
+        method: 'POST',
+        url: '/api/business/query',
+        headers: { ...h(), authorization },
+        payload: { queryId: 'orders.search', arguments: { status: '已完成' } },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json().rows.map((r: any) => r.id)).toEqual(expected);
+      expect(response.body).not.toContain('internalMemo');
+    }
+    for (const arguments_ of [
+      { status: '已完成', tenantId: 'tenant-b' },
+      { status: 'invalid' },
+      { url: 'https://evil.example' },
+      { status: { anything: true } },
+    ])
+      expect(
+        (
+          await server.app.inject({
+            method: 'POST',
+            url: '/api/business/query',
+            headers: h(),
+            payload: { queryId: 'orders.search', arguments: arguments_ },
+          })
+        ).statusCode,
+      ).toBe(400);
+    expect(
+      (
+        await server.app.inject({
+          method: 'POST',
+          url: '/api/business/query',
+          headers: { ...h(), authorization: emptyRoles },
+          payload: { queryId: 'orders.search', arguments: { status: '已完成' } },
+        })
+      ).statusCode,
+    ).toBe(403);
+    const operation = queryConfig.operations.find((q) => q.id === 'orders.search')!;
+    operation.enabled = false;
+    await expect(
+      service.execute(p, 'orders.search', { status: '已完成' }, alice, 'disabled-post'),
+    ).rejects.toMatchObject({ code: 'QUERY_NOT_ALLOWED' });
+    operation.enabled = true;
+    const original = globalThis.fetch,
+      bodies: RequestInit[] = [];
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      if (String(url).startsWith(queryConfig.baseUrl)) {
+        bodies.push(init!);
+        return Promise.reject(new Error('uncertain network'));
+      }
+      return original(url, init);
+    });
+    try {
+      await expect(
+        service.execute(p, 'orders.search', { status: '已完成' }, alice, 'failed-post'),
+      ).rejects.toMatchObject({ code: 'BUSINESS_RESPONSE_INVALID' });
+      expect(bodies).toHaveLength(1);
+      expect(bodies[0]).toMatchObject({
+        method: 'POST',
+        redirect: 'error',
+        body: JSON.stringify({ status: '已完成' }),
+      });
+      expect(bodies[0]!.headers).toMatchObject({ authorization: alice, 'content-type': 'application/json' });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it('keeps POST registration owner-only and persists its review separately from enablement', async () => {
+    expect(
+      (
+        await owner.inject({
+          method: 'POST',
+          url: '/owner/queries/review',
+          headers: { ...oh, authorization: alice },
+          payload: demoPostQuery,
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await owner.inject({
+          method: 'POST',
+          url: '/owner/queries/review',
+          headers: oh,
+          payload: { ...demoPostQuery, readOnly: false },
+        })
+      ).statusCode,
+    ).toBe(400);
+    const reviewed = await owner.inject({
+      method: 'POST',
+      url: '/owner/queries/review',
+      headers: oh,
+      payload: { ...demoPostQuery, enabled: false },
+    });
+    expect(reviewed.json().operation).toMatchObject({ method: 'POST', readOnly: true, enabled: false });
+  });
+  it('persists semantic events with the case and exposes them only within the verified scope', async () => {
+    const context = {
+      route: 'order-detail',
+      entity: { type: 'order', id: 'ORD-1001' },
+      events: [
+        {
+          type: 'business.operation.failed',
+          operation: 'order.save',
+          at: new Date().toISOString(),
+          errorCode: 'ORDER_TIMEOUT',
+          traceId: 'a'.repeat(32),
+          entity: { type: 'order', id: 'ORD-1001' },
+        },
+      ],
+    };
+    const created = await server.app.inject({
+      method: 'POST',
+      url: '/api/cases',
+      headers: { ...h(), 'idempotency-key': randomUUID() },
+      payload: { title: 'Semantic failure context', description: 'Why did this fail?', context },
+    });
+    expect(created.statusCode).toBe(201);
+    const id = created.json().case.id;
+    expect((await server.app.inject({ url: `/api/cases/${id}`, headers: h() })).json().case.context).toEqual(
+      context,
+    );
+    expect(
+      (await server.app.inject({ url: `/api/cases/${id}`, headers: { ...h(), authorization: nina } }))
+        .statusCode,
+    ).toBe(404);
+    expect(
+      (await owner.inject({ url: `/owner/projects/invoice-demo/cases/${id}/capture`, headers: oh })).json()
+        .context,
+    ).toEqual(context);
+    expect(
+      (await owner.inject({ url: `/owner/projects/other-demo/cases/${id}/capture`, headers: oh })).json()
+        .context,
+    ).toBeNull();
+    const routed = await server.app.inject({
+      method: 'POST',
+      url: '/api/assistant/route',
+      headers: h(),
+      payload: { message: '为什么不行', context },
+    });
+    expect(routed.json()).toEqual({ kind: 'support' });
   });
   it('routes scoped conversation turns without executing business calls or creating proposals', async () => {
     const before = (await admin.query('SELECT count(*)::int AS n FROM core.action_proposals')).rows[0].n;
@@ -287,6 +437,11 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('complete scoped connec
       payload: { businessQueries: queryConfig },
     });
     expect(saved.statusCode).toBe(200);
+    expect(
+      JSON.parse(
+        await readFile(join(root, 'server.docker.json'), 'utf8'),
+      ).projects[0].businessQueries.operations.find((q: any) => q.id === 'orders.search'),
+    ).toMatchObject({ method: 'POST', readOnly: true, fields: [{ in: 'body' }] });
     expect(
       JSON.parse(await readFile(join(root, 'server.docker.json'), 'utf8')).projects[0].businessQueries
         .baseUrl,

@@ -87,6 +87,33 @@ export const demoOpenApi = {
     },
   },
 };
+// Explicitly reviewed read-only POST; never auto-imported from OpenAPI.
+export const demoPostQuery = {
+  id: 'orders.search',
+  title: '按状态筛选订单',
+  description: '按状态筛选当前用户有权访问的订单',
+  method: 'POST',
+  readOnly: true,
+  path: '/api/orders/search',
+  fields: [
+    {
+      name: 'status',
+      label: '订单状态',
+      type: 'string',
+      in: 'body',
+      required: true,
+      enum: ['处理中', '已完成', '待确认'],
+    },
+  ],
+  rowsPath: 'items',
+  columns: [
+    { path: 'id', label: '订单编号' },
+    { path: 'customer', label: '客户' },
+    { path: 'status', label: '状态' },
+  ],
+  roles: ['tenant-admin'],
+  enabled: true,
+};
 export function registerDemoQueries(app: FastifyInstance, databaseFile: string, jwks: JSONWebKeySet) {
   const db = new DatabaseSync(databaseFile),
     keys = createLocalJWKSet(jwks);
@@ -125,6 +152,26 @@ export function registerDemoQueries(app: FastifyInstance, databaseFile: string, 
     };
   };
   app.get('/openapi.json', async () => demoOpenApi);
+  app.post('/api/orders/search', async (request, reply) => {
+    let p;
+    try {
+      p = await identity(request);
+    } catch {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
+    z.object({}).strict().parse(request.query);
+    const { status } = z
+      .object({ status: z.enum(['处理中', '已完成', '待确认']) })
+      .strict()
+      .parse(request.body);
+    return {
+      items: db
+        .prepare(
+          'SELECT id,customer,amount,status,internalMemo FROM orders WHERE tenant=? AND subject=? AND status=? ORDER BY id',
+        )
+        .all(p.tenant, p.subject, status),
+    };
+  });
   for (const path of ['/api/orders', '/api/orders/:orderId', '/api/preferences'])
     app.get(path, async (request, reply) => {
       let p;
