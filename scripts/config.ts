@@ -1,3 +1,4 @@
+import { analyticsConfigSchema, ticketSyncConfigSchema, deploymentFeedSchema } from '@agent18/contracts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
@@ -20,6 +21,9 @@ export const configSchema = z.object({
         displayName: z.string().max(120).optional(),
         businessBridge: bridgeSchema.optional(),
         businessQueries: queriesSchema.optional(),
+        analytics: analyticsConfigSchema.optional(),
+        ticketSync: ticketSyncConfigSchema.optional(),
+        deploymentFeed: deploymentFeedSchema.optional(),
         operations: operationsConfigSchema.optional(),
         knowledge: z.enum(['fixture', 'indexed']).default('fixture'),
         allowedOrigins: z.array(z.string().url()).default([]),

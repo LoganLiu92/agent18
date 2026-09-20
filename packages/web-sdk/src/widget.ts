@@ -1,6 +1,8 @@
 import type { Agent18 } from './index.js';
+import { conversationHistory } from './history.js';
 import type { ActionProposal, ActionDefinition, BusinessQuery } from '@agent18/contracts';
 import { latestFailure } from '@agent18/contracts/context';
+import { entityLabel, sameEntity } from '@agent18/contracts/entity';
 export type AssistantOptions = {
   title?: string;
   /** Optional CSP nonce for the isolated widget stylesheet. */
@@ -70,6 +72,10 @@ function mountContents(
   composer.append(input, send);
   root.append(header, feed, composer, element('footer', 'agent18 · 业务变更始终由你确认'));
   target.append(root);
+  const savedStatus = element('small', '正在读取对话…');
+  savedStatus.setAttribute('role', 'status');
+  root.insertBefore(savedStatus, composer);
+  let transcript: ReturnType<typeof conversationHistory> | undefined;
   let alive = true,
     busy = false,
     definitions: ActionDefinition[] = [],
@@ -83,7 +89,11 @@ function mountContents(
   const scroll = () => {
     feed.scrollTop = feed.scrollHeight;
   };
-  function message(text: string, role: 'assistant' | 'user' = 'assistant') {
+  function message(
+    text: string,
+    role: 'assistant' | 'user' = 'assistant',
+    references: import('@agent18/contracts').ConversationReference[] = [],
+  ) {
     const row = element('article', '', 'chat-message from-' + role),
       bubble = element('div', '', 'bubble');
     row.setAttribute('aria-label', role === 'user' ? '你' : '助手');
@@ -92,6 +102,7 @@ function mountContents(
     row.append(bubble);
     feed.append(row);
     scroll();
+    transcript?.push(text, role, references);
     return bubble;
   }
   const control = (
@@ -273,7 +284,25 @@ function mountContents(
     pending = undefined;
     const card = message(
       result.rows.length ? `查到了，这是${d.title}的结果。` : '没有找到符合条件、且你有权限查看的记录。',
+      'assistant',
+      [{ kind: 'query', id: result.requestId, observedAt: result.retrievedAt }],
     );
+    if (result.metric)
+      card.append(
+        element(
+          'small',
+          result.metric.definition +
+            ' · 口径 ' +
+            result.metric.version +
+            ' · ' +
+            result.metric.timezone +
+            ' · ' +
+            result.period?.start +
+            ' 至 ' +
+            result.period?.end +
+            '（结束日不含）',
+        ),
+      );
     for (const record of result.rows) {
       const item = element('div', '', 'data-card');
       for (const column of result.columns) {
@@ -311,7 +340,9 @@ function mountContents(
   }
   function preview(proposal: ActionProposal) {
     dismissPreview?.();
-    const card = message('我已准备好变更，请核对后确认。'),
+    const card = message('我已准备好变更，请核对后确认。', 'assistant', [
+        { kind: 'action', id: proposal.id, observedAt: new Date().toISOString() },
+      ]),
       d = definitions.find((a) => a.id === proposal.actionId);
     let current = proposal,
       announced = false;
@@ -395,7 +426,11 @@ function mountContents(
   async function knowledge(query: string) {
     const result = await client.askKnowledge(query);
     if (!alive) return;
-    const card = message(result.answer ?? result.notice ?? '暂时没有找到足够资料，可以补充说明。');
+    const card = message(
+      result.answer ?? result.notice ?? '暂时没有找到足够资料，可以补充说明。',
+      'assistant',
+      result.citations.slice(0, 5).map((c) => ({ kind: 'knowledge', id: c.id, observedAt: c.observedAt })),
+    );
     for (const citation of result.citations) {
       const details = element('details');
       details.append(
@@ -438,10 +473,13 @@ function mountContents(
   async function showCase(id: string) {
     const [detail, thread] = await Promise.all([client.getCase(id), client.caseMessages(id)]);
     if (!alive) return;
-    const card = message(detail.case.title);
+    const card = message(detail.case.title, 'assistant', [
+      { kind: 'ticket', id, observedAt: new Date().toISOString() },
+    ]);
     card.append(
       element('span', detail.case.status === 'resolved' ? '已解决' : '跟进中', 'status'),
       element('p', detail.case.description),
+      ...(detail.case.publicResolution ? [element('p', '解决说明：' + detail.case.publicResolution)] : []),
     );
     for (const m of thread.messages) {
       const row = element('div', '', 'data-card');
@@ -545,7 +583,8 @@ function mountContents(
     if (!alive) return;
     const currentContext = client.getContext();
     if (
-      ['pagePath', 'route', 'entity', 'entityType', 'entityId'].some(
+      !sameEntity(context.entity, currentContext.entity) ||
+      ['pagePath', 'route', 'entityType', 'entityId'].some(
         (key) =>
           JSON.stringify(context[key as keyof typeof context]) !==
           JSON.stringify(currentContext[key as keyof typeof context]),
@@ -568,11 +607,7 @@ function mountContents(
         element('summary', '查看将提交的页面信息'),
         element(
           'p',
-          [
-            context.route,
-            context.entity ? `${context.entity.type} ${context.entity.id}` : '',
-            context.appVersion,
-          ]
+          [context.route, context.entity ? entityLabel(context.entity) : '', context.appVersion]
             .filter(Boolean)
             .join(' · '),
         ),
@@ -581,7 +616,7 @@ function mountContents(
           (context.events ?? [])
             .map(
               (event) =>
-                `${event.at} ${event.operation} ${event.type.endsWith('failed') ? '失败' : '成功'} ${event.entity?.id ?? ''} ${event.errorCode ?? ''} ${event.traceId ?? ''}`,
+                `${event.at} ${event.operation} ${event.type.endsWith('failed') ? '失败' : '成功'} ${event.entity ? entityLabel(event.entity) : ''} ${event.errorCode ?? ''} ${event.traceId ?? ''}`,
             )
             .join('\n'),
         ),
@@ -651,6 +686,8 @@ function mountContents(
           key,
         );
         if (!alive) return;
+        await transcript?.flush();
+        if (transcript?.current()) await client.linkConversationCase(transcript.current()!, result.case.id);
         submitted = true;
         form.remove();
         card.append(element('p', '问题已记录，之后可以在对话里查看进展和回复。'));
@@ -726,6 +763,63 @@ function mountContents(
       },
     ],
   ]);
+  transcript = conversationHistory(client, {
+    alive: () => alive,
+    show: (text, role, refs) => {
+      const card = message(text, role);
+      for (const ref of refs ?? [])
+        card.append(
+          element('small', ref.kind + ' · ' + ref.id + ' · ' + new Date(ref.observedAt).toLocaleString()),
+        );
+      if (role === 'user') {
+        history.push(text.slice(0, 256));
+        history.splice(0, Math.max(0, history.length - 6));
+      }
+    },
+    status: (text) => {
+      savedStatus.textContent = text;
+    },
+    clear: () => {
+      dismissPreview?.();
+      pending = undefined;
+      replyCase = undefined;
+      history.length = 0;
+      feed.replaceChildren();
+      input.placeholder = '问一个问题，或告诉我你想做什么…';
+    },
+  });
+  icon(
+    '历史对话',
+    '◷',
+    () =>
+      void run(async () => {
+        await transcript!.flush();
+        const box = element('div', '', 'data-card');
+        feed.append(box);
+        const list = async (offset = 0) => {
+          const page = await transcript!.list(offset);
+          if (!alive) return;
+          box.replaceChildren(element('b', '历史对话'));
+          for (const c of page.conversations) control(box, c.title, () => transcript!.open(c.id));
+          if (offset) control(box, '上一页', () => list(Math.max(0, offset - 50)));
+          if (page.nextOffset !== null) control(box, '下一页', () => list(page.nextOffset!));
+          control(box, '新建对话', () => transcript!.fresh());
+          if (transcript!.current())
+            control(box, '删除当前对话', () => {
+              box.replaceChildren(element('p', '删除会移除这段对话正文，已上报工单会继续保留。'));
+              control(box, '确认删除对话', () => transcript!.remove());
+              control(box, '取消', () => box.remove());
+            });
+        };
+        await list();
+      }),
+  );
+  icon('重试保存', '↻', () => void run(() => transcript!.flush()));
+  void run(async () => {
+    const page = await transcript!.list();
+    if (page.conversations[0]) await transcript!.open(page.conversations[0].id);
+    else savedStatus.textContent = '对话将在发送消息后保存。';
+  });
   return {
     focus() {
       input.focus();

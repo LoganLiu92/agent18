@@ -3,6 +3,7 @@ import { KnowledgeError, type ModelConfig } from './config.js';
 
 export interface JsonModel {
   readonly identity: string;
+  readonly name?: string;
   complete(
     system: string,
     input: unknown,
@@ -11,7 +12,9 @@ export interface JsonModel {
 }
 export class CompatibleModel implements JsonModel {
   readonly identity: string;
+  readonly name: string;
   constructor(private readonly config: ModelConfig) {
+    this.name = config.model;
     this.identity = createHash('sha256')
       .update(JSON.stringify({ ...config, apiKey: undefined }))
       .digest('hex');

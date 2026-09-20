@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./context": "./src/context.ts"
+    "./context": "./src/context.ts",
+    "./entity": "./src/entity.ts"
   },
   "dependencies": {
     "zod": "4.6.5"

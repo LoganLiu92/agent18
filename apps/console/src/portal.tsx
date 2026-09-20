@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Agent18, type Session, type SupportCase } from '@agent18/web-sdk';
+import { CustomerHistory } from './customer-history.js';
 import { KnowledgeHub } from './knowledge.js';
-import { BusinessAssistant } from './actions.js';
+import { BusinessAssistant, type ActionReference } from './actions.js';
 import { BusinessQueries } from './queries.js';
 import { CaseConversation } from './conversation.js';
 import { ProductMark } from './setup.js';
 import './experience.css';
 
 export function StandalonePortal() {
+  const [actionReference, setActionReference] = useState<ActionReference>();
   const [client, setClient] = useState<Agent18>(),
     [session, setSession] = useState<Session>(),
     [name, setName] = useState('支持中心'),
     [error, setError] = useState(''),
-    [page, setPage] = useState<'knowledge' | 'queries' | 'actions' | 'cases'>('knowledge');
+    [page, setPage] = useState<'knowledge' | 'queries' | 'actions' | 'cases' | 'history'>('knowledge');
   useEffect(() => {
     const params = new URLSearchParams(location.search),
       project = params.get('project'),
@@ -139,6 +141,7 @@ export function StandalonePortal() {
               {(
                 [
                   ['knowledge', '▤', '知识与答案'],
+                  ['history', '◷', '历史对话'],
                   ['queries', '⌕', '查业务'],
                   ['actions', '↔', '办业务'],
                   ['cases', '◎', '我的问题'],
@@ -153,14 +156,27 @@ export function StandalonePortal() {
             {page === 'knowledge' && (
               <KnowledgeHub client={client} model={session?.capabilities.model === 'configured'} />
             )}{' '}
-            {page === 'queries' && <BusinessQueries client={client} />}
+            {page === 'history' && <CustomerHistory client={client} />}
+            {page === 'queries' && (
+              <BusinessQueries
+                client={client}
+                onAction={(reference) => {
+                  setActionReference(reference);
+                  setPage('actions');
+                }}
+              />
+            )}
             {page === 'actions' && (
               <>
                 <div className="portal-action-note">
                   <b>经你确认，由业务系统执行。</b>
                   <span>沿用当前用户权限；执行结果以业务回执为准。</span>
                 </div>
-                <BusinessAssistant client={client} model={session?.capabilities.model === 'configured'} />
+                <BusinessAssistant
+                  reference={actionReference}
+                  client={client}
+                  model={session?.capabilities.model === 'configured'}
+                />
               </>
             )}
             {page === 'cases' && <PortalCases client={client} />}

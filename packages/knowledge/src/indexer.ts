@@ -5,6 +5,7 @@ import type { Scope } from '@agent18/contracts';
 import { categories, KnowledgeError, type KnowledgeConfig, type SourceConfig } from './config.js';
 import { chunkFiles, scan, hash, tokens, containsSecret, type Chunk } from './scan.js';
 import type { JsonModel } from './model.js';
+import { buildProvenance, evidenceReference } from './provenance.js';
 
 const generatedSchema = z
   .object({
@@ -54,6 +55,7 @@ export class KnowledgeIndexer {
       );
       if (config.mode === 'model' && !this.model) throw new KnowledgeError('MODEL_NOT_CONFIGURED');
       const snapshot = await scan(source, process.cwd(), this.cacheDirectory, signal);
+      const observedAt = new Date().toISOString();
       const chunks = chunkFiles(snapshot.files);
       const groups: Chunk[][] = [];
       for (const chunk of chunks) {
@@ -89,6 +91,7 @@ export class KnowledgeIndexer {
           config.mode,
           this.model?.identity ?? null,
           instruction,
+          'provenance-v2-fragments',
         ]),
       );
       if (config.skipUnchanged) {
@@ -115,6 +118,16 @@ export class KnowledgeIndexer {
           };
       }
       buildId = randomUUID();
+      const provenance = buildProvenance({
+        sourceId,
+        source,
+        snapshot,
+        runId: buildId,
+        observedAt,
+        mode: config.mode,
+        prompt: instruction,
+        model: this.model,
+      });
       await scoped(this.db, this.scope, async (client) => {
         // A previous process may have exited while building. Its draft was never published.
         await client.query(
@@ -122,7 +135,7 @@ export class KnowledgeIndexer {
           [sourceId],
         );
         await client.query(
-          "INSERT INTO knowledge.builds(id,source_id,organization_id,project_id,revision,fingerprint,mode,state) VALUES($1,$2,$3,$4,$5,$6,$7,'building')",
+          "INSERT INTO knowledge.builds(id,source_id,organization_id,project_id,revision,fingerprint,mode,state,report) VALUES($1,$2,$3,$4,$5,$6,$7,'building',$8)",
           [
             buildId,
             sourceId,
@@ -131,8 +144,27 @@ export class KnowledgeIndexer {
             snapshot.revision,
             snapshot.fingerprint,
             config.mode,
+            { provenance },
           ],
         );
+      });
+      await scoped(this.db, this.scope, async (client) => {
+        for (const chunk of chunks) {
+          signal.throwIfAborted();
+          await client.query(
+            'INSERT INTO knowledge.source_fragments(build_id,organization_id,project_id,path,start_line,end_line,content_hash,body) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
+            [
+              buildId,
+              this.scope.organizationId,
+              this.scope.projectId,
+              chunk.path,
+              chunk.startLine,
+              chunk.endLine,
+              hash(chunk.text),
+              chunk.text,
+            ],
+          );
+        }
       });
       let calls = 0,
         cacheHits = 0,
@@ -186,12 +218,7 @@ export class KnowledgeIndexer {
           for (const article of articles) {
             const refs = article.references.map((key) => {
               const chunk = group.find((c) => c.key === key)!;
-              return {
-                path: chunk.path,
-                startLine: chunk.startLine,
-                endLine: chunk.endLine,
-                revision: snapshot.revision,
-              };
+              return evidenceReference(provenance, chunk);
             });
             await client.query(
               `INSERT INTO knowledge.articles(id,build_id,source_id,organization_id,project_id,title,body,category,tokens,refs,revision)
@@ -216,6 +243,7 @@ export class KnowledgeIndexer {
       }
       const report = {
         buildSignature,
+        provenance,
         audience: source.audience,
         tenantIds: source.tenantIds,
         files: snapshot.files.length,
@@ -246,10 +274,10 @@ export class KnowledgeIndexer {
         error instanceof KnowledgeError ? error.code : signal.aborted ? 'BUILD_CANCELLED' : 'BUILD_FAILED';
       if (buildId)
         await scoped(this.db, this.scope, async (client) => {
-          await client.query("UPDATE knowledge.builds SET state='failed',report=$2 WHERE id=$1", [
-            buildId,
-            { error: code },
-          ]);
+          await client.query(
+            "UPDATE knowledge.builds SET state='failed',report=report || $2::jsonb WHERE id=$1",
+            [buildId, { error: code }],
+          );
         });
       throw new KnowledgeError(code);
     } finally {
@@ -259,9 +287,11 @@ export class KnowledgeIndexer {
   }
   async activeSourceKeys(): Promise<string[]> {
     return scoped(this.db, this.scope, async (client) =>
-      (await client.query('SELECT source_key FROM knowledge.sources WHERE enabled=true')).rows.map(
-        (r) => r.source_key,
-      ),
+      (
+        await client.query(
+          "SELECT s.source_key FROM knowledge.sources s WHERE s.enabled=true AND s.source_key <> 'staff-' || s.id::text AND NOT EXISTS(SELECT 1 FROM knowledge.connections c WHERE c.source_key=s.source_key)",
+        )
+      ).rows.map((r) => r.source_key),
     );
   }
   async status() {
@@ -282,7 +312,9 @@ export class KnowledgeIndexer {
       async (client) =>
         (
           await client.query(
-            'SELECT id,title,category,body,refs,revision FROM knowledge.articles WHERE build_id=$1 ORDER BY category,title',
+            `SELECT a.id,a.title,a.category,a.body,a.refs,a.revision,b.report->'provenance' AS provenance
+             FROM knowledge.articles a JOIN knowledge.builds b ON b.id=a.build_id
+             WHERE a.build_id=$1 ORDER BY a.category,a.title`,
             [buildId],
           )
         ).rows,

@@ -77,3 +77,33 @@ it('respects writeOnly on referenced response schemas and does not select privat
   expect(result.operations.some((q) => q.id === 'orders.get')).toBe(false);
   expect(result.skipped.some((s) => s.path === '/api/orders/{orderId}')).toBe(true);
 });
+
+it('binds analytics definitions to reviewed fields, dimensions and date parameters', () => {
+  const q = {
+    ...importOpenApi(demoOpenApi).operations[0]!,
+    fields: [
+      { name: 'start', label: 'Start date', in: 'query', type: 'string', required: true },
+      { name: 'end', label: 'End date', in: 'query', type: 'string', required: true },
+    ],
+    metric: {
+      id: 'sales.revenue',
+      version: '1',
+      definition: 'Settled revenue net of refunds, grouped by customer.',
+      timezone: 'UTC',
+      values: [{ column: 'amount', unit: 'currency', currency: 'USD' }],
+      dimensions: ['customer'],
+      period: { startField: 'start', endField: 'end' },
+      maxDays: 90,
+    },
+  };
+  const parse = (value: unknown) =>
+    queriesSchema.safeParse({ baseUrl: 'https://saas.example', operations: [value] });
+  expect(parse(q).success).toBe(true);
+  for (const metric of [
+    { ...q.metric, dimensions: ['privateField'] },
+    { ...q.metric, timezone: 'invented-zone' },
+    { ...q.metric, period: { startField: 'missing', endField: 'end' } },
+    { ...q.metric, values: [{ column: 'amount', unit: 'currency', currency: 'mixed' }] },
+  ])
+    expect(parse({ ...q, metric }).success).toBe(false);
+});

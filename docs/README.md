@@ -12,12 +12,28 @@ agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已
 
 将仓库交给一个已有项目接入时，从[接入任务书](../INTEGRATE.md)开始，最终填写[目标系统验收报告](reference/integration-acceptance.md)。
 
+长期开发按[知识中心、工单与 Insights 分步计划](planning/product-development-plan-20260918.md)推进；计划同时保留后续扩展，当前源码新增能力以第十六轮开发记录为准，不代表活动部署已经升级。
+
+逐步实施可直接按任务编号开展：[M1 独立账号与知识中心](planning/m1-work-packages.md)、[知识中心页面与接口方案](planning/knowledge-center-delivery-design.md)、[M2—M4 工单与 Insights](planning/support-and-insights-work-packages.md)。共同约束见[产品领域合同](architecture/product-contracts.md)，本地实现及未验证项见[第九轮开发记录](development/round9-foundation.md)。
+
+正式后台本轮实现见[工作空间与知识文档闭环](development/round11-workspace.md)：统一导航、真实知识目录、人工文档审核发布；新增[来源向导与扫描闭环](development/round12-source-workflow.md)，工单及洞察的后续实现见第十六轮记录。
+
+2026-09-19 分享方案中的完整产品流程和 v2 页面参考已对齐到[正式开发计划](planning/product-development-plan-20260918.md)，列明当前差距、共用界面约束与下一批验收顺序。
+
+[第十三轮](development/round13-knowledge-map.md)已补客户引用投影和人工业务主题地图：范围确认、文档关联、有效发布缺口；自动产品理解与完整证据关系仍待继续。
+
+[第十四轮](development/round14-source-evidence.md)补齐独立来源快照、文件证据、历史映射及主题证据关联；正式页面可以记录支持、反驳与人工核对状态，其后续分层生成见第十五轮记录。
+
+[第十六轮](development/round16-support-workspace.md)已将持久对话、正式工单、工程调查、支持指标/报告、知识维护/评测、保留删除和知识 Worker 纳入框架。[正式后台指南](guides/support-workspace.md)说明完整接入顺序、实际页面及运行边界。
+
 ## 按你的任务开始
 
 | 你要完成的任务 | 从这里开始 | 完成标志 |
 | --- | --- | --- |
 | 将仓库交给现有项目集成 | [接入任务书](../INTEGRATE.md) | 真实登录、知识、业务与部署分别有实际验收证据 |
 | 第一次下载并运行 | [安装与公开部署](guides/installation.md) | 健康检查成功，能打开向导和示例 SaaS |
+| 运作知识、工单与洞察后台 | [正式后台指南](guides/support-workspace.md) | 员工租户授权、回复/解决/知识回流、报告与来源维护 |
+| 管理独立后台账号 | [后台账号与恢复](guides/operator-accounts.md) | 初始化、授权、会话撤销与本地恢复；适用开发版本见指南 |
 | 连接已有登录和网站 | [网站与身份接入](guides/integration.md) | 自己的用户能访问，另一用户不能读其问题 |
 | 从现有代码、文档生成知识 | [知识构建与更新](guides/knowledge.md) | 草稿有引用，发布后客户能检索，内部资料不可见 |
 | 查询订单等业务状态 | [OpenAPI 业务查询](guides/business-queries.md) | 返回当前用户有权访问的业务记录和批准字段 |
@@ -67,6 +83,7 @@ pnpm start
 | 本地 `4321/setup` | 部署者 | 初始化、知识审核发布、接口导入、运行诊断、客户收件箱 |
 | SaaS 内浮窗、内嵌区块 | 已登录客户 | 找答案、查业务、办业务、问题与回复 |
 | `/support` | 从 SaaS 打开的已登录客户 | 同样的功能，适合独立页面使用 |
+| `/admin` | 独立工作人员账号 | 知识中心、工单、调查、洞察、成员、租户范围及审计；见开发版本说明 |
 | `/console` | 本地演示与测试人员 | 固定演示身份工作台，不作为正式管理员后台 |
 
 管理员访问码与客户 Token 完全分开。公开部署只代理 Core，不对外开放本地管理服务、演示签发器、OPA 或数据库。
@@ -74,3 +91,7 @@ pnpm start
 ## 0.6 Core Foundation
 
 [核心抽象、数据迁移与范围](overview/agent18-0.6-core.md) · [Provider / Tool 注册与审核](reference/providers.md)。
+
+[第十五轮](development/round15-layered-generation.md)将固定原文核对、按主题分层生成、持久任务、独立客户稿及来源新鲜度接入正式知识中心。模型结果仍需导入草稿并人工审核发布。
+
+知识治理、批量发布、业务分析与 Playbook、定期报告、SLA、外部工单桥、Tempo 和部署证明，参见[进阶工作流指南](guides/advanced-workflows.md)。

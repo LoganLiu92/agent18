@@ -1,3 +1,5 @@
+import { dirname } from 'node:path';
+import { prepareKnowledgeRuntime } from './knowledge-runtime.js';
 import { spawn } from 'node:child_process';
 
 /** Recreate file-mounted consumers even when only an atomic config replacement changed. */
@@ -17,6 +19,9 @@ export async function startStack(
       );
     });
 
+  const envFile = compose[compose.indexOf('--env-file') + 1];
+  if (!envFile || !compose.includes('--env-file')) throw new Error('COMPOSE_ENV_FILE_REQUIRED');
+  await prepareKnowledgeRuntime(dirname(envFile));
   // Build before disrupting running consumers. PostgreSQL keeps its container and volume.
   if (build) await run(['build', 'server']);
   await run(['up', '-d', '--wait', 'postgres']);
@@ -26,5 +31,6 @@ export async function startStack(
   await run(['up', '--no-deps', '--force-recreate', '--exit-code-from', 'migrate', 'migrate']);
   await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'server']);
   await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'worker']);
+  await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'knowledge-worker']);
   if (demo) await run(['up', '-d', '--no-deps', '--force-recreate', '--wait', 'identity-demo']);
 }

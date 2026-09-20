@@ -8,7 +8,21 @@ const states = {
   uncertain: '结果待确认',
   expired: '预览已过期',
 };
-export function BusinessAssistant({ client, model }: { client: Agent18; model: boolean }) {
+export type ActionReference = {
+  queryId: string;
+  requestId: string;
+  retrievedAt: string;
+  row: Record<string, string | number | boolean | null>;
+};
+export function BusinessAssistant({
+  client,
+  model,
+  reference,
+}: {
+  client: Agent18;
+  model: boolean;
+  reference?: ActionReference;
+}) {
   const [actions, setActions] = useState<ActionDefinition[]>([]),
     [selected, setSelected] = useState(''),
     [args, setArgs] = useState<Record<string, string | number | boolean>>({});
@@ -57,6 +71,20 @@ export function BusinessAssistant({ client, model }: { client: Agent18; model: b
         <span className="eyebrow">BUSINESS ASSISTANT</span>
         <h2>用你的身份，完成业务操作</h2>
         <p className="muted-text">选择操作或描述需求。先核对预览，再确认执行。</p>
+        {reference && (
+          <details open>
+            <summary>来自查询的办理参考</summary>
+            <p>
+              {reference.queryId} · {new Date(reference.retrievedAt).toLocaleString()} · {reference.requestId}
+            </p>
+            {Object.entries(reference.row).map(([k, v]) => (
+              <p key={k}>
+                {k}：{String(v ?? '—')}
+              </p>
+            ))}
+            <small>这是当时查得的记录；请选择获准操作并填写参数，业务系统将重新核对当前状态。</small>
+          </details>
+        )}
         {model && (
           <form
             className="search-form"

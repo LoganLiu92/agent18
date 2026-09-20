@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import './experience.css';
 import { OperationsCenter } from './operations.js';
+import { OperatorBootstrap } from './operator-bootstrap.js';
+import type { buildProvenance } from '../../../packages/knowledge/src/provenance.js';
 
 type Source = {
   id: string;
@@ -116,10 +118,14 @@ export function SetupWizard() {
   const [sources, setSources] = useState<Source[]>([]),
     [mode, setMode] = useState<'extractive' | 'model'>('extractive'),
     [job, setJob] = useState<Job>(),
-    [preview, setPreview] =
-      useState<
-        { title: string; body: string; refs: { path: string; startLine: number; endLine: number }[] }[]
-      >();
+    [preview, setPreview] = useState<
+      {
+        title: string;
+        body: string;
+        refs: { path: string; startLine: number; endLine: number }[];
+        provenance?: ReturnType<typeof buildProvenance> | null;
+      }[]
+    >();
   const [previewPage, setPreviewPage] = useState(0);
   const [selectedBuild, setSelectedBuild] = useState(''),
     [applied, setApplied] = useState(false),
@@ -348,6 +354,7 @@ export function SetupWizard() {
           </span>
         </header>
         <div className="setup-content">
+          {step === 0 && <OperatorBootstrap token={token} coreUrl={state.coreUrl} />}
           <div className="setup-heading">
             <span className="experience-kicker">STEP {steps[step]![0]} OF 05</span>
             <h1>
@@ -888,6 +895,27 @@ export function SetupWizard() {
                       <details key={i} open={i === 0}>
                         <summary>{a.title}</summary>
                         <p>{a.body}</p>
+                        {a.provenance ? (
+                          <div className="knowledge-provenance">
+                            <small>
+                              来源：{a.provenance.source.key} ·{' '}
+                              {a.provenance.source.kind === 'git' ? 'Git commit' : '目录快照'}：
+                              {a.provenance.source.revision}
+                            </small>
+                            <small>
+                              读取时间：{new Date(a.provenance.snapshot.observedAt).toLocaleString()}
+                            </small>
+                            <small>
+                              生成任务：{a.provenance.generation.runId} ·{' '}
+                              {a.provenance.generation.mode === 'model'
+                                ? `模型 ${a.provenance.generation.model?.name ?? a.provenance.generation.model?.identity ?? '未知'}`
+                                : '原文提取，未调用模型'}
+                            </small>
+                            <small>部署版本：未知。以上来源版本不代表当前线上版本。</small>
+                          </div>
+                        ) : (
+                          <small>历史构建未记录完整生成信息，保留原始来源引用。</small>
+                        )}
                         {a.refs.map((r, n) => (
                           <small key={n}>
                             {r.path} · L{r.startLine}–{r.endLine}

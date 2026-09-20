@@ -25,7 +25,7 @@ Idempotency-Key: <uuid-when-required>
 | POST /api/knowledge/ask | askKnowledge(query) | 有引用的回答或明确的检索模式 |
 | POST /api/knowledge/search | searchKnowledge(query) | 检索当前可见证据 |
 | GET /api/knowledge/catalogue | knowledgeCatalogue() | 已发布知识目录 |
-| GET /api/knowledge/articles/{id} | knowledgeArticle(id) | 文章与文件行号引用 |
+| GET /api/knowledge/articles/{id} | knowledgeArticle(id) | 文章与发布版本引用 |
 | GET /api/business/queries | listBusinessQueries() | 当前角色允许的业务查询 |
 | POST /api/business/query | queryBusiness(id, args) | 当前身份调用固定 GET |
 | GET /api/actions | listActions() | 当前角色允许的业务办理 |
@@ -79,6 +79,8 @@ const assistant = mountFloatingAssistant(client, { title: '产品助手' });
 `reportCase({ title, description, context?, capture? }, idempotencyKey)` 可显式提交预览时冻结的 context；`context: {}` 表示不附带，省略则取提交时当前上下文。浮窗/内嵌已提供冻结预览与取消附带，独立页不自动交接宿主事件。完整字段与拒绝路径见[语义上下文指南](../guides/semantic-context.md)。
 
 ## 问题处理约定
+
+开发版本的客户知识文章保留 `references: []` 兼容字段，不返回源码路径、行号和源码 commit；目录、搜索与文章的 `version` 是不透明的发布标识，调用方不得把它解释为 Git 版本。历史工单知识引用在读取时按当前权限重新投影。内部来源依据只通过获准的 Operator 页面读取，具体实现范围见[第十三轮](../development/round13-knowledge-map.md)。
 
 客户问题描述和补充说明按纯文本显示。支持回复只允许本地部署者入口发送，客户不能伪造 author。已解决可重新打开；重新打开不自动重跑工具。后台检索完成也不代表客户已确认解决，不能覆盖 resolved 状态。
 

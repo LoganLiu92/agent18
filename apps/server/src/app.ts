@@ -1,3 +1,8 @@
+import { receiveDeployment } from '../../../packages/application/src/deployment-feed.js';
+import { TicketSyncRuntime } from '../../../packages/application/src/ticket-sync.js';
+import { ReportAutomation } from '../../../packages/application/src/report-automation.js';
+import { deleteCaseCapture } from '@agent18/application';
+import { ConversationService } from '@agent18/application';
 import { ProviderRegistry } from '@agent18/provider-contracts';
 import { observabilityProvider } from '@agent18/observability';
 import { registerDocs } from './docs.js';
@@ -35,6 +40,7 @@ import {
 import type { Config } from '../../../scripts/config.js';
 import { customerVerifier, verifyWorkload } from './auth.js';
 import { contentSecurityPolicy } from './security.js';
+import { registerOperators } from './operators/routes.js';
 
 export async function buildApp(
   config: Config,
@@ -111,6 +117,7 @@ export async function buildApp(
     cases.runs.reconcile(scope, runId, reason),
   );
   const verifyCustomer = customerVerifier(config);
+  registerOperators(app, db, config);
   const principals = new WeakMap<FastifyRequest, CustomerPrincipal>();
   const principal = (request: FastifyRequest) => {
     const value = principals.get(request);
@@ -138,6 +145,7 @@ export async function buildApp(
         .send();
   });
   app.options('/api/*', async (_request, reply) => reply.code(204).send());
+  const transcriptUsage = new Map<string, { since: number; count: number }>();
   app.addHook('preHandler', async (request) => {
     const route = request.routeOptions.url ?? '';
     if (route.startsWith('/api/')) {
@@ -149,6 +157,22 @@ export async function buildApp(
       )
         throw new AppError('ORIGIN_DENIED', 403);
       await scoped(db, customer, requireTenant);
+      if (request.method === 'POST' && route.startsWith('/api/conversations')) {
+        const now = Date.now(),
+          key = JSON.stringify([
+            customer.organizationId,
+            customer.projectId,
+            customer.tenantId,
+            customer.subject,
+          ]);
+        for (const [key, value] of transcriptUsage)
+          if (now - value.since >= 60000) transcriptUsage.delete(key);
+        const entry = transcriptUsage.get(key) ?? { since: now, count: 0 };
+        if (entry.count >= 120 || (!transcriptUsage.has(key) && transcriptUsage.size >= 10000))
+          throw new AppError('RATE_LIMITED', 429);
+        entry.count++;
+        transcriptUsage.set(key, entry);
+      }
       principals.set(request, customer);
     } else if (route.startsWith('/internal/')) verifyWorkload(request, config.workerToken);
   });
@@ -232,6 +256,51 @@ export async function buildApp(
       },
       tool: { id: 'knowledge.search', effect: 'READ', policy: 'OPA · default deny' },
     };
+  });
+  const conversations = new ConversationService(db);
+  app.post('/api/cases/:id/capture/delete', (req) => {
+    z.object({}).strict().parse(req.body);
+    return deleteCaseCapture(
+      db,
+      principal(req),
+      z.object({ id: z.string().uuid() }).parse(req.params).id,
+      req.id,
+    );
+  });
+  app.get('/api/conversations', (req) =>
+    conversations.list(
+      principal(req),
+      z.object({ offset: z.coerce.number().int().min(0).max(100000).default(0) }).parse(req.query).offset,
+    ),
+  );
+  app.post('/api/conversations', (req) =>
+    conversations.create(principal(req), req.body, id.parse(req.headers['idempotency-key'])),
+  );
+  app.get('/api/conversations/:id', (req) =>
+    conversations.detail(
+      principal(req),
+      z.object({ id }).parse(req.params).id,
+      z.object({ after: z.coerce.number().int().min(0).max(100000).default(0) }).parse(req.query).after,
+    ),
+  );
+  app.post('/api/conversations/:id/messages', { bodyLimit: 40000 }, (req) =>
+    conversations.append(
+      principal(req),
+      z.object({ id }).parse(req.params).id,
+      req.body,
+      id.parse(req.headers['idempotency-key']),
+    ),
+  );
+  app.post('/api/conversations/:id/cases', (req) =>
+    conversations.link(
+      principal(req),
+      z.object({ id }).parse(req.params).id,
+      z.object({ caseId: id }).strict().parse(req.body).caseId,
+    ),
+  );
+  app.post('/api/conversations/:id/delete', (req) => {
+    z.object({}).strict().parse(req.body);
+    return conversations.remove(principal(req), z.object({ id }).parse(req.params).id, req.id);
   });
   app.get('/api/cases', async (request) => ({ cases: await cases.list(principal(request)) }));
   app.post('/api/cases', { bodyLimit: 800000 }, async (request, reply) => {
@@ -409,6 +478,44 @@ export async function buildApp(
   app.get('/sdk/capture.js', async (_request, reply) =>
     reply.type('text/javascript; charset=utf-8').send(await readFile('packages/web-sdk/dist/capture.js')),
   );
+  app.post('/integrations/deployments/events', { bodyLimit: 8192 }, async (req) => {
+    const headers = z
+      .object({
+        'x-agent18-timestamp': z.string(),
+        'x-agent18-event': z.string(),
+        'x-agent18-signature': z.string(),
+      })
+      .parse(req.headers);
+    return receiveDeployment(db, config.projects, req.body, {
+      timestamp: headers['x-agent18-timestamp'],
+      eventId: headers['x-agent18-event'],
+      signature: headers['x-agent18-signature'],
+    });
+  });
+  const ticketSync = new TicketSyncRuntime(db, config.projects);
+  app.post('/internal/ticket-sync/tick', async (req) => {
+    z.object({}).strict().parse(req.body);
+    return ticketSync.tick();
+  });
+  app.post('/integrations/tickets/events', { bodyLimit: 8192 }, async (req) => {
+    const headers = z
+      .object({
+        'x-agent18-timestamp': z.string(),
+        'x-agent18-event': z.string(),
+        'x-agent18-signature': z.string(),
+      })
+      .parse(req.headers);
+    return ticketSync.receive(req.body, {
+      timestamp: headers['x-agent18-timestamp'],
+      eventId: headers['x-agent18-event'],
+      signature: headers['x-agent18-signature'],
+    });
+  });
+  const reportAutomation = new ReportAutomation(db, config.projects);
+  app.post('/internal/reports/tick', async (request) => {
+    z.object({}).strict().parse(request.body);
+    return reportAutomation.tick();
+  });
   app.post('/internal/observations/tick', async (request) => {
     z.object({}).strict().parse(request.body);
     return observations.tick(AbortSignal.timeout(55000));
@@ -450,7 +557,7 @@ export async function buildApp(
     const pathname = new URL(request.url, 'http://localhost').pathname;
     const file = resolve(
       root,
-      ['/', '/console', '/support'].includes(pathname) ? 'index.html' : '.' + pathname,
+      ['/', '/console', '/support', '/admin'].includes(pathname) ? 'index.html' : '.' + pathname,
     );
     if (!file.startsWith(root + sep)) return reply.code(404).send();
     try {

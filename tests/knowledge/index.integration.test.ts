@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { mkdtemp, writeFile, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,6 +9,8 @@ import { localDirectory, readConfig } from '../../scripts/config.js';
 import { buildApp } from '../../apps/server/src/app.js';
 import { SignJWT, importJWK } from 'jose';
 import type { Scope } from '@agent18/contracts';
+import { ToolGateway, knowledgeBinding } from '@agent18/application';
+import { builtInTools, evidenceBatchSchema } from '@agent18/provider-contracts';
 
 describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge and isolation', () => {
   let indexDb: InstanceType<typeof Pool>,
@@ -21,6 +23,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
   let first: string,
     second: string,
     citationId: string,
+    citationSource: string,
     calls = 0,
     invalid = false;
   const model: JsonModel = {
@@ -62,7 +65,12 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
       credentials = JSON.parse(await readFile(join(localDirectory, 'indexer.json'), 'utf8'));
     indexDb = new Pool({ connectionString: credentials.databaseUrl });
     appDb = new Pool({ connectionString: config.databaseUrl });
-    scope = { ...config.projects[0]!, tenantId: 'tenant-a', subject: 'knowledge-test' };
+    scope = {
+      organizationId: config.projects[0]!.organizationId,
+      projectId: config.projects[0]!.projectId,
+      tenantId: 'tenant-a',
+      subject: 'knowledge-test',
+    };
     root = await mkdtemp(join(tmpdir(), 'agent18-index-'));
     source = sourceSchema.parse({
       id: 'test-' + randomUUID(),
@@ -93,8 +101,24 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
     const rows = await search();
     expect(rows).toHaveLength(1);
     citationId = rows[0]!.id;
+    citationSource = rows[0]!.source;
     const article = await provider.article(scope, citationId);
-    expect(article?.references[0]).toMatchObject({ path: 'guide.md', startLine: 1 });
+    expect(article?.references).toEqual([]);
+    expect(article?.version).toBe('publication-' + first);
+    expect(rows[0]!.version).toBe(article?.version);
+    expect(JSON.stringify(article)).not.toContain('guide.md');
+    const exported = await indexer.export(first);
+    expect(exported[0]?.provenance).toMatchObject({
+      schemaVersion: 1,
+      source: { kind: 'directory', commit: null },
+      generation: { runId: first, mode: 'model', model: { identity: model.identity } },
+      deployment: { status: 'unknown', revision: null },
+    });
+    expect(exported[0]?.refs[0]).toMatchObject({
+      sourceId: exported[0]?.provenance.source.id,
+      snapshotId: exported[0]?.provenance.snapshot.id,
+    });
+    expect(exported[0]?.refs[0].contentHash).toMatch(/^[a-f0-9]{64}$/);
   });
   it('watch deduplicates unchanged drafts but rebuilds changed visibility without auto-publication', async () => {
     const beforeCalls = calls;
@@ -148,7 +172,9 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
       expect(catalogue.json().articles.some((a: { id: string }) => a.id === citationId)).toBe(true);
       const article = await server.app.inject({ url: `/api/knowledge/articles/${citationId}`, headers });
       expect(article.statusCode).toBe(200);
-      expect(article.json().references[0].path).toBe('guide.md');
+      expect(article.json().references).toEqual([]);
+      expect(article.json().version).toBe('publication-' + first);
+      expect(article.body).not.toContain('guide.md');
       expect(article.body).not.toContain('organizationId');
       const answer = await server.app.inject({
         method: 'POST',
@@ -159,8 +185,51 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
       expect(answer.statusCode).toBe(200);
       expect(answer.json().mode).toBe('retrieval_only');
       expect(answer.json().citations[0].id).toBe(citationId);
+      expect(answer.json().citations[0].version).toBe('publication-' + first);
     } finally {
       await server.app.close();
+    }
+  });
+  it('re-projects legacy citations from the current authorized publication and rejects forged source links', async () => {
+    const [current] = await search();
+    const legacy = {
+      ...current!,
+      version: 'private-commit',
+      title: 'stale internal title',
+      excerpt: '/private/code.ts',
+    };
+    const { scope: _scope, visibility: _visibility, ...safeLegacy } = legacy;
+    const visible = await provider.visible(scope, [safeLegacy]);
+    expect(visible).toHaveLength(1);
+    expect(visible[0]).toMatchObject({ id: citationId, version: 'publication-' + first });
+    expect(JSON.stringify(visible)).not.toMatch(/private-commit|private\/code|stale internal/);
+    expect(await provider.visible({ ...scope, tenantId: 'tenant-b' }, [safeLegacy])).toEqual([]);
+    expect(
+      await provider.visible(scope, [{ ...safeLegacy, source: `knowledge://${randomUUID()}/${citationId}` }]),
+    ).toEqual([]);
+    const binding = knowledgeBinding(provider);
+    const evidence = evidenceBatchSchema.parse(
+      await binding.tools[0]!.invoke(
+        { query: 'uniquealphakey', limit: 5 },
+        { scope, requestId: 'legacy-case', signal: AbortSignal.timeout(3000) },
+      ),
+    );
+    evidence[0]!.citation = safeLegacy;
+    evidence[0]!.summary = 'stale internal summary';
+    evidence[0]!.provenance.sourceVersion = 'private-commit';
+    const gateway = new ToolGateway(appDb, undefined as never, provider);
+    const resolve = vi.spyOn(gateway.registry, 'resolve').mockResolvedValue({
+      tool: builtInTools.find((t) => t.id === 'knowledge.search')!,
+      fingerprint: 'test',
+    });
+    try {
+      const projected = await gateway.visibleEvidence(scope, evidence);
+      expect(projected).toHaveLength(1);
+      expect(projected[0]!.citation).toEqual(visible[0]);
+      expect(JSON.stringify(projected)).not.toMatch(/private-commit|stale internal/);
+      expect(evidence[0]!.provenance.sourceVersion).toBe('private-commit');
+    } finally {
+      resolve.mockRestore();
     }
   });
   it('does not expose drafts, internal sources, different tenants, projects or unscoped SQL', async () => {
@@ -169,9 +238,26 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
     expect((await appDb.query('SELECT * FROM knowledge.articles')).rowCount).toBe(0);
     await expect(appDb.query('SELECT * FROM knowledge.cache')).rejects.toMatchObject({ code: '42501' });
     await expect(indexDb.query('SELECT * FROM core.cases')).rejects.toMatchObject({ code: '42501' });
-    await expect(appDb.query('UPDATE knowledge.sources SET enabled=true')).rejects.toMatchObject({
-      code: '42501',
-    });
+    // The app role now supports staff publication; RLS still denies every customer/unscoped write.
+    expect((await appDb.query('UPDATE knowledge.sources SET enabled=false')).rowCount).toBe(0);
+    expect(
+      (await scoped(appDb, scope, (c) => c.query('UPDATE knowledge.sources SET enabled=false RETURNING id')))
+        .rowCount,
+    ).toBe(0);
+    expect((await search())[0]!.id).toBe(citationId);
+    await expect(appDb.query('DELETE FROM knowledge.sources')).rejects.toMatchObject({ code: '42501' });
+  });
+  it('keeps staff-managed publications outside the CLI watch source set', async () => {
+    const sourceId = randomUUID();
+    await scoped(indexDb, scope, (c) =>
+      c.query(
+        `INSERT INTO knowledge.sources(id,organization_id,project_id,source_key,name,audience) VALUES($1,$2,$3,$4,'Staff article','internal')`,
+        [sourceId, scope.organizationId, scope.projectId, 'staff-' + sourceId],
+      ),
+    );
+    const keys = await indexer.activeSourceKeys();
+    expect(keys).toContain(source.id);
+    expect(keys).not.toContain('staff-' + sourceId);
   });
   it('reuses unchanged model outputs and leaves previous published build intact', async () => {
     const before = calls,
@@ -201,7 +287,7 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('published knowledge an
           id: citationId,
           title: 'old',
           excerpt: 'old',
-          source: `knowledge://${randomUUID()}/${citationId}`,
+          source: citationSource,
           version: '1',
           observedAt: new Date().toISOString(),
         },

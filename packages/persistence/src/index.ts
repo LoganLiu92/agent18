@@ -43,6 +43,12 @@ export function caseView(row: pg.QueryResultRow): SupportCase {
     description: row.description,
     context: row.context,
     status: row.status,
+    ...(row.ticket_status
+      ? {
+          ticketStatus: row.ticket_status,
+          publicResolution: row.status === 'resolved' ? (row.public_resolution ?? null) : null,
+        }
+      : {}),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };

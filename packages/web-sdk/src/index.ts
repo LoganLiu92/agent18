@@ -1,5 +1,13 @@
+import type { Conversation, ConversationDetail, ConversationReference } from '@agent18/contracts';
+export type {
+  Conversation,
+  ConversationMessage,
+  ConversationDetail,
+  ConversationReference,
+} from '@agent18/contracts';
 import type { ClientContext, BusinessEvent } from '@agent18/contracts';
 import { recentEvents } from '@agent18/contracts/context';
+import { isEntityIdentity, sameEntity } from '@agent18/contracts/entity';
 import { captureCollector, type CaptureOptions } from './capture.js';
 import type {
   ReportCase,
@@ -64,6 +72,13 @@ export class Agent18 {
   constructor(private readonly options: Agent18Options) {
     this.collector = captureCollector(options.capture);
   }
+  deleteCaseCapture(id: string) {
+    return this.request<{ deleted: boolean }>(
+      `/api/cases/${encodeURIComponent(id)}/capture/delete`,
+      'POST',
+      {},
+    );
+  }
   async capturePage() {
     this.abort.signal.throwIfAborted();
     const capture = this.collector.snapshot();
@@ -122,15 +137,13 @@ export class Agent18 {
       if (input[key] !== undefined && !bounded(input[key], pattern)) throw new Error('CONTEXT_INVALID');
     }
     if (input.entity) {
-      const e = input.entity;
-      if (
-        !bounded(e.type, /^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/) ||
-        typeof e.id !== 'string' ||
-        !e.id.length ||
-        e.id.length > 128 ||
-        (e.namespace !== undefined && !bounded(e.namespace, /^[a-zA-Z0-9_.-]{1,80}$/))
-      )
-        throw new Error('CONTEXT_INVALID');
+      // Context accepts host objects but copies only identity fields, preserving the SDK's existing contract.
+      const e = {
+        type: input.entity.type,
+        id: input.entity.id,
+        ...(input.entity.namespace !== undefined ? { namespace: input.entity.namespace } : {}),
+      };
+      if (!isEntityIdentity(e)) throw new Error('CONTEXT_INVALID');
       extras.entity = { type: e.type, id: e.id, ...(e.namespace ? { namespace: e.namespace } : {}) };
     }
     if (input.correlationIds) {
@@ -152,7 +165,8 @@ export class Agent18 {
       ...extras,
     };
     if (
-      ['pagePath', 'route', 'entity', 'entityType', 'entityId'].some(
+      !sameEntity(this.context.entity, input.entity) ||
+      ['pagePath', 'route', 'entityType', 'entityId'].some(
         (key) =>
           JSON.stringify(this.context[key as keyof ClientContext]) !==
           JSON.stringify(next[key as keyof typeof next]),
@@ -188,19 +202,11 @@ export class Agent18 {
     ] as const)
       if (input[key] !== undefined && (typeof input[key] !== 'string' || !pattern.test(input[key]))) fail();
     const entity = input.entity ?? this.context.entity;
-    if (
-      entity &&
-      (Object.keys(entity).some((key) => !['type', 'id', 'namespace'].includes(key)) ||
-        !/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/.test(entity.type) ||
-        typeof entity.id !== 'string' ||
-        !entity.id.length ||
-        entity.id.length > 128)
-    )
-      fail();
+    if (entity && !isEntityIdentity(entity)) fail();
     const event: BusinessEvent = {
       ...input,
       at: new Date().toISOString(),
-      ...(entity ? { entity: { type: entity.type, id: entity.id } } : {}),
+      ...(entity ? { entity: { ...entity } } : {}),
     };
     this.events = recentEvents([...this.events, event]);
   }
@@ -239,6 +245,52 @@ export class Agent18 {
   }
   session() {
     return this.request<Session>('/api/session');
+  }
+  listConversations(offset = 0) {
+    return this.request<{ conversations: Conversation[]; nextOffset: number | null }>(
+      '/api/conversations?offset=' + offset,
+    );
+  }
+  createConversation(title: string, key: string) {
+    return this.request<{ conversation: Conversation; replayed: boolean }>(
+      '/api/conversations',
+      'POST',
+      { title },
+      key,
+    );
+  }
+  getConversation(id: string, after = 0) {
+    return this.request<ConversationDetail>(
+      '/api/conversations/' + encodeURIComponent(id) + '?after=' + after,
+    );
+  }
+  addConversationMessage(
+    id: string,
+    role: 'user' | 'assistant',
+    body: string,
+    key: string,
+    references: ConversationReference[] = [],
+  ) {
+    return this.request<{ id: string; sequence: number; replayed: boolean }>(
+      '/api/conversations/' + encodeURIComponent(id) + '/messages',
+      'POST',
+      { role, body, references },
+      key,
+    );
+  }
+  linkConversationCase(id: string, caseId: string) {
+    return this.request<{ linked: boolean }>(
+      '/api/conversations/' + encodeURIComponent(id) + '/cases',
+      'POST',
+      { caseId },
+    );
+  }
+  deleteConversation(id: string) {
+    return this.request<{ deleted: boolean }>(
+      '/api/conversations/' + encodeURIComponent(id) + '/delete',
+      'POST',
+      {},
+    );
   }
   listCases() {
     return this.request<{ cases: SupportCase[] }>('/api/cases');
