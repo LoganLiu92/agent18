@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import {
+  metricDefinitionSchema,
+  conversationInput,
+  conversationMessageInput,
   reportCaseSchema,
   caseSchema,
   contextSchema,
@@ -43,6 +46,74 @@ export const publicApiDefinitions: {
   idempotent?: boolean;
   created?: boolean;
 }[] = [
+  {
+    method: 'get',
+    path: '/api/conversations',
+    summary: 'List the current customer conversations',
+    tag: 'Conversations',
+    response: object({
+      conversations: array(object({ id: uuid, title: string, createdAt: string, updatedAt: string })),
+      nextOffset: { type: ['integer', 'null'] },
+    }),
+  },
+  {
+    method: 'post',
+    path: '/api/conversations',
+    summary: 'Create an independent conversation',
+    tag: 'Conversations',
+    body: schema(conversationInput),
+    response: object({
+      conversation: object({ id: uuid, title: string, createdAt: string, updatedAt: string }),
+      replayed: bool,
+    }),
+    idempotent: true,
+  },
+  {
+    method: 'get',
+    path: '/api/conversations/{id}',
+    summary: 'Read display history without resuming actions',
+    tag: 'Conversations',
+    response: object({
+      conversation: object({ id: uuid, title: string, createdAt: string, updatedAt: string }),
+      messages: array(
+        object({
+          id: uuid,
+          sequence: { type: 'integer' },
+          role: { enum: ['user', 'assistant'] },
+          body: string,
+          origin: { const: 'client_display' },
+          createdAt: string,
+        }),
+      ),
+      nextAfter: { type: ['integer', 'null'] },
+      cases: array(object({ id: uuid, title: string, status: string })),
+    }),
+  },
+  {
+    method: 'post',
+    path: '/api/conversations/{id}/messages',
+    summary: 'Append untrusted display text; does not execute tools',
+    tag: 'Conversations',
+    body: schema(conversationMessageInput),
+    response: object({ id: uuid, sequence: { type: 'integer' }, replayed: bool }),
+    idempotent: true,
+  },
+  {
+    method: 'post',
+    path: '/api/conversations/{id}/cases',
+    summary: 'Link an owned ticket to an owned conversation',
+    tag: 'Conversations',
+    body: object({ caseId: uuid }),
+    response: object({ linked: bool }),
+  },
+  {
+    method: 'post',
+    path: '/api/conversations/{id}/delete',
+    summary: 'Delete message bodies and links, retaining separately reported tickets',
+    tag: 'Conversations',
+    body: object({}),
+    response: object({ deleted: bool }),
+  },
   {
     method: 'post',
     path: '/api/assistant/route',
@@ -155,6 +226,14 @@ export const publicApiDefinitions: {
     response: ref('Article'),
   },
   {
+    method: 'post',
+    path: '/api/cases/{id}/capture/delete',
+    summary: 'Erase customer-owned page capture and derived investigation reports',
+    tag: 'Cases',
+    body: object({}),
+    response: object({ deleted: bool }),
+  },
+  {
     method: 'get',
     path: '/api/business/queries',
     summary: 'List enabled operations allowed for current user roles',
@@ -167,17 +246,22 @@ export const publicApiDefinitions: {
     summary: 'Execute registered GET using current bearer token; return projected fields',
     tag: 'Business reads',
     body: object({ queryId: string, arguments: args }),
-    response: object({
-      queryId: string,
-      columns: array(column),
-      rows: array({
-        type: 'object',
-        additionalProperties: { type: ['string', 'number', 'boolean', 'null'] },
-      }),
-      truncated: bool,
-      retrievedAt: { type: 'string', format: 'date-time' },
-      requestId: string,
-    }),
+    response: object(
+      {
+        metric: schema(metricDefinitionSchema),
+        period: object({ start: string, end: string }),
+        queryId: string,
+        columns: array(column),
+        rows: array({
+          type: 'object',
+          additionalProperties: { type: ['string', 'number', 'boolean', 'null'] },
+        }),
+        truncated: bool,
+        retrievedAt: { type: 'string', format: 'date-time' },
+        requestId: string,
+      },
+      ['queryId', 'columns', 'rows', 'truncated', 'retrievedAt', 'requestId'],
+    ),
   },
   {
     method: 'get',
@@ -416,22 +500,26 @@ export const openApi = {
         source: string,
         version: string,
         observedAt: string,
-        references: array(
-          object({
-            path: string,
-            startLine: { type: 'integer' },
-            endLine: { type: 'integer' },
-            revision: string,
-          }),
-        ),
+        references: {
+          type: 'array',
+          items: {},
+          maxItems: 0,
+          deprecated: true,
+          description:
+            'Compatibility field; always empty. Internal source evidence is not part of the customer API.',
+        },
       }),
-      BusinessQuery: object({
-        id: string,
-        title: string,
-        description: string,
-        fields: array(field),
-        columns: array(column),
-      }),
+      BusinessQuery: object(
+        {
+          metric: schema(metricDefinitionSchema),
+          id: string,
+          title: string,
+          description: string,
+          fields: array(field),
+          columns: array(column),
+        },
+        ['id', 'title', 'description', 'fields', 'columns'],
+      ),
       Action: object({ id: string, title: string, description: string, fields: array(field) }),
       Proposal: object({
         id: uuid,

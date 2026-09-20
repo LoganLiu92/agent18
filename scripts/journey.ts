@@ -43,6 +43,17 @@ try {
     const c = JSON.parse(await readFile(join(root, file), 'utf8'));
     c.consoleOrigin = core;
     c.projects[0].allowedOrigins = ['http://localhost:14319'];
+    c.projects[0].operations = {
+      enabled: true,
+      checks: [
+        {
+          id: 'journey-health',
+          kind: 'http',
+          title: 'Journey Core health',
+          url: file === 'server.json' ? core + '/health/live' : 'http://server:4318/health/live',
+        },
+      ],
+    };
     if (file === 'server.json') {
       c.databaseUrl = c.databaseUrl.replace(':54328/', ':15432/');
       c.queueDatabaseUrl = c.queueDatabaseUrl.replace(':54328/', ':15432/');
@@ -215,10 +226,11 @@ try {
   let detail;
   for (let i = 0; i < 30; i++) {
     detail = await api('/api/cases/' + caseId);
-    if (detail.runs[0]?.state === 'completed') break;
+    if (detail.runs[0]?.state === 'completed' && detail.investigation?.state === 'completed') break;
     await new Promise((r) => setTimeout(r, 1000));
   }
   assert.equal(detail.runs[0].state, 'completed');
+  assert.equal(detail.investigation?.state, 'completed');
   assert.ok(detail.evidence.length > 0);
   await api(`/api/cases/${caseId}/messages`, { body: 'Customer follow-up' }, alice, randomUUID());
   await api(`/api/cases/${caseId}`, undefined, bob, undefined, 404);
@@ -255,6 +267,7 @@ try {
   pass('Built-in documentation, machine-readable API, real backup and isolated restore');
   const retained = await restoreBackup(root, snapshot.directory, false);
   assert.ok(retained.database);
+  await execute('docker', [...compose, 'stop', 'worker', 'knowledge-worker', 'server']);
   await activateRestore(root, retained.database);
   await startStack(compose, { build: false });
   assert.equal((await api('/api/cases/' + caseId)).case.status, 'resolved');
@@ -270,10 +283,11 @@ try {
   );
   for (let i = 0; i < 30; i++) {
     detail = await api('/api/cases/' + afterRestore.case.id);
-    if (detail.runs[0]?.state === 'completed') break;
+    if (detail.runs[0]?.state === 'completed' && detail.investigation?.state === 'completed') break;
     await new Promise((r) => setTimeout(r, 1000));
   }
   assert.equal(detail.runs[0].state, 'completed');
+  assert.equal(detail.investigation?.state, 'completed');
   assert.ok(detail.evidence.length > 0);
   assert.equal((await execute('docker', [...compose, 'ps', '-q', 'postgres'])).stdout.trim(), postgresId);
   pass('Core and Worker process new work after database activation while retaining PostgreSQL');

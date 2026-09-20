@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "tsx scripts/check-demo.ts && AGENT18_INTEGRATION=1 vitest run --config vitest.config.ts",
+    "test:operators": "AGENT18_INTEGRATION=1 vitest run tests/security/operators.integration.test.ts --config vitest.config.ts",
     "logs": "docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml logs --tail=80",
     "demo:start": "tsx scripts/start-stack.ts demo",
     "demo:stop": "docker compose --env-file .local/compose.env -f deploy/compose/compose.yaml --profile demo --profile observability down",
@@ -25,7 +26,7 @@
     "test:recovery": "tsx scripts/check-demo.ts && tsx scripts/verify-recovery.ts",
     "format": "prettier --write apps packages providers examples scripts tests *.json *.ts deploy/compose/*.yaml",
     "format:check": "prettier --check apps packages providers examples scripts tests *.json *.ts deploy/compose/*.yaml",
-    "knowledge": "node --env-file-if-exists=.local/model.env --import tsx scripts/knowledge.ts",
+    "knowledge": "node --env-file-if-exists=.local/model.env --env-file-if-exists=.local/knowledge.env --import tsx scripts/knowledge.ts",
     "demo:actions": "tsx scripts/enable-demo-actions.ts",
     "project:configure": "tsx scripts/project.ts",
     "setup:ui": "tsx apps/setup/src/main.ts",
@@ -44,7 +45,11 @@
     "test:journey": "tsx scripts/journey.ts",
     "registry": "tsx scripts/registry.ts",
     "observability:demo": "tsx scripts/observability-demo.ts",
-    "test:observability": "tsx scripts/check-demo.ts && tsx scripts/verify-observability.ts"
+    "test:observability": "tsx scripts/check-demo.ts && tsx scripts/verify-observability.ts",
+    "knowledge:worker": "node --env-file-if-exists=.local/model.env --env-file-if-exists=.local/knowledge.env --import tsx scripts/knowledge-worker.ts",
+    "retention": "tsx scripts/retention.ts",
+    "test:backup:isolation": "AGENT18_BACKUP_INTEGRATION=1 vitest run tests/setup/backup-isolation.integration.test.ts --config vitest.config.ts",
+    "test:integration:isolated": "tsx scripts/verify-isolated.ts"
   },
   "dependencies": {
     "@agent18/actions": "workspace:*",

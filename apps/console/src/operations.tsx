@@ -1,3 +1,7 @@
+import { GitCredentials } from './git-credentials.js';
+import { DeploymentFeedSettings } from './deployment-settings.js';
+import { TicketSyncSettings } from './ticket-sync-settings.js';
+import { AnalyticsSettings } from './analytics-settings.js';
 import { useEffect, useRef, useState } from 'react';
 import type { QueryConfig, BridgeConfig } from '@agent18/actions';
 import type { Config } from '../../../scripts/config.js';
@@ -6,6 +10,7 @@ import type { SupportCase, CaseMessage } from '@agent18/contracts';
 import { ProductMark } from './setup.js';
 import { ObservationCenter, CaptureView } from './observations.js';
 import { QueryRegistration } from './query-registration.js';
+import { OperatorBootstrap } from './operator-bootstrap.js';
 
 type Project = Config['projects'][number];
 type InboxCase = SupportCase & { tenantId: string; subject: string };
@@ -133,6 +138,7 @@ export function OperationsCenter({
         )}
         {page === 'overview' && (
           <>
+            <OperatorBootstrap token={token} coreUrl={coreUrl} />
             <div className="ops-heading">
               <div>
                 <span className="experience-kicker">OPERATE WITH CONFIDENCE</span>
@@ -212,12 +218,18 @@ export function OperationsCenter({
           </>
         )}
         {page === 'connect' && (
-          <ConnectionEditor
-            key={selected}
-            projectKey={selected}
-            request={request}
-            onSaved={() => setNotice('配置已保存。点击“应用到运行服务”后生效。')}
-          />
+          <>
+            <ConnectionEditor
+              key={selected}
+              projectKey={selected}
+              request={request}
+              onSaved={() => setNotice('配置已保存。点击“应用到运行服务”后生效。')}
+            />
+            <AnalyticsSettings key={'analytics-' + selected} projectKey={selected} request={request} />
+            <TicketSyncSettings key={'sync-' + selected} projectKey={selected} request={request} />
+            <DeploymentFeedSettings key={'deployment-' + selected} projectKey={selected} request={request} />
+            <GitCredentials request={request} />
+          </>
         )}
         {page === 'inbox' && <OwnerInbox key={selected} projectKey={selected} request={request} />}
         {page === 'observe' && <ObservationCenter key={selected} projectKey={selected} request={request} />}

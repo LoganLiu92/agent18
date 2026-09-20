@@ -38,7 +38,8 @@ export class ToolGateway {
         const provider = this.providers.get(tool.provider);
         if (!provider?.visible) continue; // Revocation must be checked again when a Case is read.
         const visible = await provider.visible(scope, [e]);
-        if (visible.some((v) => v.id === e.id)) result.push(e);
+        const projected = validateEvidence(visible, scope, tool).find((v) => v.id === e.id);
+        if (projected) result.push(projected);
       } catch {
         /* Unknown, revoked, hidden or invalid evidence is not released. */
       }
@@ -189,7 +190,7 @@ export class ToolGateway {
       mode: 'retrieval_only',
       citations,
       notice: citations.some((c) => c.source.startsWith('knowledge://'))
-        ? '已检索当前发布的知识版本；引用可追溯到源文件。'
+        ? '已检索当前发布的知识版本；引用指向当前获准阅读的文档。'
         : '当前仅检索演示资料；未连接模型，不生成诊断或 AI 回答。',
     };
   }

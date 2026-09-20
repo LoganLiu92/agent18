@@ -7,6 +7,7 @@ import { buildApp } from '../../apps/server/src/app.js';
 import { readConfig, localDirectory } from '../../scripts/config.js';
 import { operationsConfigSchema } from '@agent18/observability/config';
 import { enqueueObservation, ObservationRuntime } from '@agent18/application';
+import { configurationHash } from '@agent18/observability';
 import type { Scope, PageCapture } from '@agent18/contracts';
 
 describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
@@ -270,6 +271,80 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
         }
       } finally {
         config.projects[0]!.operations!.modelAnalysis = false;
+      }
+    });
+    it('invokes the versioned Tempo binding through the policy gateway', async () => {
+      const previous = config.projects[0]!.operations!;
+      config.projects[0]!.operations = operationsConfigSchema.parse({
+        enabled: true,
+        checks: [
+          {
+            id: 'tempo',
+            kind: 'tempo',
+            title: 'Trace',
+            url: 'http://127.0.0.1:' + (server.address() as { port: number }).port,
+            projectAttributes: { 'service.namespace': 'observations' },
+            tenantAttribute: 'tenant.id',
+          },
+        ],
+      });
+      try {
+        const evidence = await app.gateway.invoke(
+          {
+            ...scope,
+            kind: 'operator',
+            expiresAt: Date.now() + 60000,
+            permissions: ['tool:operations.observe:READ'],
+          },
+          'operations.observe',
+          {
+            checkId: 'tempo',
+            configHash: configurationHash(config.projects[0]!.operations!),
+            mode: 'case',
+            observedAt: new Date().toISOString(),
+          },
+          crypto.randomUUID(),
+        );
+        expect(evidence[0]).toMatchObject({
+          kind: 'trace',
+          resource: { namespace: 'unknown' },
+          provenance: { toolId: 'operations.observe', toolVersion: 2 },
+        });
+      } finally {
+        config.projects[0]!.operations = previous;
+      }
+    });
+    it('upgrades bundled bindings without undoing revocation or replacing locally reviewed descriptors', async () => {
+      const migration = await readFile(
+        resolve('packages/persistence/migrations/036_observability_trace_binding.sql'),
+        'utf8',
+      );
+      const client = await admin.connect();
+      try {
+        for (const custom of [false, true]) {
+          await client.query('BEGIN');
+          await client.query(
+            "UPDATE control.providers SET version='1.0.0',review='revoked',reviewed_by='migration-009' WHERE id='observability'",
+          );
+          await client.query(
+            `UPDATE control.tools SET version=1,resource_types='["log","metric","health"]'::jsonb,
+            review='revoked',reviewed_by=$1 WHERE id='operations.observe'`,
+            [custom ? 'local-owner-review' : 'migration-009'],
+          );
+          await client.query(migration);
+          expect(
+            (await client.query("SELECT version,review FROM control.tools WHERE id='operations.observe'"))
+              .rows[0],
+          ).toEqual({ version: custom ? 1 : 2, review: 'revoked' });
+          expect(
+            (await client.query("SELECT version,review FROM control.providers WHERE id='observability'"))
+              .rows[0],
+          ).toEqual({ version: custom ? '1.0.0' : '1.1.0', review: 'revoked' });
+          await client.query('ROLLBACK');
+        }
+      } finally {
+        await client.query('ROLLBACK');
+        client.release();
       }
     });
     it('persists a failed result when the registered tool is revoked and does not publish evidence', async () => {

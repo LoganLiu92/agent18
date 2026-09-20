@@ -8,6 +8,8 @@ import { DatabaseSync, backup as sqliteBackup } from 'node:sqlite';
 import { z } from 'zod';
 import { parseEnv } from 'node:util';
 import { atomicJson } from './atomic.js';
+import { privacyReplaySql, tombstoneSchema } from './privacy.js';
+import { revokeRestoredOperatorSessions } from './operator-restore.js';
 const manifestSchema = z
   .object({
     format: z.literal('agent18-backup-v1'),
@@ -108,7 +110,7 @@ export async function createBackup(directory: string, destination?: string) {
       output: resolve(target, 'database.dump'),
     });
     const allowed =
-      /^(server(?:\.docker)?\.json|worker(?:\.docker)?\.json|migration(?:\.docker)?\.json|indexer\.json|knowledge(?:\.[a-z][a-z0-9-]*)?\.json|model\.env|observability\.env|identity\.json|postgres-password)$/;
+      /^(server(?:\.docker)?\.json|worker(?:\.docker)?\.json|migration(?:\.docker)?\.json|indexer\.json|knowledge(?:\.[a-z][a-z0-9-]*)?\.json|model\.env|knowledge\.env|observability\.env|identity\.json|postgres-password)$/;
     for (const name of await readdir(directory))
       if (allowed.test(name)) {
         await copyFile(resolve(directory, name), resolve(target, name));
@@ -183,6 +185,19 @@ export async function restoreBackup(directory: string, source: string, verifyOnl
     await composeRun(directory, ['pg_restore', '-U', 'postgres', '-d', database, '--exit-on-error'], {
       input: resolve(source, 'database.dump'),
     });
+    await upgradeRestoredSchema(directory, database);
+    await composeRun(directory, [
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      database,
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      revokeRestoredOperatorSessions,
+    ]);
+    await propagatePrivacy(directory, database);
     const query =
       "SELECT json_build_object('cases',(SELECT count(*) FROM core.cases),'messages',(SELECT count(*) FROM core.case_messages),'articles',(SELECT count(*) FROM knowledge.articles),'proposals',(SELECT count(*) FROM core.action_proposals),'captures',(SELECT count(*) FROM core.case_captures),'observationReports',(SELECT count(*) FROM core.observation_reports),'migrations',(SELECT count(*) FROM public.agent18_migrations))";
     const counts = JSON.parse(
@@ -231,6 +246,8 @@ export async function restoreBackup(directory: string, source: string, verifyOnl
       counts,
       rls: 'unscoped application reads returned zero rows',
       configuration: 'Archived config preserved for operator review; active deployment unchanged.',
+      operatorSessions:
+        'Restored staff sessions revoked; review restored accounts and grants before activation.',
     };
   } finally {
     if (!keep)
@@ -248,6 +265,81 @@ export async function restoreBackup(directory: string, source: string, verifyOnl
   }
 }
 
+async function upgradeRestoredSchema(directory: string, target: string) {
+  const query = (sql: string) =>
+    composeRun(directory, [
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      target,
+      '-At',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      sql,
+    ]);
+  const applied = JSON.parse(
+    (
+      await query(
+        "SELECT coalesce(json_agg(t),'[]') FROM (SELECT name,checksum FROM public.agent18_migrations ORDER BY name) t",
+      )
+    ).trim(),
+  ) as { name: string; checksum: string }[];
+  for (const file of (await readdir('packages/persistence/migrations'))
+    .filter((f) => /^\d+_[a-z0-9_]+\.sql$/.test(f))
+    .sort()) {
+    const sql = await readFile(resolve('packages/persistence/migrations', file), 'utf8'),
+      hash = createHash('sha256').update(sql).digest('hex');
+    const existing = applied.find((r) => r.name === file);
+    if (existing) {
+      if (existing.checksum !== hash) throw new Error('RESTORE_MIGRATION_CHECKSUM_MISMATCH');
+      continue;
+    }
+    await query(
+      `BEGIN; ${sql} INSERT INTO public.agent18_migrations(name,checksum) VALUES('${file}','${hash}'); COMMIT;`,
+    );
+  }
+}
+
+async function propagatePrivacy(directory: string, target: string) {
+  const server = JSON.parse(await readFile(resolve(directory, 'server.json'), 'utf8'));
+  const source = new URL(server.databaseUrl).pathname.slice(1);
+  if (!/^[a-zA-Z0-9_]+$/.test(source)) throw new Error('RESTORE_DATABASE_INVALID');
+  const command = (database: string, sql: string) =>
+    composeRun(directory, [
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      database,
+      '-At',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      sql,
+    ]);
+  const exists =
+    (await command(source, "SELECT to_regclass('control.privacy_tombstones') IS NOT NULL")).trim() === 't';
+  if (!exists) return;
+  // Page below composeRun's output bound; malformed/truncated JSON fails closed.
+  let after = '00000000-0000-0000-0000-000000000000';
+  while (true) {
+    const raw = JSON.parse(
+      (
+        await command(
+          source,
+          `SELECT coalesce(json_agg(t),'[]') FROM (SELECT * FROM control.privacy_tombstones WHERE id>'${after}'::uuid ORDER BY id LIMIT 100) t`,
+        )
+      ).trim(),
+    );
+    const rows = z.array(tombstoneSchema).parse(raw);
+    if (!rows.length) break;
+    await command(target, privacyReplaySql(rows));
+    after = rows.at(-1)!.id;
+  }
+}
+
 export async function activateRestore(directory: string, database: string) {
   if (!/^agent18_restore_[a-f0-9]{16}$/.test(database)) throw new Error('RESTORE_DATABASE_INVALID');
   const marker = JSON.parse(await readFile(resolve(directory, 'restores', database + '.json'), 'utf8'));
@@ -262,8 +354,25 @@ export async function activateRestore(directory: string, database: string) {
     '-v',
     'ON_ERROR_STOP=1',
     '-c',
-    'SELECT count(*) FROM public.agent18_migrations',
+    revokeRestoredOperatorSessions + ' SELECT count(*) FROM public.agent18_migrations',
   ]);
+  const live = JSON.parse(await readFile(resolve(directory, 'server.json'), 'utf8'));
+  const liveName = new URL(live.databaseUrl).pathname.slice(1);
+  if (!/^[a-zA-Z0-9_]+$/.test(liveName)) throw new Error('RESTORE_DATABASE_INVALID');
+  const connections = await composeRun(directory, [
+    'psql',
+    '-U',
+    'postgres',
+    '-d',
+    'postgres',
+    '-At',
+    '-v',
+    'ON_ERROR_STOP=1',
+    '-c',
+    `SELECT count(*) FROM pg_stat_activity WHERE datname='${liveName}' AND usename IN ('agent18_app','agent18_queue','agent18_indexer')`,
+  ]);
+  if (Number(connections.trim()) !== 0) throw new Error('RESTORE_STOP_APPLICATION_FIRST');
+  await propagatePrivacy(directory, database);
   const stamp = Date.now(),
     files = [
       'server.json',

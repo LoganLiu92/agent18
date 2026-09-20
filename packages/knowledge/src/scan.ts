@@ -1,3 +1,4 @@
+import { gitCredentialEnvironment } from './git-credentials.js';
 import { readdir, realpath, lstat, open, mkdir } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, relative, sep, extname, matchesGlob } from 'node:path';
@@ -85,7 +86,7 @@ export type Snapshot = {
   skipped: { path: string; reason: string }[];
   bytes: number;
 };
-async function git(args: string[], cwd?: string): Promise<Buffer> {
+async function git(args: string[], cwd?: string, credentials: NodeJS.ProcessEnv = {}): Promise<Buffer> {
   try {
     const r = await exec(
       'git',
@@ -98,6 +99,10 @@ async function git(args: string[], cwd?: string): Promise<Buffer> {
         'protocol.ext.allow=never',
         '-c',
         'protocol.file.allow=never',
+        '-c',
+        'credential.helper=',
+        '-c',
+        'http.followRedirects=false',
         ...args,
       ],
       {
@@ -106,7 +111,9 @@ async function git(args: string[], cwd?: string): Promise<Buffer> {
         timeout: 60000,
         maxBuffer: 25_000_000,
         env: {
-          ...process.env,
+          ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_CONFIG_'))),
+          GIT_CONFIG_COUNT: '0',
+          ...credentials,
           GIT_TERMINAL_PROMPT: '0',
           GIT_CONFIG_NOSYSTEM: '1',
           GIT_CONFIG_GLOBAL: '/dev/null',
@@ -206,9 +213,11 @@ export async function scan(
     await mkdir(cache, { recursive: true, mode: 0o700 });
     const repo = resolve(cache, hash(source.location));
     const stat = await lstat(repo).catch(() => null);
-    if (!stat) await git(['clone', '--bare', '--no-hardlinks', '--', source.location, repo]);
+    const credentials = gitCredentialEnvironment(source);
+    if (!stat)
+      await git(['clone', '--bare', '--no-hardlinks', '--', source.location, repo], undefined, credentials);
     else if (!stat.isDirectory() || stat.isSymbolicLink()) throw new KnowledgeError('GIT_CACHE_INVALID');
-    await git(['--git-dir', repo, 'fetch', '--no-tags', 'origin', source.ref]);
+    await git(['--git-dir', repo, 'fetch', '--no-tags', 'origin', source.ref], undefined, credentials);
     revision = (await git(['--git-dir', repo, 'rev-parse', '--verify', 'FETCH_HEAD^{commit}']))
       .toString()
       .trim();

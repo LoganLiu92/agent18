@@ -29,6 +29,21 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z
     .object({
       ...common,
+      kind: z.literal('tempo'),
+      projectAttributes: z
+        .record(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_.-]{0,127}$/), z.string().min(1).max(128))
+        .refine((v) => Object.keys(v).length > 0 && Object.keys(v).length <= 8),
+      tenantAttribute: z.string().min(1).max(128).default('tenant.id'),
+      subjectAttribute: z.string().min(1).max(128).optional(),
+      tenantHeaders: z
+        .record(z.string().min(1).max(128), z.string().regex(/^[a-zA-Z0-9_.-]{1,128}$/))
+        .default({}),
+      windowMinutes: z.number().int().min(1).max(60).default(10),
+    })
+    .strict(),
+  z
+    .object({
+      ...common,
       kind: z.literal('http'),
       expectedStatus: z.number().int().min(200).max(399).default(200),
     })
@@ -70,6 +85,17 @@ export const operationsConfigSchema = z
     checks: z.array(checkSchema).max(8).default([]),
   })
   .strict()
+  .refine(
+    (v) =>
+      v.checks.every(
+        (c) =>
+          c.kind !== 'tempo' ||
+          (!(c.tenantAttribute in c.projectAttributes) &&
+            (!c.subjectAttribute ||
+              (!(c.subjectAttribute in c.projectAttributes) && c.subjectAttribute !== c.tenantAttribute))),
+      ),
+    'Trace scope attributes must be independent',
+  )
   .refine((v) => new Set(v.checks.map((c) => c.id)).size === v.checks.length, 'Check IDs must be unique')
   .refine(
     (v) =>

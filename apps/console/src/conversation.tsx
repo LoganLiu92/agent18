@@ -13,7 +13,8 @@ export function CaseConversation({
     [messages, setMessages] = useState<CaseMessage[]>([]),
     [body, setBody] = useState(''),
     [error, setError] = useState(''),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [confirmErase, setConfirmErase] = useState(false);
   const key = useRef(crypto.randomUUID());
   const refresh = async () => {
     const [d, m] = await Promise.all([client.getCase(caseId), client.caseMessages(caseId)]);
@@ -53,6 +54,34 @@ export function CaseConversation({
       )}
       {detail && (
         <>
+          {detail.capture && (
+            <div className="experience-alert">
+              <p>此工单附有你授权提交的页面采集信息。</p>
+              {!confirmErase ? (
+                <button disabled={busy} onClick={() => setConfirmErase(true)}>
+                  删除页面附件
+                </button>
+              ) : (
+                <>
+                  <p>将删除附件和基于附件形成的调查报告；工单和公开沟通保留。</p>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void act(async () => {
+                        await client.deleteCaseCapture(caseId);
+                        setConfirmErase(false);
+                      })
+                    }
+                  >
+                    确认删除附件
+                  </button>
+                  <button disabled={busy} onClick={() => setConfirmErase(false)}>
+                    取消
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           <div className="ops-card-head">
             <span className="experience-badge">
               {detail.case.status === 'resolved' ? '已解决' : '跟进中'}
@@ -63,6 +92,12 @@ export function CaseConversation({
           </div>
           <h3>{detail.case.title}</h3>
           <p className="ops-description">{detail.case.description}</p>
+          {detail.case.publicResolution && (
+            <div className="experience-alert">
+              <b>解决说明</b>
+              <p>{detail.case.publicResolution}</p>
+            </div>
+          )}
           <div className="case-progress">
             {detail.runs.slice(0, 3).map((r) => (
               <article key={r.id}>

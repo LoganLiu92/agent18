@@ -14,6 +14,10 @@ export const sourceSchema = z
     name: z.string().min(1).max(120),
     kind: z.enum(['directory', 'git']),
     location: z.string().min(1).max(1000),
+    credentialEnv: z
+      .string()
+      .regex(/^AGENT18_GIT_[A-Z0-9_]{1,60}$/)
+      .optional(),
     ref: z
       .string()
       .regex(/^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,199}$/)
@@ -85,7 +89,7 @@ export function modelFromEnvironment(env: NodeJS.ProcessEnv = process.env): Mode
     maxTokens > 8192 ||
     !Number.isInteger(timeoutMs) ||
     timeoutMs < 100 ||
-    timeoutMs > 60000
+    timeoutMs > 180000
   )
     throw new KnowledgeError('MODEL_BUDGET_INVALID');
   const tokenLimitField = env.AGENT18_MODEL_TOKEN_LIMIT_FIELD ?? 'max_completion_tokens';

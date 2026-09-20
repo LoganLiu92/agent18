@@ -1,3 +1,4 @@
+import { parseTempoTrace } from './tempo.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { type Scope, type Evidence, evidenceSchema } from '@agent18/contracts';
@@ -65,7 +66,7 @@ export function observabilityProvider(
   request: typeof fetch = fetch,
 ): RegisteredProvider {
   return {
-    manifest: { id: 'observability', version: '1.0.0', capabilities: ['operations.observe'], mode: 'live' },
+    manifest: { id: 'observability', version: '1.1.0', capabilities: ['operations.observe'], mode: 'live' },
     transport: 'http',
     // Engineering evidence is intentionally never released by the customer evidence projection.
     visible: async () => [],
@@ -73,7 +74,7 @@ export function observabilityProvider(
       {
         descriptor: {
           id: 'operations.observe',
-          version: 1,
+          version: 2,
           review: 'approved',
           capability: 'operations.observe',
           provider: 'observability',
@@ -81,7 +82,7 @@ export function observabilityProvider(
           stage: 'READ',
           audience: 'ENGINEERING',
           risk: 'LOW',
-          resourceTypes: ['log', 'metric', 'health'],
+          resourceTypes: ['log', 'metric', 'health', 'trace'],
           environmentPolicy: [...environments],
         },
         inputSchema: observationInput,
@@ -119,7 +120,7 @@ export function observabilityProvider(
             provenance: {
               providerId: 'observability',
               toolId: 'operations.observe',
-              toolVersion: 1,
+              toolVersion: 2,
               sourceVersion: input.configHash,
               requestId: ctx.requestId,
             },
@@ -136,6 +137,66 @@ export function observabilityProvider(
                 `${check.title}: HTTP ${result.status}; ${Date.now() - started} ms`,
                 result.status === check.expectedStatus ? 'healthy' : 'alert',
               ),
+            ];
+          }
+          if (check.kind === 'tempo') {
+            if (input.mode !== 'case' || !input.traceId)
+              return [
+                evidence(
+                  'trace',
+                  'trace',
+                  `${check.title}: no scoped case trace ID; availability is unknown`,
+                  'unknown',
+                ),
+              ];
+            if (Object.keys(check.tenantHeaders).length) {
+              const tenant = check.tenantHeaders[ctx.scope.tenantId];
+              if (!tenant) throw new AppError('OBSERVABILITY_SCOPE_REJECTED', 403);
+              headers['X-Scope-OrgID'] = tenant;
+            }
+            headers.accept = 'application/json';
+            const end = Math.min(Date.parse(input.observedAt) + 60000, Date.now());
+            const url = new URL(check.url.replace(/\/$/, '') + '/api/traces/' + input.traceId.toLowerCase());
+            url.search = new URLSearchParams({
+              start: String(Math.floor((end - check.windowMinutes * 60000) / 1000)),
+              end: String(Math.ceil(end / 1000)),
+            }).toString();
+            const response = await get(url.toString());
+            if (response.status === 404) {
+              await response.body?.cancel();
+              return [
+                evidence(
+                  'trace',
+                  'trace',
+                  `${check.title}: trace unavailable in this scope/time window; it may be unsampled or expired`,
+                  'unknown',
+                ),
+              ];
+            }
+            const spans = parseTempoTrace(
+              await boundedJson(response),
+              input.traceId,
+              ctx.scope,
+              check,
+              input.observedAt,
+            );
+            return [
+              evidence(
+                'trace',
+                'trace',
+                `${check.title}: ${spans.length} spans available; showing at most 29; trace ${input.traceId}; span status is evidence, not root cause`,
+                spans.some((s) => s.error) ? 'alert' : 'unknown',
+              ),
+              ...spans.slice(0, 29).map((s) => ({
+                ...evidence(
+                  'trace',
+                  'span',
+                  `${s.service} · ${s.name}; duration ${s.durationMs} ms; status ${s.error ? 'error' : 'no recorded error'}; parent ${s.parentId ?? 'root'}`,
+                  'sample',
+                  s.at,
+                ),
+                resource: { namespace: 'sample', type: 'span', id: s.id },
+              })),
             ];
           }
           if (check.kind === 'loki') {

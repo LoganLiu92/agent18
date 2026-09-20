@@ -1,6 +1,6 @@
 name: ${AGENT18_STACK_NAME:-agent18}
 x-app: &app
-  image: agent18:0.8.0-local
+  image: ${AGENT18_IMAGE:-agent18:0.8.0-local}
   pull_policy: never
   user: '${AGENT18_UID:-1000}:${AGENT18_GID:-1000}'
   init: true
@@ -58,6 +58,8 @@ services:
         required: false
       - path: ${AGENT18_LOCAL_DIR}/observability.env
         required: false
+      - path: ${AGENT18_LOCAL_DIR}/analytics.env
+        required: false
     volumes: ['${AGENT18_LOCAL_DIR}/server.docker.json:/run/config/server.json:ro']
     ports: ['127.0.0.1:4318:4318']
     depends_on:
@@ -79,6 +81,27 @@ services:
     command: [node, --import, tsx, apps/worker/src/main.ts]
     environment: { AGENT18_WORKER_CONFIG: /run/config/worker.json }
     volumes: ['${AGENT18_LOCAL_DIR}/worker.docker.json:/run/config/worker.json:ro']
+    depends_on:
+      server: { condition: service_healthy }
+  knowledge-worker:
+    <<: *app
+    networks: [core, host-access]
+    command: [node, --import, tsx, scripts/knowledge-worker.ts]
+    environment:
+      AGENT18_INDEXER_CONFIG: /run/config/indexer.json
+      AGENT18_KNOWLEDGE_CONFIG: /run/config/knowledge-worker.json
+      AGENT18_KNOWLEDGE_CACHE: /cache
+      AGENT18_KNOWLEDGE_ROOTS: '["/sources"]'
+    env_file:
+      - path: ${AGENT18_LOCAL_DIR}/model.env
+        required: false
+      - path: ${AGENT18_LOCAL_DIR}/knowledge.env
+        required: false
+    volumes:
+      - ${AGENT18_LOCAL_DIR}/indexer.docker.json:/run/config/indexer.json:ro
+      - ${AGENT18_LOCAL_DIR}/knowledge-worker.json:/run/config/knowledge-worker.json:ro
+      - ${AGENT18_LOCAL_DIR}/knowledge-sources:/sources:ro
+      - ${AGENT18_LOCAL_DIR}/knowledge-cache:/cache
     depends_on:
       server: { condition: service_healthy }
   identity-demo:

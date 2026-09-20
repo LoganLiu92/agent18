@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { OperationsConfig, ObservationCheck } from '@agent18/observability/config';
 import type { ObservationReport } from '@agent18/application';
 import type { PageCapture } from '@agent18/contracts';
+import { entityLabel } from '@agent18/contracts/entity';
 type Request = <T>(path: string, body?: unknown, key?: string) => Promise<T>;
 type Job = {
   id: string;
@@ -70,28 +71,46 @@ export function ObservationCenter({ projectKey, request }: { projectKey: string;
   const add = (kind: ObservationCheck['kind']) => {
     const common = {
       id: kind + '-' + Math.random().toString(36).slice(2, 8),
-      title: kind === 'http' ? '服务可用性' : kind === 'loki' ? '业务错误日志' : '服务器指标',
+      title:
+        kind === 'tempo'
+          ? '请求链路'
+          : kind === 'http'
+            ? '服务可用性'
+            : kind === 'loki'
+              ? '业务错误日志'
+              : '服务器指标',
       url:
-        kind === 'http'
-          ? 'https://your-saas.example/health'
-          : kind === 'loki'
-            ? 'http://loki:3100'
-            : 'http://prometheus:9090',
+        kind === 'tempo'
+          ? 'http://tempo:3200'
+          : kind === 'http'
+            ? 'https://your-saas.example/health'
+            : kind === 'loki'
+              ? 'http://loki:3100'
+              : 'http://prometheus:9090',
     };
     const check: ObservationCheck =
-      kind === 'http'
-        ? { ...common, kind, expectedStatus: 200 }
-        : kind === 'loki'
-          ? {
-              ...common,
-              kind,
-              labels: { app: 'your-saas' },
-              tenantLabel: 'tenant_id',
-              contains: 'error',
-              windowMinutes: 10,
-              minimumMatches: 1,
-            }
-          : { ...common, kind, query: 'up{job="your-saas"}', comparison: 'lt', threshold: 1 };
+      kind === 'tempo'
+        ? {
+            ...common,
+            kind,
+            projectAttributes: { 'service.namespace': 'your-saas' },
+            tenantAttribute: 'tenant.id',
+            tenantHeaders: {},
+            windowMinutes: 10,
+          }
+        : kind === 'http'
+          ? { ...common, kind, expectedStatus: 200 }
+          : kind === 'loki'
+            ? {
+                ...common,
+                kind,
+                labels: { app: 'your-saas' },
+                tenantLabel: 'tenant_id',
+                contains: 'error',
+                windowMinutes: 10,
+                minimumMatches: 1,
+              }
+            : { ...common, kind, query: 'up{job="your-saas"}', comparison: 'lt', threshold: 1 };
     setConfig((c) => ({ ...c!, checks: [...c!.checks, check] }));
   };
   return (
@@ -212,9 +231,16 @@ export function ObservationCenter({ projectKey, request }: { projectKey: string;
             />
           ))}
           <div className="ops-actions">
-            {(['http', 'loki', 'prometheus'] as const).map((kind) => (
+            {(['http', 'loki', 'prometheus', 'tempo'] as const).map((kind) => (
               <button key={kind} disabled={config.checks.length >= 8} onClick={() => add(kind)}>
-                ＋ {kind === 'http' ? 'HTTP 可用性' : kind === 'loki' ? 'Loki 日志' : 'Prometheus 指标'}
+                ＋{' '}
+                {kind === 'tempo'
+                  ? 'Tempo 链路'
+                  : kind === 'http'
+                    ? 'HTTP 可用性'
+                    : kind === 'loki'
+                      ? 'Loki 日志'
+                      : 'Prometheus 指标'}
               </button>
             ))}
           </div>
@@ -416,7 +442,13 @@ function CheckEditor({
   onRemove: () => void;
   onValidity: (valid: boolean) => void;
 }) {
-  const [labels, setLabels] = useState(c.kind === 'loki' ? JSON.stringify(c.labels) : ''),
+  const [labels, setLabels] = useState(
+      c.kind === 'loki'
+        ? JSON.stringify(c.labels)
+        : c.kind === 'tempo'
+          ? JSON.stringify(c.projectAttributes)
+          : '',
+    ),
     [invalid, setInvalid] = useState(false);
   return (
     <fieldset className="observation-editor">
@@ -517,6 +549,57 @@ function CheckEditor({
             </label>
           </>
         )}
+        {c.kind === 'tempo' && (
+          <>
+            <label>
+              项目固定属性（JSON）
+              <input
+                value={labels}
+                onChange={(e) => {
+                  setLabels(e.target.value);
+                  try {
+                    onChange({ ...c, projectAttributes: JSON.parse(e.target.value) });
+                    setInvalid(false);
+                    onValidity(true);
+                  } catch {
+                    setInvalid(true);
+                    onValidity(false);
+                  }
+                }}
+              />
+              {invalid && <small>请输入合法 JSON 对象。</small>}
+            </label>
+            <label>
+              租户属性名
+              <input
+                value={c.tenantAttribute}
+                onChange={(e) => onChange({ ...c, tenantAttribute: e.target.value })}
+              />
+            </label>
+            <label>
+              用户属性名（可选）
+              <input
+                value={c.subjectAttribute ?? ''}
+                onChange={(e) => onChange({ ...c, subjectAttribute: e.target.value || undefined })}
+              />
+            </label>
+            <label>
+              时间窗口（分钟）
+              <input
+                type="number"
+                min="1"
+                max="60"
+                value={c.windowMinutes}
+                onChange={(e) => onChange({ ...c, windowMinutes: Number(e.target.value) })}
+              />
+            </label>
+            <p>
+              仅在工单提供 Trace ID
+              时查询，逐条核对项目与租户属性。缺失/过期/未采样均显示未知，不代表业务成功。多租户 Tempo Header
+              映射在部署配置中维护。
+            </p>
+          </>
+        )}
         {c.kind === 'prometheus' && (
           <>
             <label>
@@ -591,8 +674,7 @@ export function CaptureView({
       {context && (
         <>
           <p>
-            {context.route} {context.pagePath}{' '}
-            {context.entity && `${context.entity.type} · ${context.entity.id}`}
+            {context.route} {context.pagePath} {context.entity && entityLabel(context.entity)}
           </p>
           <small>宿主提供的业务线索；用户身份与权限以服务端验证为准。</small>
           {context.events?.map((event, index) => (
@@ -601,7 +683,7 @@ export function CaptureView({
                 {event.operation} · {event.type.endsWith('failed') ? '失败' : '成功'}
               </b>
               <p>
-                {event.at} · {event.entity?.type} {event.entity?.id} · {event.errorCode}
+                {event.at} · {event.entity && entityLabel(event.entity)} · {event.errorCode}
               </p>
               <pre>
                 {[

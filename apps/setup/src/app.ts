@@ -1,3 +1,5 @@
+import { registerGitCredentials } from './git-credentials.js';
+import { registerAnalyticsSetup } from './analytics.js';
 import Fastify from 'fastify';
 import { registerOperations } from './operations.js';
 import { registerObservations } from './observations.js';
@@ -8,6 +10,7 @@ import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { parseEnv } from 'node:util';
 import { z } from 'zod';
 import { Pool } from '@agent18/persistence';
+import { AppError } from '@agent18/domain';
 import {
   KnowledgeIndexer,
   KnowledgeError,
@@ -17,6 +20,7 @@ import {
 } from '@agent18/knowledge';
 import { configSchema } from '../../../scripts/config.js';
 import { configureProject, projectInputSchema } from '../../../scripts/lib/project-config.js';
+import { OperatorService } from '../../server/src/operators/service.js';
 
 type Job = {
   id: string;
@@ -103,11 +107,46 @@ export async function buildSetupApp(options: SetupOptions) {
   });
   app.setErrorHandler((error, _request, reply) =>
     reply
-      .code(error instanceof KnowledgeError ? (error.code === 'SETUP_BUSY' ? 409 : 400) : 400)
-      .send({ error: { code: error instanceof KnowledgeError ? error.code : 'SETUP_REQUEST_FAILED' } }),
+      .code(
+        error instanceof AppError
+          ? error.status
+          : error instanceof KnowledgeError
+            ? error.code === 'SETUP_BUSY'
+              ? 409
+              : 400
+            : 400,
+      )
+      .send({
+        error: {
+          code:
+            error instanceof AppError || error instanceof KnowledgeError
+              ? error.code
+              : 'SETUP_REQUEST_FAILED',
+        },
+      }),
   );
   registerOperations(app, directory, mutate);
+  registerAnalyticsSetup(app, directory, mutate);
+  registerGitCredentials(app, directory, mutate);
   registerObservations(app, directory, mutate);
+  const withOperators = async <T>(fn: (service: OperatorService) => Promise<T>) => {
+    const config = await settings();
+    const pool = new Pool({ connectionString: config.databaseUrl, max: 2 });
+    try {
+      return await fn(new OperatorService(pool, config));
+    } finally {
+      await pool.end();
+    }
+  };
+  app.get('/owner/operators', () =>
+    withOperators(async (service) => ({ initialized: await service.initialized() })),
+  );
+  app.post('/owner/operators/bootstrap', (request) =>
+    mutate(() => withOperators((service) => service.bootstrap(request.body, request.id))),
+  );
+  app.post('/owner/operators/recover', (request) =>
+    mutate(() => withOperators((service) => service.recoverAdministrator(request.body, request.id))),
+  );
   app.get('/owner/state', async () => {
     const config = await settings(),
       env = await environment();

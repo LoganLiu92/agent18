@@ -56,18 +56,23 @@ export const pageCaptureSchema = z
   })
   .strict();
 export type PageCapture = z.infer<typeof pageCaptureSchema>;
+export const entityIdentitySchema = z
+  .object({
+    namespace: z
+      .string()
+      .regex(/^[a-zA-Z0-9_.-]{1,80}$/)
+      .optional(),
+    type: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
+    id: z.string().min(1).max(128),
+  })
+  .strict();
+export { entityKey, sameEntity, entityLabel, isEntityIdentity, type EntityIdentity } from './entity.js';
 export const businessEventSchema = z
   .object({
     type: z.enum(['business.operation.failed', 'business.operation.succeeded']),
     operation: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
     at: z.string().datetime(),
-    entity: z
-      .object({
-        type: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
-        id: z.string().min(1).max(128),
-      })
-      .strict()
-      .optional(),
+    entity: entityIdentitySchema.optional(),
     errorCode: z
       .string()
       .regex(/^[a-zA-Z0-9_.-]{1,80}$/)
@@ -100,17 +105,7 @@ export const contextSchema = z
       .string()
       .regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/)
       .optional(),
-    entity: z
-      .object({
-        namespace: z
-          .string()
-          .regex(/^[a-zA-Z0-9_.-]{1,80}$/)
-          .optional(),
-        type: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/),
-        id: z.string().min(1).max(128),
-      })
-      .strict()
-      .optional(),
+    entity: entityIdentitySchema.optional(),
     sessionId: z
       .string()
       .regex(/^[a-zA-Z0-9_.:-]{1,128}$/)
@@ -194,6 +189,10 @@ export const caseSchema = z.object({
   title: z.string(),
   description: z.string(),
   status: z.enum(['open', 'needs_human', 'resolved']),
+  ticketStatus: z
+    .enum(['new', 'open', 'investigating', 'waiting_customer', 'waiting_internal', 'resolved', 'closed'])
+    .optional(),
+  publicResolution: z.string().nullable().optional(),
   context: contextSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -254,6 +253,7 @@ export type KnowledgeArticle = {
   source: string;
   version: string;
   observedAt: string;
+  /** @deprecated Customer responses return []; source evidence is available only through Operator APIs. */
   references: { path: string; startLine: number; endLine: number; revision: string }[];
 };
 export type KnowledgeCatalogue = {
@@ -296,8 +296,11 @@ export type BusinessQuery = {
   description: string;
   fields: ActionDefinition['fields'];
   columns: { path: string; label: string }[];
+  metric?: import('./metrics.js').MetricDefinition;
 };
 export type QueryResult = {
+  metric?: import('./metrics.js').MetricDefinition;
+  period?: { start: string; end: string };
   queryId: string;
   columns: BusinessQuery['columns'];
   rows: Record<string, string | number | boolean | null>[];
@@ -355,3 +358,9 @@ export type Evidence = z.infer<typeof evidenceSchema>;
 // Artifact payloads need their own authorization path; the customer projection never releases refs.
 export const evidenceViewSchema = evidenceSchema.omit({ scope: true, artifactRef: true });
 export type EvidenceView = z.infer<typeof evidenceViewSchema>;
+export * from './conversations.js';
+
+export { metricDefinitionSchema, type MetricDefinition } from './metrics.js';
+export * from './analytics.js';
+export * from './ticket-sync.js';
+export * from './deployments.js';

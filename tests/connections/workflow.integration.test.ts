@@ -93,6 +93,111 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')('complete scoped connec
     await admin?.end();
     if (root) await rm(root, { recursive: true, force: true });
   });
+  it('persists customer conversations over HTTP with idempotency and subject isolation', async () => {
+    const key = randomUUID();
+    const create = () =>
+      server.app.inject({
+        method: 'POST',
+        url: '/api/conversations',
+        headers: { ...h(), 'idempotency-key': key },
+        payload: { title: 'Persistent customer conversation' },
+      });
+    const created = await create();
+    expect(created.statusCode, created.body).toBe(200);
+    const id = created.json().conversation.id;
+    expect((await create()).json().conversation.id).toBe(id);
+    const messageKey = randomUUID();
+    const append = (body: string, authorization = alice) =>
+      server.app.inject({
+        method: 'POST',
+        url: '/api/conversations/' + id + '/messages',
+        headers: { ...h(), authorization, 'idempotency-key': messageKey },
+        payload: { role: 'user', body },
+      });
+    expect((await append('Please explain the onboarding workflow.')).statusCode).toBe(200);
+    expect((await append('Please explain the onboarding workflow.')).statusCode).toBe(200);
+    expect((await append('Changed content')).statusCode).toBe(409);
+    for (const authorization of [bob, nina]) {
+      expect(
+        (await server.app.inject({ url: '/api/conversations/' + id, headers: { ...h(), authorization } }))
+          .statusCode,
+      ).toBe(404);
+      expect((await append('Please explain the onboarding workflow.', authorization)).statusCode).toBe(404);
+    }
+    const detail = await server.app.inject({ url: '/api/conversations/' + id, headers: h() });
+    expect(detail.json().messages).toHaveLength(1);
+    expect(detail.json().messages[0]).toMatchObject({ sequence: 1, origin: 'client_display' });
+    expect(
+      (
+        await server.app.inject({
+          method: 'POST',
+          url: '/api/conversations/' + id + '/delete',
+          headers: h(),
+          payload: {},
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect((await server.app.inject({ url: '/api/conversations/' + id, headers: h() })).statusCode).toBe(404);
+  });
+  it('validates metric date windows before calling any upstream service', async () => {
+    const q = {
+      ...queryConfig.operations.find((q) => q.id === 'orders.list')!,
+      fields: [
+        { name: 'start', label: 'Start', in: 'query', type: 'string', required: true },
+        { name: 'end', label: 'End', in: 'query', type: 'string', required: true },
+      ],
+      metric: {
+        id: 'orders.sample',
+        version: '1',
+        definition: 'Synthetic order values for boundary verification',
+        timezone: 'UTC',
+        values: [{ column: 'amount', unit: 'currency', currency: 'USD' }],
+        dimensions: ['customer'],
+        period: { startField: 'start', endField: 'end' },
+        maxDays: 31,
+      },
+    };
+    const metrics = queriesSchema.parse({ ...queryConfig, operations: [q] });
+    const scopedService = new QueryService(server.db, new OpaPolicy(cfg.opaUrl), () => metrics);
+    const realFetch = globalThis.fetch;
+    const upstream = vi.spyOn(globalThis, 'fetch');
+    try {
+      for (const [start, end] of [
+        ['2026-02-30', '2026-03-03'],
+        ['2026-03-03', '2026-03-03'],
+        ['2026-01-01', '2026-04-01'],
+      ])
+        await expect(
+          scopedService.execute(p, 'orders.list', { start, end }, alice, randomUUID()),
+        ).rejects.toMatchObject({ code: 'METRIC_PERIOD_INVALID' });
+      expect(upstream).not.toHaveBeenCalled();
+      upstream.mockImplementation((url, init) =>
+        String(url).startsWith(metrics.baseUrl)
+          ? Promise.resolve(
+              new Response(
+                JSON.stringify([
+                  { id: 'ORD-1001', customer: 'Alice', amount: 100, status: '已完成' },
+                  { id: 'ORD-1002', customer: 'Alice', amount: 200, status: '待处理' },
+                ]),
+                { headers: { 'content-type': 'application/json' } },
+              ),
+            )
+          : realFetch(url, init),
+      );
+      const result = await scopedService.execute(
+        p,
+        'orders.list',
+        { start: '2026-03-01', end: '2026-03-10' },
+        alice,
+        randomUUID(),
+      );
+      expect(result.period).toEqual({ start: '2026-03-01', end: '2026-03-10' });
+      expect(result.metric?.version).toBe('1');
+      expect(result.rows).toHaveLength(2);
+    } finally {
+      upstream.mockRestore();
+    }
+  });
   it('uses real SaaS HTTP data and exposes only approved fields', async () => {
     const r = await server.app.inject({
       method: 'POST',

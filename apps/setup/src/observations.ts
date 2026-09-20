@@ -1,3 +1,4 @@
+import { serializeEnv } from '../../../scripts/lib/env-file.js';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
@@ -94,13 +95,7 @@ export function registerObservations(
       const env = parseEnv(await readFile(resolve(directory, 'observability.env'), 'utf8').catch(() => ''));
       if (Object.keys(env).length >= 20 && !(input.name in env)) throw new KnowledgeError('CREDENTIAL_LIMIT');
       env[input.name] = input.value;
-      await writeFile(
-        resolve(directory, 'observability.env'),
-        Object.entries(env)
-          .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-          .join('\n') + '\n',
-        { mode: 0o600 },
-      );
+      await writeFile(resolve(directory, 'observability.env'), serializeEnv(env), { mode: 0o600 });
       return { saved: true, restartRequired: true };
     }),
   );

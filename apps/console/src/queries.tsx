@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { Agent18, BusinessQuery, QueryResult } from '@agent18/web-sdk';
-export function BusinessQueries({ client }: { client: Agent18 }) {
+export function BusinessQueries({
+  client,
+  onAction,
+}: {
+  client: Agent18;
+  onAction?: (context: {
+    queryId: string;
+    requestId: string;
+    retrievedAt: string;
+    row: Record<string, string | number | boolean | null>;
+  }) => void;
+}) {
   const [queries, setQueries] = useState<BusinessQuery[]>([]),
     [selected, setSelected] = useState(''),
     [args, setArgs] = useState<Record<string, string | number | boolean>>({}),
@@ -127,11 +138,29 @@ export function BusinessQueries({ client }: { client: Agent18 }) {
               <h2>查询结果</h2>
               <span>{new Date(result.retrievedAt).toLocaleTimeString()}</span>
             </div>
+            {result.metric && (
+              <div className="experience-alert">
+                <b>
+                  {result.metric.id} · 口径 {result.metric.version}
+                </b>
+                <p>{result.metric.definition}</p>
+                <p>
+                  {result.period?.start} 至 {result.period?.end}（结束日不含）· {result.metric.timezone}
+                </p>
+                <p>
+                  {result.metric.values
+                    .map((v) => v.column + '：' + v.unit + (v.currency ? ' ' + v.currency : ''))
+                    .join(' / ')}
+                </p>
+                <small>数值由业务接口计算；缺失值不视为零，截断结果不能作为完整总量。</small>
+              </div>
+            )}
             {result.rows.length ? (
               <div className="query-table-scroll">
                 <table>
                   <thead>
                     <tr>
+                      {onAction && <th>后续办理</th>}
                       {result.columns.map((c) => (
                         <th key={c.path}>{c.label}</th>
                       ))}
@@ -140,6 +169,22 @@ export function BusinessQueries({ client }: { client: Agent18 }) {
                   <tbody>
                     {result.rows.map((r, i) => (
                       <tr key={i}>
+                        {onAction && (
+                          <td>
+                            <button
+                              onClick={() =>
+                                onAction({
+                                  queryId: result.queryId,
+                                  requestId: result.requestId,
+                                  retrievedAt: result.retrievedAt,
+                                  row: r,
+                                })
+                              }
+                            >
+                              基于此记录办理
+                            </button>
+                          </td>
+                        )}
                         {result.columns.map((c) => (
                           <td key={c.path}>
                             {r[c.path] === null

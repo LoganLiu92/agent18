@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Browser-safe context helpers are also distributed with the MIT Web SDK.
 import type { BusinessEvent, ClientContext } from './index.js';
+import { sameEntity } from './entity.js';
 
 export const contextEventTtlMs = 10 * 60 * 1000;
 export function recentEvents(events: BusinessEvent[] = [], now = Date.now()) {
@@ -17,21 +18,11 @@ export function latestFailure(context?: ClientContext, now = Date.now()) {
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]!;
     if (event.type !== 'business.operation.failed') continue;
-    if (
-      context?.entity &&
-      event.entity &&
-      (context.entity.type !== event.entity.type || context.entity.id !== event.entity.id)
-    )
-      continue;
+    if (context?.entity && event.entity && !sameEntity(context.entity, event.entity)) continue;
     if (
       events
         .slice(i + 1)
-        .some(
-          (next) =>
-            next.operation === event.operation &&
-            next.entity?.type === event.entity?.type &&
-            next.entity?.id === event.entity?.id,
-        )
+        .some((next) => next.operation === event.operation && sameEntity(next.entity, event.entity))
     )
       continue;
     return event;

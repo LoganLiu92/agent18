@@ -22,7 +22,7 @@ const post = async (path: string, body: unknown, lease?: string) => {
       ...(lease ? { 'x-run-lease': lease } : {}),
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(path === '/internal/observations/tick' ? 60000 : 20_000),
+    signal: AbortSignal.timeout(path.endsWith('/tick') ? 60000 : 20_000),
   });
   if (!response.ok) throw new Error(`Core request status ${response.status}`);
   return response.json();
@@ -48,7 +48,13 @@ const observe = async () => {
   if (observing) return;
   observing = true;
   try {
-    await post('/internal/observations/tick', {});
+    const results = await Promise.allSettled(
+      ['/internal/observations/tick', '/internal/reports/tick', '/internal/ticket-sync/tick'].map((path) =>
+        post(path, {}),
+      ),
+    );
+    if (results.some((result) => result.status === 'rejected'))
+      console.error('agent18 scheduled tick failed; durable jobs retained');
   } catch {
     console.error('agent18 observation tick failed; durable jobs retained');
   } finally {

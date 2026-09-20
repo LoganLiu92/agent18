@@ -108,13 +108,10 @@ export function KnowledgeHub({ client, model }: { client: Agent18; model: boolea
             <span className="badge blue">{labels[article.category]}</span>
             <h2>{article.title}</h2>
             <div className="prose-source">{article.body}</div>
-            <h4>来源依据</h4>
-            {article.references.map((r, i) => (
-              <p className="source-reference" key={i}>
-                {r.path} · L{r.startLine}–{r.endLine}
-                <small>版本 {r.revision.slice(0, 12)}</small>
-              </p>
-            ))}
+            <h4>已发布文档</h4>
+            <p className="source-reference">文档编号 {article.id}</p>
+            <p className="source-reference">发布版本 {article.version}</p>
+            <p className="muted-text">当前内容按你的访问权限提供，文档撤下后将不可继续读取。</p>
           </article>
         ) : answer ? (
           <div className="search-results">

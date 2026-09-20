@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Agent18, Agent18Error, type CaseDetail, type Session, type SupportCase } from '@agent18/web-sdk';
 import './style.css';
 import { SetupWizard } from './setup.js';
+import { AdminWorkspace } from './admin.js';
 import { StandalonePortal } from './portal.js';
 import { Welcome } from './welcome.js';
 import { KnowledgeHub } from './knowledge.js';
@@ -775,7 +776,9 @@ function App() {
 }
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {location.pathname === '/setup' ? (
+    {location.pathname === '/admin' ? (
+      <AdminWorkspace />
+    ) : location.pathname === '/setup' ? (
       <SetupWizard />
     ) : location.pathname === '/support' ? (
       <StandalonePortal />

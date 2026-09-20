@@ -60,14 +60,22 @@ export function knowledgeBinding(knowledge: KnowledgeProvider): RegisteredProvid
     async visible(scope, evidence) {
       const citations = evidence.flatMap((e) => (e.citation ? [e.citation] : []));
       const visible = knowledge.visible ? await knowledge.visible(scope, citations) : citations;
-      return evidence.filter(
-        (e) =>
-          e.citation &&
-          visible.some(
-            (c) =>
-              c.id === e.citation!.id && c.source === e.citation!.source && c.version === e.citation!.version,
-          ),
-      );
+      return evidence.flatMap((e) => {
+        const citation = visible.find((c) => c.id === e.citation?.id && c.source === e.citation?.source);
+        if (!citation) return [];
+        // Indexed publications re-project legacy citations after current authorization.
+        // Other providers still require the exact original version.
+        if (!citation.source.startsWith('knowledge://') && citation.version !== e.citation?.version)
+          return [];
+        return [
+          {
+            ...e,
+            citation,
+            summary: citation.excerpt,
+            provenance: { ...e.provenance, sourceVersion: citation.version },
+          },
+        ];
+      });
     },
   };
 }

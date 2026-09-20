@@ -42,7 +42,8 @@ export class CaseService {
       if (!inserted.rowCount) {
         const previous = (await client.query('SELECT * FROM core.cases WHERE idempotency_key=$1', [key]))
           .rows[0];
-        if (!previous || previous.request_hash !== hash) throw new AppError('IDEMPOTENCY_CONFLICT', 409);
+        if (!previous || previous.deleted_at || previous.request_hash !== hash)
+          throw new AppError('IDEMPOTENCY_CONFLICT', 409);
         return { case: caseView(previous), replayed: true };
       }
       const { tool, binding, fingerprint } = await this.gateway.registry.resolve(this.workflow.toolId);
@@ -86,12 +87,18 @@ export class CaseService {
   }
   async list(scope: Scope) {
     return scoped(this.db, scope, async (client) =>
-      (await client.query('SELECT * FROM core.cases ORDER BY created_at DESC LIMIT 100')).rows.map(caseView),
+      (
+        await client.query(
+          'SELECT * FROM core.cases WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 100',
+        )
+      ).rows.map(caseView),
     );
   }
   async detail(scope: Scope, caseId: string): Promise<CaseDetail> {
     const result = await scoped(this.db, scope, async (client) => {
-      const row = (await client.query('SELECT * FROM core.cases WHERE id=$1', [caseId])).rows[0];
+      const row = (
+        await client.query('SELECT * FROM core.cases WHERE id=$1 AND deleted_at IS NULL', [caseId])
+      ).rows[0];
       if (!row) return null;
       const runs = await this.runs.views(client, caseId);
       const evidence = (

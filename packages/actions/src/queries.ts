@@ -6,6 +6,7 @@ import type { OpaPolicy } from '@agent18/policy';
 import { containsSecret } from '@agent18/knowledge';
 import { bridgeSchema, actionSchema } from './schemas.js';
 import { validateArguments } from './index.js';
+import { metricDefinitionSchema } from '@agent18/contracts';
 import type { BusinessQuery, QueryResult } from '@agent18/contracts';
 
 const safePath = z
@@ -34,9 +35,31 @@ export const querySchema = z
       .max(30),
     roles: z.array(z.string().min(1).max(50)).min(1).max(20),
     enabled: z.boolean().default(false),
+    metric: metricDefinitionSchema.optional(),
   })
   .strict()
   .superRefine((q, ctx) => {
+    if (q.metric) {
+      const columns = new Set(q.columns.map((c) => c.path)),
+        metric = q.metric;
+      if (
+        metric.values.some((v) => !columns.has(v.column)) ||
+        metric.dimensions.some((d) => !columns.has(d)) ||
+        new Set([...metric.values.map((v) => v.column), ...metric.dimensions]).size !==
+          metric.values.length + metric.dimensions.length
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Metric values and dimensions must be unique approved columns',
+        });
+      if (
+        metric.period.startField === metric.period.endField ||
+        [metric.period.startField, metric.period.endField].some(
+          (name) => !q.fields.some((f) => f.name === name && f.type === 'string' && f.required),
+        )
+      )
+        ctx.addIssue({ code: 'custom', message: 'Metrics require two explicit required date parameters' });
+    }
     if (q.method === 'POST' && !q.readOnly)
       ctx.addIssue({ code: 'custom', message: 'POST queries require explicit read-only review' });
     if (q.method === 'GET' && q.fields.some((field) => field.in === 'body'))
@@ -190,12 +213,13 @@ export class QueryService {
   list(p: CustomerPrincipal): BusinessQuery[] {
     return (this.config(p)?.operations ?? [])
       .filter((q) => q.enabled && q.roles.some((r) => p.roles.includes(r)))
-      .map(({ id, title, description, fields, columns }) => ({
+      .map(({ id, title, description, fields, columns, metric }) => ({
         id,
         title,
         description,
         fields: fields.map(({ in: _in, ...f }) => f),
         columns,
+        ...(metric ? { metric } : {}),
       }));
   }
   async execute(
@@ -212,6 +236,19 @@ export class QueryService {
     if (!config || !query || p.expiresAt <= Date.now() || (query.method === 'POST' && !query.readOnly))
       throw new AppError('QUERY_NOT_ALLOWED', 403);
     const args = validateArguments({ ...query, description: query.description || query.title }, input);
+    let period: { start: string; end: string } | undefined;
+    if (query.metric) {
+      const start = String(args[query.metric.period.startField]),
+        end = String(args[query.metric.period.endField]);
+      const valid = (v: string) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+        Number.isFinite(Date.parse(v)) &&
+        new Date(v).toISOString().slice(0, 10) === v;
+      const days = (Date.parse(end) - Date.parse(start)) / 86400000;
+      if (!valid(start) || !valid(end) || days <= 0 || days > query.metric.maxDays)
+        throw new AppError('METRIC_PERIOD_INVALID', 400);
+      period = { start, end };
+    }
     let path = query.path;
     for (const f of query.fields.filter((f) => f.in === 'path')) {
       const value = String(args[f.name]);
@@ -328,6 +365,7 @@ export class QueryService {
       });
       return {
         queryId,
+        ...(query.metric ? { metric: query.metric, period } : {}),
         columns: query.columns,
         rows,
         truncated: records.length > 50,
