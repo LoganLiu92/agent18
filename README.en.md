@@ -2,13 +2,20 @@
 
 **AI support that can answer, act, and investigate.**
 
-Agent18 is an open-source support agent for SaaS products. Connect your documentation, code, model API and current-user identity. Customers get cited answers, query their business data, confirm registered actions and report failures from one conversation. Your support team follows up with runtime evidence and turns resolutions into reviewed knowledge.
+Help customers get answers, check live data, confirm business actions, and report issues—without leaving your product.
 
-- **Answer** with published knowledge and user-scoped business data.
-- **Act** through registered APIs, explicit confirmation and verifiable receipts.
-- **Investigate** with page context, HTTP health, Loki logs and Prometheus metrics.
+[![checks](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml/badge.svg)](https://github.com/LoganLiu92/agent18/actions/workflows/ci.yml)
+[简体中文](README.md) · [Quick start](#quick-start) · [Integration](#integrate-your-saas) · [Handbook](docs/README.md)
 
-**Integrating an existing product? Start with the [integration task brief](INTEGRATE.md)** (Chinese). It maps responsibilities across repositories, defines staged outcomes, and includes a task prompt and [acceptance report template](docs/reference/integration-acceptance.md) for your target system.
+agent18 is an open-source support agent for existing SaaS products. It connects product documentation and code, authenticated users, business APIs, and observability sources in one customer-facing conversation.
+
+**Answer · Ground responses in sources.** Use reviewed, published knowledge for product questions and authorized business APIs for live data.
+
+**Act · Preview before execution.** Show the exact change, wait for explicit confirmation, let your SaaS authorize and execute it, then reconcile the receipt.
+
+**Investigate · Give support a starting point.** Collect reviewable page context, consult logs and metrics, and let people follow up. Resolutions can become knowledge drafts for review.
+
+Built for SaaS teams with existing authentication, APIs, and product knowledge who want to self-host support. **Keep your login and business database. Do not give the model administrator credentials.**
 
 [//]: # (agent18:release:start)
 
@@ -16,11 +23,9 @@ Current version: **0.8.0 integration preview**. See the [runtime overview](docs/
 
 [//]: # (agent18:release:end)
 
-Built for SaaS teams with existing authentication, business APIs and product knowledge who want to self-host support. See the [capability roadmap](docs/planning/mvp-roadmap.md) and [observability guide](docs/guides/observability.md) for integration requirements and limits.
+## Quick start
 
-## Run locally
-
-Requires Node 24.14.x, pnpm 11.19.0 and Docker Compose v2. Git sources use the host's existing read permissions. Official images and npm SDK packages are not published yet; these commands build from source and start a local synthetic SaaS demo.
+Use **Node.js 24.14.x, pnpm 11.19.0, Docker Compose v2, and Git**. These commands build from source and start a local demo with synthetic users and business data—not a public production deployment.
 
 ```sh
 git clone https://github.com/LoganLiu92/agent18.git
@@ -29,47 +34,65 @@ pnpm install --frozen-lockfile
 pnpm start
 ```
 
-Open `http://localhost:4321/setup` and enter the owner access code printed in your terminal. Connect a project, optional model, knowledge sources and website. After setup, the operator workspace becomes the default view.
+Open the [local setup workspace](http://localhost:4321/setup) and enter the **Owner access code** printed in your terminal. Select the demo system, configure a knowledge source, build and review it, publish it, and choose a website entry point.
 
-Try the synthetic SaaS at `http://localhost:4319/example`. Its floating assistant can read scoped orders, preview and change the current user's notification preference, verify persisted state, and submit support cases. The same interface supports inline embedding and a standalone support page opened from the SaaS.
+For day-to-day knowledge and ticket management, use the separate [operator workspace](http://localhost:4318/admin). Create the first administrator in Setup, then grant project and tenant access. The Owner access code is for local deployment maintenance.
 
-## AI reasons. Your system remains in control.
+**A model API key is optional.** Without one, you can test source retrieval, citations, business queries, confirmed actions, and support follow-ups. Model generation and model-assisted answers require separate configuration; deterministic demos do not validate model quality.
 
-A business write follows: registered capability and schema → policy → exact preview → user confirmation → identity, permission and revision checks → SaaS execution → receipt reconciliation.
+Open the [demo SaaS and floating assistant](http://localhost:4319/example). The built-in UI and most detailed guides are currently in Chinese; these prompts match the demo:
 
-The model proposes registered actions and arguments. Agent18 forwards the current user's short-lived identity to a fixed API. Your SaaS rechecks object access and commits the mutation and idempotent receipt in one transaction. Uncertain delivery stays unverified while Agent18 checks the receipt. See the [business action contract](docs/guides/business-actions.md).
+| Try | Expected result |
+| --- | --- |
+| `查询我的订单` — query my orders | Read the current user's business data. Switch demo users to check the corresponding access boundaries. |
+| `关闭邮件通知` — disable email notifications | Review the proposed change and confirm it. Then enter `查看我的通知偏好` to verify the persisted preference. |
+| `提交问题` — report an issue | Review and optionally include page context, submit the issue, add details, and follow support replies and progress. |
 
-## What is available
+For knowledge answers, ask a question covered by the document you just published and check the source citations.
 
-[//]: # (agent18:capabilities:start)
+Also try the [inline assistant](http://localhost:4319/example?mode=inline). Open the standalone support page from the SaaS support button so it receives the current user's identity. The [local handbook](http://localhost:4318/docs) is served with the application.
 
-| Capability | Status | Available | Requirements and limits |
-| --- | --- | --- | --- |
-| Answer | Implemented | Directory/Git sources, extractive or model drafts, citations, review, publication and watch | Source scope, audience and answer quality need target-system validation |
-| Query | Implemented | Reviewed OpenAPI GET and read-only POST operations, current-user identity, roles and field projection | POST needs explicit read-only review and flat scalar parameters; SaaS enforces object access; GraphQL is not supported |
-| Act | Implemented | Registered actions, exact previews, explicit confirmation, reauthorization and receipt reconciliation | SaaS implements transactional idempotency; no arbitrary browser control or autonomous multi-step writes |
-| Investigate | Partial | Semantic business failure events and page previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery | Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented |
-| Handoff and learn | Partial | Persistent cases, follow-ups, local operator replies, resolve/reopen and internal knowledge drafts | Ordinary chat resets on reload; remote operator SSO, assignment and external ticket sync are not implemented |
-| Self-host | Partial | Source installation, setup, floating/inline/standalone entry, diagnostics, backup and isolated restore | Single-host integration preview; official images/npm packages, distributed quotas and HA are not shipped |
-| Code repair | Planned | Planned: engineering evidence handoff, fix proposals, isolated verification and draft PRs | No automated code changes, merge or production deployment |
+### Try a runtime investigation
 
-[//]: # (agent18:capabilities:end)
+In a local demo that still uses the default `invoice-demo` project, open another terminal:
 
-Implemented means the repository includes runnable behavior and validation paths. Your real identity, data, model quality and production behavior still need [target-system acceptance](docs/reference/integration-acceptance.md).
+```sh
+pnpm observability:demo
+```
 
-## What you integrate
+Click “模拟业务异常” in the demo SaaS, report the failure through the assistant, and inspect the associated logs, metrics, and report in the local workspace. This uses real Loki / Prometheus components with synthetic failures. **An investigation report is not proof of root cause.** See the [observability guide](docs/guides/observability.md).
 
-The 0.8 preview adds explicitly reviewed read-only POST queries and bounded host business events. `client.emit` can attach operation/error/trace hints to a reviewable report; context expires, resets when the current object changes, and can be omitted before submission. See [semantic context](docs/guides/semantic-context.md) and the [0.8 overview](docs/overview/agent18-0.8-integration.md).
+Stop the demo with `pnpm demo:stop`; closing the setup terminal does not stop Docker services. For startup issues, run `pnpm run doctor` and consult the [installation guide](docs/guides/installation.md).
 
-1. **Identity:** Your authenticated backend issues a short-lived Ed25519 Support Token. Project, tenant, user and roles are derived from a trusted session. Agent18 verifies signatures and enforces scoped PostgreSQL RLS.
-2. **Knowledge:** Import directories or Git. Build extractive or model-generated drafts with file/line citations. Review and publish. `knowledge watch` builds changed drafts without automatically publishing them.
-3. **Business reads:** Import a bounded OpenAPI 3.0/3.1 GET subset. Operations start disabled; review roles and projected response fields. Your API revalidates the current user's permissions.
-4. **Business actions:** Implement prepare/execute/status at a fixed SaaS endpoint. The user confirms an exact preview; your backend commits business data and an idempotent receipt together. Uncertain delivery is reconciled without resending writes.
-5. **Support:** Customers report, follow up, view progress, receive operator replies, resolve and reopen their own cases.
+## Your SaaS remains in control
 
-Agent18 does not replace your login system or business database. Repository access and a model key do not grant business permissions. Your SaaS remains responsible for live authorization and object ownership.
+A business write is more than a model choosing a tool:
 
-## Embed
+```text
+Registered action → Parameter and policy checks → Exact preview → User confirmation
+                  → Identity, permission and revision checks → SaaS execution → Receipt
+```
+
+agent18 calls fixed business endpoints using the current user's short-lived identity. **Your SaaS enforces authorization, object ownership, and business rules.** It must commit the mutation and idempotent receipt in the same transaction. Uncertain delivery triggers receipt reconciliation—not a success claim or a blind retry of the write.
+
+Code and documentation provide context, not permission. The model cannot register arbitrary endpoints or execute arbitrary SQL, shell commands, or browser clicks. See the [business action contract](docs/guides/business-actions.md).
+
+## Integrate your SaaS
+
+Start with the [integration task brief](INTEGRATE.md) and add capabilities incrementally.
+
+| Connection | What your system provides |
+| --- | --- |
+| Identity and website | A backend-issued Support Token derived from a real session; project, tenant, public keys, allowed website origins, and the embedded SDK. |
+| Product knowledge | Readable documentation or code, an explicit customer/internal audience, and review before publication. |
+| Queries and actions | Reviewed read-only APIs; for writes, a `prepare / execute / status` bridge with transactional receipts. |
+| Investigation and handoff | Optional HTTP / Loki / Prometheus / Tempo sources, trusted scope labels, read-only credentials, and scoped operator access. |
+
+OpenAPI import creates candidates from a bounded **GET** subset. Read-only **POST** operations require separate registration and review; they are not automatically imported. See [business queries](docs/guides/business-queries.md).
+
+### Minimal browser integration
+
+First configure [identity issuance, origins, and CSP](docs/guides/integration.md). Then mount the assistant from an ES module on an authenticated page:
 
 ```js
 import { Agent18, mountFloatingAssistant }
@@ -78,40 +101,73 @@ import { Agent18, mountFloatingAssistant }
 const client = new Agent18({
   baseUrl: 'https://support.example.com',
   projectKey: 'your-saas',
+  capture: { enabled: true, pageText: true, screenshot: false },
   getToken: async () => {
-    const response = await fetch('/api/support-token', { method: 'POST' });
-    if (!response.ok) throw new Error('Login required');
-    return (await response.json()).token;
+    const response = await fetch('/api/support-token', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+    if (!response.ok) throw new Error('Support identity unavailable; check your login');
+    const { token } = await response.json();
+    if (typeof token !== 'string' || !token) throw new Error('Support endpoint returned no token');
+    return token;
   },
 });
+
 const assistant = mountFloatingAssistant(client, { title: 'Product assistant' });
-// On logout/user change: assistant.destroy(); client.destroy();
+
+// Call from the host on logout, user/tenant change, or page teardown.
+function disconnectSupport() {
+  assistant.destroy();
+  client.destroy();
+}
 ```
 
-Also available: `mountAssistant(container, client)` and `openSupportPage(options)`. The browser SDK is framework independent; optional UI uses Shadow DOM and collects bounded report context without cookies or form values; optional screenshots require configuration and a report preview. Current built-in UI and most detailed guides are Chinese.
+Replace the example domain and project key. Implement `/api/support-token` in your backend using your existing session and CSRF protections; do not trust browser-supplied users, tenants, or roles. Mark sensitive page regions with `data-agent18-private` and verify capture previews on your actual pages.
 
-## Operate and contribute
+Also available: `mountAssistant(container, client)`, `openSupportPage(options)`, or the SDK alone with your own UI. For post-action refresh callbacks, identity changes, and standalone-page handoff, see the [complete integration example](docs/guides/integration.md).
 
-Built-in docs: `/docs`. Machine-readable contract: `/openapi.json`.
+## Version and capability status
+
+Runnable implementations, partial capabilities, and planned work are listed separately. Integration and production acceptance are not assumed.
+
+**Current source code is not the same as your active deployment.** The independent operator workspace, persistent conversations, ticket assignment, knowledge maintenance, and business analytics require the matching migrations, configuration, and permissions. Updating documentation does not upgrade a running instance. See the [workspace guide](docs/guides/support-workspace.md) and [round 17 development record](docs/development/round17-product-workflows.md).
+
+[//]: # (agent18:capabilities:start)
+
+| Capability | Status | Available | Requirements and limits |
+| --- | --- | --- | --- |
+| Answer | Implemented | Directory/Git sources, extractive or model drafts, citations, review, publication and watch | Source scope, audience and answer quality need target-system validation |
+| Query | Implemented | Reviewed OpenAPI GET and read-only POST operations, current-user identity, roles and field projection | POST needs explicit read-only review and flat scalar parameters; SaaS enforces object access; GraphQL is not supported |
+| Act | Implemented | Registered actions, exact previews, explicit confirmation, reauthorization and receipt reconciliation | SaaS implements transactional idempotency; no arbitrary browser control or autonomous multi-step writes |
+| Investigate | Partial | Business failure events and page previews, HTTP/Loki/Prometheus/Tempo, durable investigations, incident deduplication and recovery, and attested deployment records | Requires real sources and trusted scope labels; missing or out-of-scope traces return unknown or are rejected; correlated evidence is not proof of root cause |
+| Handoff and learn | Partial | Persistent conversations, ticket assignment, customer follow-ups, operator replies, resolve/reopen and internal knowledge drafts | Requires matching migrations and scoped operator access; restores saved text and historical references without replaying actions; external ticket systems need adapters and acceptance |
+| Self-host | Partial | Source installation, setup, floating/inline/standalone entry, diagnostics, backup and isolated restore | Single-host integration preview; official images/npm packages, distributed quotas and HA are not shipped |
+| Code repair | Planned | Planned: engineering evidence handoff, fix proposals, isolated verification and draft PRs | No automated code changes, merge or production deployment |
+
+[//]: # (agent18:capabilities:end)
+
+“Implemented” means the repository provides implementation and validation paths—not that your deployment is accepted. Use the [target-system acceptance report](docs/reference/integration-acceptance.md) to check real identities, user/tenant isolation, model quality, business writes, and failure handling.
+
+## Documentation and development
+
+| Task | Start here |
+| --- | --- |
+| Run, deploy, and maintain | [Installation](docs/guides/installation.md) · [Operations and recovery](docs/guides/operations.md) · [Security](SECURITY.md) |
+| Integrate an existing product | [Integration brief](INTEGRATE.md) · [Identity and SDK](docs/guides/integration.md) · [Acceptance](docs/reference/integration-acceptance.md) |
+| Manage knowledge and support | [Knowledge](docs/guides/knowledge.md) · [Operator workspace](docs/guides/support-workspace.md) · [Knowledge governance and business analytics](docs/guides/advanced-workflows.md) · [Observability](docs/guides/observability.md) |
+| Understand and extend | [Runtime overview](docs/overview/agent18-0.8-integration.md) · [API and SDK](docs/reference/api.md) · [Handbook](docs/README.md) |
+| Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/planning/mvp-roadmap.md) · [Changelog](CHANGELOG.md) |
 
 ```sh
-pnpm check
-pnpm run doctor
-pnpm knowledge watch 300
-pnpm backup
-pnpm backup:verify .local/backups/YOUR_BACKUP
+pnpm check          # Formatting, docs, build, tests, and local release checks
+pnpm run doctor     # Diagnose a configured local instance
 ```
 
-Backups contain sensitive configuration and stay local. Restore verification creates and removes a fresh isolated database. A retained restore can be explicitly activated; existing databases are not overwritten.
+Choose database, recovery, and end-to-end tests using the [contribution guide](CONTRIBUTING.md). Some tests pause demo services or change synthetic data; do not point them at production.
 
-Default ports bind to loopback. The synthetic identity issuer is in the demo profile. See the [installation guide](docs/guides/installation.md) before public deployment; expose only Core behind HTTPS, keep the operator service local, and use your real SaaS identity.
+Release and capability blocks are maintained in `docs/release.json`. After changing the manifest, run `pnpm docs:sync` and `pnpm docs:check`. Keep the generation markers in both READMEs.
 
-See [the handbook](docs/README.md), [runtime overview](docs/overview/agent18-0.7-operations.md), [roadmap](docs/planning/mvp-roadmap.md), [review and priorities](docs/planning/review-and-priorities.md), [contributing](CONTRIBUTING.md) and [security](SECURITY.md). Core is Apache-2.0; the browser SDK is MIT.
+## License
 
-## Core Foundation in 0.6
-
-Context, Evidence, RunStep, Provider/Tool registries and three-state policy decisions now support domain-neutral read workflows. L1 knowledge, L2 identity and L3 confirmed business actions remain implemented; 0.7 adds HTTP / Loki / Prometheus evidence and inspection reports; full trace correlation, proven RCA and code fixes remain roadmap work. See the [0.6 review and migration guide](docs/overview/agent18-0.6-core.md) and [registry contracts](docs/reference/providers.md). Public npm SDK packages and official images are not published yet.
-
-## Real monitoring demo
-
-After `pnpm demo:start`, run `pnpm observability:demo` and `pnpm test:observability`. Optional Compose profiles run pinned Loki and Prometheus images with synthetic business errors and recovery. Production deployments configure existing monitoring endpoints, scopes and read-only credentials in the Owner workspace. Page capture defaults to bounded text/error context; screenshots are off by default. Mark sensitive regions with `data-agent18-private` and review the capture before submission.
+Core is [Apache-2.0](LICENSE); the Web SDK is [MIT](packages/web-sdk/LICENSE). Access to knowledge sources and business APIs remains governed by the respective systems.

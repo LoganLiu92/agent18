@@ -61,17 +61,20 @@
       "status": "partial",
       "zh": [
         "上报与巡检",
-        "业务失败事件与页面预览、HTTP/Loki/Prometheus、持久排查、异常合并与恢复",
-        "需真实数据源和可信标签；完整 Trace 与根因证明尚未实现"
+        "业务失败事件与页面预览、HTTP/Loki/Prometheus/Tempo、持久排查、异常合并与恢复、可信部署记录",
+        "需真实数据源与可信范围标签；Trace 缺失或范围不符返回未知或拒绝；关联证据不等于根因证明"
       ],
       "en": [
         "Investigate",
-        "Semantic business failure events and page previews, HTTP/Loki/Prometheus, durable investigations, incident deduplication and recovery",
-        "Requires real sources and trusted labels; full trace correlation and proven root cause are not implemented"
+        "Business failure events and page previews, HTTP/Loki/Prometheus/Tempo, durable investigations, incident deduplication and recovery, and attested deployment records",
+        "Requires real sources and trusted scope labels; missing or out-of-scope traces return unknown or are rejected; correlated evidence is not proof of root cause"
       ],
       "evidence": [
         "packages/application/src/observations.ts",
-        "scripts/verify-observability.ts"
+        "scripts/verify-observability.ts",
+        "providers/observability/src/tempo.ts",
+        "tests/observability/runtime.integration.test.ts",
+        "scripts/verify-tempo.ts"
       ]
     },
     {
@@ -79,17 +82,18 @@
       "status": "partial",
       "zh": [
         "人工接手与经验",
-        "持久工单、客户补充、本地工作人员回复、解决/重开、内部知识草稿",
-        "普通聊天刷新重置；尚无远程客服 SSO、坐席分工或外部工单同步"
+        "持久对话、工单分配、客户补充、工作人员回复、解决/重开与内部知识草稿",
+        "需对应源码迁移与员工租户授权；恢复已保存文本与历史引用，不重放业务操作；外部工单需实际适配与验收"
       ],
       "en": [
         "Handoff and learn",
-        "Persistent cases, follow-ups, local operator replies, resolve/reopen and internal knowledge drafts",
-        "Ordinary chat resets on reload; remote operator SSO, assignment and external ticket sync are not implemented"
+        "Persistent conversations, ticket assignment, customer follow-ups, operator replies, resolve/reopen and internal knowledge drafts",
+        "Requires matching migrations and scoped operator access; restores saved text and historical references without replaying actions; external ticket systems need adapters and acceptance"
       ],
       "evidence": [
-        "packages/application/src/conversation.ts",
-        "tests/connections/workflow.integration.test.ts"
+        "packages/application/src/conversations.ts",
+        "apps/server/src/operators/support.ts",
+        "tests/security/operators.integration.test.ts"
       ]
     },
     {
