@@ -19,6 +19,11 @@ export const documents = [
   ['reference/providers', 'Provider 与 Tool 注册规范', 'docs/reference/providers.md'],
   ['guides/installation', '安装与公开部署', 'docs/guides/installation.md'],
   [
+    'development/round18-integration-review',
+    '新系统试接前复核',
+    'docs/development/round18-integration-review.md',
+  ],
+  [
     'development/round17-product-workflows',
     '产品工作流与协议验收',
     'docs/development/round17-product-workflows.md',

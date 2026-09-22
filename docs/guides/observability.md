@@ -2,6 +2,8 @@
 
 本指南连接现有监控系统；没有监控时，也提供独立可选的 Loki / Prometheus 演示组合。所有运维检查只读，不需要把 SSH、数据库管理员或写权限交给 agent18。
 
+当前源码还提供 Tempo 逐 span 范围校验和可信部署记录，配置、签名与未知结果语义见[Trace 与部署证明](advanced-workflows.md)。下方 Loki / Prometheus 演示不包含 Tempo，不能用它证明 Trace 或真实线上版本已经接通。
+
 ## 用真实组件跑通演示
 
 ```sh

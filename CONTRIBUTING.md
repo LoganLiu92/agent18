@@ -34,6 +34,7 @@ pnpm setup:ui
 pnpm check
 pnpm test:policy
 pnpm test:integration
+pnpm test:backup:isolation
 pnpm test:recovery
 pnpm test:journey
 pnpm observability:demo
@@ -41,6 +42,8 @@ pnpm test:observability
 ```
 
 按改动选择必要测试；身份、数据库、调用、发布与恢复变化必须验证允许和拒绝路径。恢复测试会暂停本地演示组件；journey 使用新建隔离 Compose 项目和固定的专用测试端口。
+
+已有活动实例时优先使用 `pnpm test:integration:isolated`，它建立独立数据库运行指定套件，不停止活动 Worker。`test:backup:isolation` 验证临时数据库的备份、恢复和删除重放；两者需要本地 PostgreSQL 管理配置。CI 在临时演示环境运行完整集成、恢复、旅程与隔离备份测试，不能把这些结果代替目标 SaaS 接入验收。
 
 PR 说明具体问题、最终行为、验证结果及依赖接入者的边界。引用本地模拟测试时明确模拟范围，不把构建/容器成功写成真实 SaaS 验收。格式使用 `pnpm format`；新增技术文件同时更新手册导航和版本记录。
 

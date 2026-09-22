@@ -223,6 +223,7 @@ export class Agent18 {
   private async request<T>(path: string, method = 'GET', body?: unknown, key?: string): Promise<T> {
     this.abort.signal.throwIfAborted();
     const token = await this.options.getToken();
+    this.abort.signal.throwIfAborted();
     const response = await (this.options.fetch ?? fetch)(
       `${this.options.baseUrl.replace(/\/$/, '')}${path}`,
       {
@@ -240,6 +241,7 @@ export class Agent18 {
       },
     );
     const result = await response.json();
+    this.abort.signal.throwIfAborted();
     if (!response.ok) throw new Agent18Error(result.error?.code ?? 'REQUEST_FAILED', response.status);
     return result as T;
   }

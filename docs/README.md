@@ -8,11 +8,11 @@ agent18 是一个嵌入现有 SaaS 的开源支持与业务助手。它连接已
 
 [//]: # (agent18:release:end)
 
-知识与业务对话已连接页面问题上报、HTTP/Loki/Prometheus 自动排查、周期巡检、异常恢复与内部知识草稿。[监控接入指南](guides/observability.md)提供真实组件演示和生产配置；[公开路线图](planning/mvp-roadmap.md)记录剩余工作与验收条件。
+知识与业务对话已连接页面问题上报、HTTP/Loki/Prometheus/Tempo 排查、周期巡检、异常恢复与内部知识草稿。[监控接入指南](guides/observability.md)提供真实组件演示和配置，[进阶工作流](guides/advanced-workflows.md)说明 Tempo、部署证明、外部工单与分析合同；[公开路线图](planning/mvp-roadmap.md)记录剩余工作与验收条件。
 
 将仓库交给一个已有项目接入时，从[接入任务书](../INTEGRATE.md)开始，最终填写[目标系统验收报告](reference/integration-acceptance.md)。
 
-长期开发按[知识中心、工单与 Insights 分步计划](planning/product-development-plan-20260918.md)推进；计划同时保留后续扩展，当前源码新增能力以第十六轮开发记录为准，不代表活动部署已经升级。
+长期开发按[知识中心、工单与 Insights 分步计划](planning/product-development-plan-20260918.md)推进；计划同时保留后续扩展，当前源码交付以[第十七轮开发记录](development/round17-product-workflows.md)及使用指南为准，不代表活动部署已经升级。后续接入复核见[第十八轮](development/round18-integration-review.md)。
 
 逐步实施可直接按任务编号开展：[M1 独立账号与知识中心](planning/m1-work-packages.md)、[知识中心页面与接口方案](planning/knowledge-center-delivery-design.md)、[M2—M4 工单与 Insights](planning/support-and-insights-work-packages.md)。共同约束见[产品领域合同](architecture/product-contracts.md)，本地实现及未验证项见[第九轮开发记录](development/round9-foundation.md)。
 
@@ -59,7 +59,7 @@ pnpm start
 2. 审查并发布构建，在示例 SaaS 的浮窗中查找资料。
 3. 在浮窗中输入“查询我的订单”；换成另一个用户后再次查询，验证隔离。
 4. 输入“关闭邮件通知”，核对预览并点击确认，再查询通知偏好核验实际状态。
-5. 提交一个问题并补充说明，在本地工作台回复，在客户侧刷新查看；确认解决后可重新打开。
+5. 在 Setup 初始化管理员，再用 `/admin` 的独立员工账号和租户授权回复客户问题；客户侧刷新查看，确认解决后可重新打开。
 6. 运行 `pnpm run doctor`，再按运维指南进行一次备份恢复演练。
 
 示例身份和订单是合成数据，但业务查询确实访问独立 HTTP 服务，通知偏好确实写入 SaaS 自己的 SQLite，客户问题确实持久化到 PostgreSQL。模型未配置时不会把检索结果伪装成模型回答。

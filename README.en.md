@@ -79,6 +79,8 @@ Code and documentation provide context, not permission. The model cannot registe
 
 ## Integrate your SaaS
 
+For another project's coding assistant, copy the [integration prompt](INTEGRATE.md#可以发给另一个项目的任务描述) and require a completed [acceptance report](docs/reference/integration-acceptance.md) with actual evidence.
+
 Start with the [integration task brief](INTEGRATE.md) and add capabilities incrementally.
 
 | Connection | What your system provides |

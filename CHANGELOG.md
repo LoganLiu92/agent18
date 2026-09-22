@@ -9,7 +9,18 @@
 - Persist submitted events in scoped cases, show them to local operators and correlate investigation logs using the reported failure trace ID.
 - Extend the synthetic SaaS and real Loki/Prometheus acceptance journey. Existing GET configurations remain compatible; no new database migration.
 
-See the [0.8 overview](docs/overview/agent18-0.8-integration.md) and [semantic context guide](docs/guides/semantic-context.md). General conversation persistence, remote operator SSO, official package/image distribution and full trace backends remain roadmap work.
+See the [0.8 overview](docs/overview/agent18-0.8-integration.md) and [semantic context guide](docs/guides/semantic-context.md). The bullets above describe the initial 0.8 delivery; subsequent source changes below keep the 0.8.0 integration-preview version and require their migrations and rebuilt services.
+
+### Current source workflows and integration review
+
+- Deliver independent staff accounts with project/tenant authorization, persistent conversation text and historical references, ticket assignment, public/internal replies, SLA calendars and retention/deletion replay.
+- Add fixed knowledge provenance, topic-based generation, separate customer drafts, candidate evaluation and semantic review, publication sets and private Git credential bindings.
+- Add scoped Tempo evidence, deployment records, signed ticket synchronization, service-authorized business analytics, registered Playbooks and scheduled reports. Apply migrations through 036; see [workflow evidence](docs/development/round17-product-workflows.md).
+- Align the integration brief, runtime overview, handbook and target-system acceptance checklist with these implementations; document container source paths, staff bootstrap, optional integrations and the limits of reusing a multi-project instance.
+- Reject late SDK tokens and responses after client destruction so identity changes cannot continue an old request through a custom transport.
+- Remove forced database termination from operator test teardown to avoid racing closing PostgreSQL clients; retain errors for leaked connections and include isolated backup validation in CI.
+
+Remote staff SSO, official package/image distribution, HA and automatic code repair remain outside this source delivery. External SaaS acceptance is still required; see the [integration review](docs/development/round18-integration-review.md).
 
 ### Documentation and review alignment
 

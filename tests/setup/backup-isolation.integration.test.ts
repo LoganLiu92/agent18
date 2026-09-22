@@ -136,8 +136,9 @@ it.skipIf(process.env.AGENT18_BACKUP_INTEGRATION !== '1')(
         throw new Error('ACTIVATION_NOT_APPLIED');
     } finally {
       await db?.end();
-      for (const n of restored) await admin.query(`DROP DATABASE ${n} WITH (FORCE)`);
-      await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      // Let closing pool sockets drain; forced termination can emit idle-client errors.
+      for (const n of restored) await admin.query(`DROP DATABASE ${n}`);
+      await admin.query(`DROP DATABASE IF EXISTS ${name}`);
       await admin.end();
       await rm(root, { recursive: true, force: true });
     }

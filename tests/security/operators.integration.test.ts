@@ -173,7 +173,10 @@ describe.skipIf(process.env.AGENT18_INTEGRATION !== '1')(
       await setup?.close();
       await app?.app.close();
       await db?.end();
-      if (created) await admin.query(`DROP DATABASE ${name} WITH (FORCE)`);
+      // pg-pool resolves end() before every socket has finished closing. A forced
+      // drop can kill those closing clients and emit an unhandled 57P01 error.
+      // A normal drop lets PostgreSQL wait for them and still exposes real leaks.
+      if (created) await admin.query(`DROP DATABASE ${name}`);
       await admin?.end();
       if (root) await rm(root, { recursive: true, force: true });
     });

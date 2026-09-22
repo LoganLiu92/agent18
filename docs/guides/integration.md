@@ -157,4 +157,4 @@ function disconnectSupport() {
 
 注册业务能力见[OpenAPI 查询](business-queries.md)与[代操作协议](business-actions.md)。先保存配置，再“应用到运行服务”，最后从 SaaS 当前用户测试；Core 成功重启不等于 SaaS 业务权限已经验证。
 
-客户页面和 SDK 现已支持问题消息、处理进展、解决与重开。本地部署者在“客户问题”选择项目和问题后回复；客户只能读自己范围内的回复。完整接口见[API 与 SDK](../reference/api.md)。
+客户页面和 SDK 支持持久对话、问题消息、处理进展、解决与重开。日常支持使用独立员工账号进入 `/admin`，先获得项目角色与明确租户范围，再分配和回复工单；本地 Setup 保留部署者维护入口。客户只能读自己范围内的公开回复，内部备注和工程证据分开授权。见[员工后台](support-workspace.md)和[API 与 SDK](../reference/api.md)。
